@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../models/quiz_result.dart';
-import '../database/quiz_repo.dart';
 
 class QuizScorecardScreen extends StatelessWidget {
   final List<QuizQuestion> questions;

@@ -29,8 +29,8 @@ class SettingsProvider extends ChangeNotifier {
   String get deepseekApiKey => _deepseekApiKey;
   String get aiModel => _aiModel;
 
-  String get activeApiKey {
-    switch (_aiProvider) {
+  String getApiKeyForProvider(String provider) {
+    switch (provider) {
       case AiService.providerOpenAi:
         return _openaiApiKey;
       case AiService.providerClaude:
@@ -42,6 +42,8 @@ class SettingsProvider extends ChangeNotifier {
         return _geminiApiKey;
     }
   }
+
+  String get activeApiKey => getApiKeyForProvider(_aiProvider);
 
   String get activeProviderDisplayName {
     switch (_aiProvider) {
