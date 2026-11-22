@@ -64,13 +64,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.0
-          name: "StudyVault Flutter v1.0.0 APK"
+          tag_name: v1.1.0
+          name: "StudyVault Flutter v1.1.0 (UI & Reading Tracker Upgrade)"
           body: |
-            ### 📱 StudyVault Flutter Edition Release APK
-            - **100% Native Indic / Hindi PDF Viewer** powered by Google Pdfium (Zero Tofu boxes `□`)
-            - **Gemini AI Quiz Generator** from study notes & prompts
-            - **Timed Quiz Runner & Scorecard**
-            - **Spaced Repetition & Study Pomodoro Timer**
-            - **100% Offline SQLite Storage**
+            ### 📱 StudyVault Flutter v1.1.0 Release APK
+            - **Reading Streak Tracker (🔥)** with Daily & Weekly Activity Charts
+            - **Eye-Care Reading Modes**: Day, Sepia Paper (Blue-light filter), and AMOLED Pure Black
+            - **Dynamic Theme Palette Engine**: Indigo, Emerald Focus Green, Royal Amethyst, Amber
+            - **Pro PDF Reader Toolbar**: Horizontal Book Flip vs. Vertical Scroll, Live Timer, and Reading Pace Estimator
+            - **100% Native Google Pdfium Indic Rendering Engine** (No Tofu Boxes `□`)
+          files: build/app/outputs/flutter-apk/app-release.apk
+          overwrite: true
           files: build/app/outputs/flutter-apk/app-release.apk
