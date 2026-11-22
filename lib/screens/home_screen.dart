@@ -23,13 +23,17 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
   final QuizRepo _quizRepo = QuizRepo();
 
   List<QuizQuestion> _allQuestions = [];
   List<QuizResult> _pastResults = [];
   bool _isLoadingAssessment = true;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -146,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final study = Provider.of<StudyProvider>(context);
     final settings = Provider.of<SettingsProvider>(context);
 

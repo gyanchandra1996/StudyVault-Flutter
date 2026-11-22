@@ -64,14 +64,17 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.1.0
-          name: "StudyVault Flutter v1.1.0 (UI & Reading Tracker Upgrade)"
+          tag_name: v1.2.0
+          name: "StudyVault Flutter v1.2.0 (PIN Lock, Categories Tab & PDF Share)"
           body: |
-            ### 📱 StudyVault Flutter v1.1.0 Release APK
+            ### 📱 StudyVault Flutter v1.2.0 Release APK
+            - **Butter-Smooth UI (Zero Flickering)** with permanent state preservation
+            - **Pre-Seeded Core Categories**: Computer Science, Arithmetic, Reasoning, GK, English, Hindi Vyakaran
+            - **Dedicated Categories Bottom Tab** with instant search & exam filtering
+            - **App Security & 4-Digit PIN Lock** to protect study materials and notes
+            - **Direct PDF Sharing** to WhatsApp, Google Drive, and other apps
             - **Reading Streak Tracker (🔥)** with Daily & Weekly Activity Charts
-            - **Eye-Care Reading Modes**: Day, Sepia Paper (Blue-light filter), and AMOLED Pure Black
-            - **Dynamic Theme Palette Engine**: Indigo, Emerald Focus Green, Royal Amethyst, Amber
-            - **Pro PDF Reader Toolbar**: Horizontal Book Flip vs. Vertical Scroll, Live Timer, and Reading Pace Estimator
+            - **Eye-Care Reading Modes**: Day, Sepia Warm Paper, and AMOLED Pure Black
             - **100% Native Google Pdfium Indic Rendering Engine** (No Tofu Boxes `□`)
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

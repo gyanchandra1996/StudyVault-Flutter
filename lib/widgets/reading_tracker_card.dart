@@ -21,7 +21,6 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> {
   int _todayMinutes = 0;
   List<Map<String, dynamic>> _weekData = [];
   PdfDocument? _recentPdf;
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -30,19 +29,19 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> {
   }
 
   Future<void> _loadTrackerData() async {
-    setState(() => _isLoading = true);
     final streak = await _readingRepo.getReadingStreakDays();
     final todayMins = await _readingRepo.getTodayReadingMinutes();
     final week = await _readingRepo.getWeeklyActivity();
     final recentList = await _pdfRepo.getRecentPdfs(limit: 1);
 
-    setState(() {
-      _streakDays = streak;
-      _todayMinutes = todayMins;
-      _weekData = week;
-      _recentPdf = recentList.isNotEmpty ? recentList.first : null;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _streakDays = streak;
+        _todayMinutes = todayMins;
+        _weekData = week;
+        _recentPdf = recentList.isNotEmpty ? recentList.first : null;
+      });
+    }
   }
 
   String _getGreeting() {
@@ -54,9 +53,6 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()));
-    }
 
     final settings = Provider.of<SettingsProvider>(context);
     final accent = settings.activeAccentColor;

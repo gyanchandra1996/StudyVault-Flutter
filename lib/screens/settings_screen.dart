@@ -86,6 +86,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
+          // App Security & PIN Lock Section
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: settings.activeAccentColor),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'App Security & PIN Lock',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Lock StudyVault with a 4-digit PIN to keep your notes and study materials private.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Require PIN on Launch'),
+                    subtitle: Text(
+                      settings.isLockEnabled ? 'PIN lock is active' : 'Disabled',
+                      style: TextStyle(
+                        color: settings.isLockEnabled ? Colors.green : Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                    value: settings.isLockEnabled,
+                    onChanged: (val) {
+                      if (val) {
+                        _showSetPinDialog(context, settings);
+                      } else {
+                        settings.setLockPin(false, '');
+                      }
+                    },
+                  ),
+                  if (settings.isLockEnabled) ...[
+                    const Divider(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton.icon(
+                          icon: const Icon(Icons.key, size: 16),
+                          label: const Text('Change PIN'),
+                          onPressed: () => _showSetPinDialog(context, settings),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.lock, size: 16),
+                          label: const Text('Lock Now'),
+                          onPressed: () => settings.lockApp(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Gemini AI Configuration Section
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -350,6 +417,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  void _showSetPinDialog(BuildContext context, SettingsProvider settings) {
+    final pinController = TextEditingController();
+    String error = '';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Set 4-Digit Security PIN'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Enter a 4-digit numeric PIN to protect your app:'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: pinController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 24, letterSpacing: 10, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  counterText: '',
+                  errorText: error.isNotEmpty ? error : null,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final pin = pinController.text.trim();
+                if (pin.length != 4 || int.tryParse(pin) == null) {
+                  setDialogState(() => error = 'Please enter exactly 4 digits');
+                } else {
+                  settings.setLockPin(true, pin);
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PIN lock enabled successfully!')),
+                  );
+                }
+              },
+              child: const Text('Save PIN'),
+            ),
+          ],
+        ),
       ),
     );
   }

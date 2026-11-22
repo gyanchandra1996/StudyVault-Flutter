@@ -11,6 +11,9 @@ class SettingsProvider extends ChangeNotifier {
   String _accentName = 'indigo'; // 'indigo', 'emerald', 'amethyst', 'amber'
   String _readerFilter = 'original'; // 'original', 'sepia', 'night'
   String _scrollDirection = 'vertical'; // 'vertical', 'horizontal'
+  bool _isLockEnabled = false;
+  String _lockPin = '';
+  bool _isAppUnlocked = false;
   bool _isTestingApiKey = false;
   String? _apiTestResult;
 
@@ -22,6 +25,9 @@ class SettingsProvider extends ChangeNotifier {
   String get accentName => _accentName;
   String get readerFilter => _readerFilter;
   String get scrollDirection => _scrollDirection;
+  bool get isLockEnabled => _isLockEnabled;
+  String get lockPin => _lockPin;
+  bool get isAppUnlocked => _isAppUnlocked;
   bool get isDarkMode => _themeStyle == 'dark' || _themeStyle == 'amoled';
   bool get isAmoled => _themeStyle == 'amoled';
   bool get isSepia => _themeStyle == 'sepia';
@@ -56,6 +62,35 @@ class SettingsProvider extends ChangeNotifier {
     _accentName = prefs.getString('accentName') ?? 'indigo';
     _readerFilter = prefs.getString('readerFilter') ?? 'original';
     _scrollDirection = prefs.getString('scrollDirection') ?? 'vertical';
+    _isLockEnabled = prefs.getBool('isLockEnabled') ?? false;
+    _lockPin = prefs.getString('lockPin') ?? '';
+    _isAppUnlocked = !_isLockEnabled;
+    notifyListeners();
+  }
+
+  bool unlockWithPin(String pin) {
+    if (pin == _lockPin) {
+      _isAppUnlocked = true;
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  void lockApp() {
+    if (_isLockEnabled) {
+      _isAppUnlocked = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setLockPin(bool enabled, String pin) async {
+    _isLockEnabled = enabled;
+    _lockPin = pin;
+    _isAppUnlocked = !enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLockEnabled', enabled);
+    await prefs.setString('lockPin', pin);
     notifyListeners();
   }
 

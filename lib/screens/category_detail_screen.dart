@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/category.dart';
 import '../models/pdf_document.dart';
 import '../database/category_repo.dart';
@@ -142,12 +143,23 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                             color: pdf.isCompleted == 1 ? Colors.green : Colors.grey,
                           ),
                         ),
-                        trailing: showDelete
-                            ? IconButton(
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
+                              tooltip: 'Share PDF',
+                              onPressed: () {
+                                Share.shareXFiles([XFile(pdf.localPath)], text: 'StudyVault Note: ${pdf.title}');
+                              },
+                            ),
+                            if (showDelete)
+                              IconButton(
                                 icon: const Icon(Icons.delete_outline, color: Colors.grey),
                                 onPressed: () => _deletePdf(pdf),
-                              )
-                            : const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                              ),
+                          ],
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,

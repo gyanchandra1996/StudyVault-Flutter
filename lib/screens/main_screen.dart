@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import 'home_screen.dart';
+import 'categories_screen.dart';
 import 'flashcards_screen.dart';
 import 'favorites_screen.dart';
-import 'recent_screen.dart';
 import 'settings_screen.dart';
+import 'lock_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -19,9 +20,9 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    CategoriesScreen(),
     FlashcardsScreen(),
     FavoritesScreen(),
-    RecentScreen(),
     SettingsScreen(),
   ];
 
@@ -29,6 +30,10 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final accent = settings.activeAccentColor;
+
+    if (settings.isLockEnabled && !settings.isAppUnlocked) {
+      return const LockScreen();
+    }
 
     return Scaffold(
       body: IndexedStack(
@@ -46,6 +51,11 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Home',
           ),
           NavigationDestination(
+            icon: const Icon(Icons.category_outlined),
+            selectedIcon: Icon(Icons.category, color: accent),
+            label: 'Categories',
+          ),
+          NavigationDestination(
             icon: const Icon(Icons.style_outlined),
             selectedIcon: Icon(Icons.style, color: accent),
             label: 'Flashcards',
@@ -54,11 +64,6 @@ class _MainScreenState extends State<MainScreen> {
             icon: const Icon(Icons.star_outline),
             selectedIcon: Icon(Icons.star, color: accent),
             label: 'Favorites',
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history, color: accent),
-            label: 'Recent',
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),

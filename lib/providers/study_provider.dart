@@ -28,10 +28,76 @@ class StudyProvider extends ChangeNotifier {
     notifyListeners();
 
     _exams = await _examRepo.getAllExams();
-    if (_exams.isNotEmpty && _selectedExam == null) {
+    if (_exams.isEmpty) {
+      final defaultExamId = await _examRepo.insertExam(Exam(
+        title: 'General Competition & Govt Exams',
+        description: 'DSSSB, SSC, EMRS, Railway & State Exams',
+        color: '#6366F1',
+        icon: 'school',
+      ));
+      final defaultExam = await _examRepo.getExamById(defaultExamId);
+      if (defaultExam != null) {
+        _exams = [defaultExam];
+        _selectedExam = defaultExam;
+      }
+    } else if (_selectedExam == null) {
       _selectedExam = _exams.first;
     }
+
     await loadCategoriesForSelectedExam();
+
+    if (_categories.isEmpty && _selectedExam != null) {
+      final defaultCats = [
+        Category(
+          title: 'Computer Science & IT',
+          description: 'Architecture, Networking, DBMS, Operating Systems & Programming',
+          color: '#6366F1',
+          icon: 'computer',
+          examId: _selectedExam!.id,
+        ),
+        Category(
+          title: 'Arithmetic & Quantitative Aptitude',
+          description: 'Percentage, Profit-Loss, Time & Work, Algebra, Number System',
+          color: '#10B981',
+          icon: 'calculate',
+          examId: _selectedExam!.id,
+        ),
+        Category(
+          title: 'Reasoning & Mental Ability',
+          description: 'Verbal & Non-Verbal Logic, Puzzles, Series, Syllogism',
+          color: '#F59E0B',
+          icon: 'psychology',
+          examId: _selectedExam!.id,
+        ),
+        Category(
+          title: 'General Knowledge & Current Affairs',
+          description: 'History, Polity, Geography, Economy, Science & Daily News',
+          color: '#EC4899',
+          icon: 'public',
+          examId: _selectedExam!.id,
+        ),
+        Category(
+          title: 'General English & Grammar',
+          description: 'Vocabulary, Comprehension, Idioms & Error Spotting',
+          color: '#8B5CF6',
+          icon: 'translate',
+          examId: _selectedExam!.id,
+        ),
+        Category(
+          title: 'Hindi Vyakaran (हिंदी व्याकरण)',
+          description: 'संधि, समास, मुहावरे, पर्यायवाची, विलोम शब्द एवं अपठित गद्यांश',
+          color: '#06B6D4',
+          icon: 'menu_book',
+          examId: _selectedExam!.id,
+        ),
+      ];
+
+      for (var cat in defaultCats) {
+        await _categoryRepo.insertCategory(cat);
+      }
+      await loadCategoriesForSelectedExam();
+    }
+
     _recentPdfs = await _pdfRepo.getRecentPdfs();
 
     _isLoading = false;
