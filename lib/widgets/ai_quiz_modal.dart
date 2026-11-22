@@ -245,7 +245,7 @@ class _AiQuizModalState extends State<AiQuizModal> {
                   const SizedBox(width: 12),
                   DropdownButton<int>(
                     value: _questionCount,
-                    items: [3, 5, 10, 15].map((c) {
+                    items: [3, 5, 10, 15, 20].map((c) {
                       return DropdownMenuItem(value: c, child: Text('$c Questions'));
                     }).toList(),
                     onChanged: (val) {

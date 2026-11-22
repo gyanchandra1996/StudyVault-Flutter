@@ -19,11 +19,12 @@ class AppDatabase {
 
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
     await _upgradeToV3(db);
+    await _upgradeToV4(db);
     return db;
   }
 
@@ -34,6 +35,29 @@ class AppDatabase {
     if (oldVersion < 3) {
       await _upgradeToV3(db);
     }
+    if (oldVersion < 4) {
+      await _upgradeToV4(db);
+    }
+  }
+
+  Future<void> _upgradeToV4(Database db) async {
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS personal_documents (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          doc_type TEXT NOT NULL,
+          file_path TEXT NOT NULL,
+          file_type TEXT NOT NULL,
+          doc_number TEXT,
+          notes TEXT,
+          is_locked INTEGER DEFAULT 1,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_personal_docs_type ON personal_documents (doc_type)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories (parent_id)');
+    } catch (_) {}
   }
 
   Future<void> _upgradeToV3(Database db) async {
@@ -192,7 +216,22 @@ class AppDatabase {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE personal_documents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        doc_type TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        file_type TEXT NOT NULL,
+        doc_number TEXT,
+        notes TEXT,
+        is_locked INTEGER DEFAULT 1,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
     // Create indexes for instant queries
+    await db.execute('CREATE INDEX idx_personal_docs_type ON personal_documents (doc_type)');
     await db.execute('CREATE INDEX idx_categories_exam ON categories (exam_id)');
     await db.execute('CREATE INDEX idx_categories_parent ON categories (parent_id)');
     await db.execute('CREATE INDEX idx_pdfs_category ON pdfs (category_id)');

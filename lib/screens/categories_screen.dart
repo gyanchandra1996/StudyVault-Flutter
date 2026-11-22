@@ -115,6 +115,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
         title: const Text('Subjects & Categories', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
+            icon: Icon(settings.isCategoryGridView ? Icons.view_list : Icons.grid_view),
+            tooltip: settings.isCategoryGridView ? 'Switch to List View' : 'Switch to Grid View',
+            onPressed: () => settings.toggleCategoryViewMode(),
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Category',
             onPressed: () => _showAddCategoryDialog(context, study),
@@ -189,83 +194,157 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                             ],
                           ),
                         )
-                      : GridView.builder(
-                          cacheExtent: 1500.0,
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 1.15,
-                          ),
-                          itemCount: filteredCategories.length,
-                          itemBuilder: (ctx, idx) {
-                            final cat = filteredCategories[idx];
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(18),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => CategoryDetailScreen(category: cat),
-                                  ),
-                                ).then((_) => study.refreshRecentPdfs());
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: accent.withOpacity(0.08),
+                      : settings.isCategoryGridView
+                          ? GridView.builder(
+                              cacheExtent: 1500.0,
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 1.15,
+                              ),
+                              itemCount: filteredCategories.length,
+                              itemBuilder: (ctx, idx) {
+                                final cat = filteredCategories[idx];
+                                final pdfCount = study.categoryPdfCounts[cat.id] ?? 0;
+                                return InkWell(
                                   borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: accent.withOpacity(0.2)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => CategoryDetailScreen(category: cat),
+                                      ),
+                                    ).then((_) => study.refreshRecentPdfs());
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: accent.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(color: accent.withOpacity(0.2)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: accent.withOpacity(0.18),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: Icon(_getIconData(cat.icon), color: accent, size: 22),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: accent.withOpacity(0.18),
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: Icon(_getIconData(cat.icon), color: accent, size: 22),
+                                            ),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: accent.withOpacity(0.14),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    '📄 $pdfCount',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: accent,
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (settings.showDeleteActions) ...[
+                                                  const SizedBox(width: 4),
+                                                  GestureDetector(
+                                                    onTap: () => study.deleteCategory(cat.id!),
+                                                    child: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ],
                                         ),
-                                        if (settings.showDeleteActions)
-                                          GestureDetector(
-                                            onTap: () => study.deleteCategory(cat.id!),
-                                            child: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
-                                          ),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              cat.title,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
+                                            if (cat.description != null && cat.description!.isNotEmpty) ...[
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                cat.description!,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ],
                                     ),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                  ),
+                                );
+                              },
+                            )
+                          : ListView.builder(
+                              cacheExtent: 1500.0,
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                              itemCount: filteredCategories.length,
+                              itemBuilder: (ctx, idx) {
+                                final cat = filteredCategories[idx];
+                                final pdfCount = study.categoryPdfCounts[cat.id] ?? 0;
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: accent.withOpacity(0.12),
+                                      child: Icon(_getIconData(cat.icon), color: accent),
+                                    ),
+                                    title: Text(
+                                      cat.title,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    subtitle: Text(
+                                      cat.description != null && cat.description!.isNotEmpty
+                                          ? '${cat.description!} • 📄 $pdfCount PDFs'
+                                          : '📄 $pdfCount PDFs inside',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          cat.title,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                        ),
-                                        if (cat.description != null && cat.description!.isNotEmpty) ...[
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            cat.description!,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                        if (settings.showDeleteActions)
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                                            onPressed: () => study.deleteCategory(cat.id!),
                                           ),
-                                        ],
+                                        const Icon(Icons.chevron_right, color: Colors.grey),
                                       ],
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => CategoryDetailScreen(category: cat),
+                                        ),
+                                      ).then((_) => study.refreshRecentPdfs());
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
                 ),
               ],
             ),

@@ -19,6 +19,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _isLockEnabled = false;
   String _lockPin = '';
   bool _isAppUnlocked = false;
+  String _categoryViewMode = 'grid'; // 'grid', 'list'
   bool _isTestingApiKey = false;
   String? _apiTestResult;
 
@@ -68,6 +69,8 @@ class SettingsProvider extends ChangeNotifier {
   bool get isLockEnabled => _isLockEnabled;
   String get lockPin => _lockPin;
   bool get isAppUnlocked => _isAppUnlocked;
+  String get categoryViewMode => _categoryViewMode;
+  bool get isCategoryGridView => _categoryViewMode == 'grid';
   bool get isDarkMode => _themeStyle == 'dark' || _themeStyle == 'amoled';
   bool get isAmoled => _themeStyle == 'amoled';
   bool get isSepia => _themeStyle == 'sepia';
@@ -143,7 +146,15 @@ class SettingsProvider extends ChangeNotifier {
     _scrollDirection = prefs.getString('scrollDirection') ?? 'vertical';
     _isLockEnabled = prefs.getBool('isLockEnabled') ?? false;
     _lockPin = prefs.getString('lockPin') ?? '';
+    _categoryViewMode = prefs.getString('categoryViewMode') ?? 'grid';
     _isAppUnlocked = !_isLockEnabled;
+    notifyListeners();
+  }
+
+  Future<void> toggleCategoryViewMode() async {
+    _categoryViewMode = _categoryViewMode == 'grid' ? 'list' : 'grid';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('categoryViewMode', _categoryViewMode);
     notifyListeners();
   }
 

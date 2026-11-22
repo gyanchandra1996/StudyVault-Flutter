@@ -14,12 +14,14 @@ class StudyProvider extends ChangeNotifier {
   List<Exam> _exams = [];
   Exam? _selectedExam;
   List<Category> _categories = [];
+  Map<int, int> _categoryPdfCounts = {};
   List<PdfDocument> _recentPdfs = [];
   bool _isLoading = false;
 
   List<Exam> get exams => _exams;
   Exam? get selectedExam => _selectedExam;
   List<Category> get categories => _categories;
+  Map<int, int> get categoryPdfCounts => _categoryPdfCounts;
   List<PdfDocument> get recentPdfs => _recentPdfs;
   bool get isLoading => _isLoading;
 
@@ -112,6 +114,13 @@ class StudyProvider extends ChangeNotifier {
 
   Future<void> loadCategoriesForSelectedExam() async {
     _categories = await _categoryRepo.getCategoriesByExam(_selectedExam?.id);
+    final Map<int, int> counts = {};
+    for (final cat in _categories) {
+      if (cat.id != null) {
+        counts[cat.id!] = await _categoryRepo.getPdfCountForCategory(cat.id!);
+      }
+    }
+    _categoryPdfCounts = counts;
     notifyListeners();
   }
 

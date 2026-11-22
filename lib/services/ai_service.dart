@@ -165,21 +165,23 @@ class AiService {
 
     final systemInstruction = '''
 You are an expert exam preparation quiz master.
-Create $count multiple choice questions based on the topic or text below.
+Create exactly $count multiple choice questions based on the topic or text below.
+If the prompt/topic is in Hindi (हिंदी) or requests Hindi grammar/literature/GK, generate questions, options, and explanations in proper Devanagari Hindi.
+Keep explanations concise (under 30 words each) to ensure smooth generation of all $count questions.
 Format your response ONLY as a JSON array of objects with these exact keys:
 [
   {
-    "question": "Question text here (can be in Hindi, English, or bilingual)",
+    "question": "Question text here (in English or Hindi)",
     "optionA": "Option A text",
     "optionB": "Option B text",
     "optionC": "Option C text",
     "optionD": "Option D text",
     "correctIndex": 0,
-    "explanation": "Brief explanation of why this answer is correct",
+    "explanation": "Concise explanation of why this answer is correct",
     "subject": "Topic name"
   }
 ]
-Do not wrap with markdown backticks or commentary. Only return raw JSON.
+Do not wrap with commentary. Return raw valid JSON.
 ''';
 
     String responseText = '';
@@ -293,7 +295,7 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
               ],
               'generationConfig': {
                 'temperature': 0.4,
-                'maxOutputTokens': 2048,
+                'maxOutputTokens': 8192,
               }
             }),
           );
@@ -326,13 +328,37 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
 
     final cleanedJson = responseText.replaceAll(RegExp(r'```json|```'), '').trim();
     final firstBracket = cleanedJson.indexOf('[');
-    final lastBracket = cleanedJson.lastIndexOf(']');
-    if (firstBracket == -1 || lastBracket == -1 || lastBracket < firstBracket) {
+    if (firstBracket == -1) {
       throw Exception('Could not parse valid question array from AI response:\n$responseText');
     }
 
-    final jsonSubstring = cleanedJson.substring(firstBracket, lastBracket + 1);
-    final List<dynamic> parsedList = jsonDecode(jsonSubstring);
+    String candidateJson = cleanedJson.substring(firstBracket);
+    final lastBracket = candidateJson.lastIndexOf(']');
+    if (lastBracket != -1) {
+      candidateJson = candidateJson.substring(0, lastBracket + 1);
+    } else {
+      final lastBrace = candidateJson.lastIndexOf('}');
+      if (lastBrace != -1) {
+        candidateJson = '${candidateJson.substring(0, lastBrace + 1)}]';
+      }
+    }
+
+    List<dynamic> parsedList = [];
+    try {
+      parsedList = jsonDecode(candidateJson) as List<dynamic>;
+    } catch (_) {
+      final objectMatches = RegExp(r'\{[^{}]*"question"[^{}]*\}', dotAll: true).allMatches(candidateJson);
+      for (final m in objectMatches) {
+        try {
+          final obj = jsonDecode(m.group(0)!) as Map<String, dynamic>;
+          if (obj.containsKey('question')) parsedList.add(obj);
+        } catch (_) {}
+      }
+    }
+
+    if (parsedList.isEmpty) {
+      throw Exception('Could not parse valid question array from AI response:\n$responseText');
+    }
 
     return parsedList.map((item) {
       final map = item as Map<String, dynamic>;

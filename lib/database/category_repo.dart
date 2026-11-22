@@ -41,6 +41,52 @@ class CategoryRepo {
     );
   }
 
+  Future<Category?> getCategoryById(int id) async {
+    final db = await dbProvider.database;
+    final res = await db.query('categories', where: 'id = ?', whereArgs: [id]);
+    if (res.isNotEmpty) return Category.fromMap(res.first);
+    return null;
+  }
+
+  Future<int> getSubcategoryCount(int parentId) async {
+    final db = await dbProvider.database;
+    final res = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM categories WHERE parent_id = ?',
+      [parentId],
+    );
+    return (res.first['count'] as int?) ?? 0;
+  }
+
+  Future<int> getPdfCountForCategory(int categoryId, {bool recursive = true}) async {
+    final db = await dbProvider.database;
+    if (!recursive) {
+      final res = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM pdfs WHERE category_id = ? AND is_deleted = 0',
+        [categoryId],
+      );
+      return (res.first['count'] as int?) ?? 0;
+    }
+
+    final Set<int> allCatIds = {categoryId};
+    List<int> currentLevel = [categoryId];
+    while (currentLevel.isNotEmpty) {
+      final placeholders = List.filled(currentLevel.length, '?').join(',');
+      final childRes = await db.rawQuery(
+        'SELECT id FROM categories WHERE parent_id IN ($placeholders)',
+        currentLevel,
+      );
+      currentLevel = childRes.map((r) => r['id'] as int).toList();
+      allCatIds.addAll(currentLevel);
+    }
+
+    final placeholders = List.filled(allCatIds.length, '?').join(',');
+    final res = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM pdfs WHERE category_id IN ($placeholders) AND is_deleted = 0',
+      allCatIds.toList(),
+    );
+    return (res.first['count'] as int?) ?? 0;
+  }
+
   Future<int> deleteCategory(int id) async {
     final db = await dbProvider.database;
     return await db.delete('categories', where: 'id = ?', whereArgs: [id]);
