@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'providers/settings_provider.dart';
 import 'providers/study_provider.dart';
 import 'providers/pomodoro_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,7 +75,7 @@ class StudyVaultApp extends StatelessWidget {
                 elevation: 0.5,
               ),
             ),
-            home: const HomeScreen(),
+            home: const MainScreen(),
           );
         },
       ),

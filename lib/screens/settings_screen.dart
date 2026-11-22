@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import 'flashcards_screen.dart';
+import 'notes_screen.dart';
+import 'recent_screen.dart';
+import 'storage_screen.dart';
+import 'recycle_bin_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -226,6 +231,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Study Tools & Data Management
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFEFF6FF),
+                    child: Icon(Icons.style, color: Color(0xFF3B82F6)),
+                  ),
+                  title: const Text('Flashcards Hub (SM-2)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Spaced repetition revision cards'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FlashcardsScreen()),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFDF2F8),
+                    child: Icon(Icons.edit_note, color: Color(0xFFEC4899)),
+                  ),
+                  title: const Text('Consolidated Study Notes', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('All notes created in PDF reader'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotesScreen()),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFF0FDF4),
+                    child: Icon(Icons.history, color: Color(0xFF10B981)),
+                  ),
+                  title: const Text('Reading History', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Chronological document history'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RecentScreen()),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFEFF6FF),
+                    child: Icon(Icons.pie_chart_outline, color: Color(0xFF6366F1)),
+                  ),
+                  title: const Text('Storage Usage', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('View and clean offline storage'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StorageScreen()),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFEE2E2),
+                    child: Icon(Icons.delete_outline, color: Colors.red),
+                  ),
+                  title: const Text('Recycle Bin', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Soft-deleted documents'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RecycleBinScreen()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );

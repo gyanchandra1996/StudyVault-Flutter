@@ -9,7 +9,7 @@ class AppDatabase {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('study_vault.db');
+    _database = await _initDB('study_vault_v2.db');
     return _database!;
   }
 
@@ -62,6 +62,9 @@ class AppDatabase {
         category_id INTEGER,
         exam_id INTEGER,
         is_completed INTEGER DEFAULT 0,
+        is_favorite INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        deleted_at INTEGER,
         created_at INTEGER NOT NULL,
         last_opened_at INTEGER NOT NULL,
         FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE,
@@ -118,12 +121,43 @@ class AppDatabase {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE flashcards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pdf_id INTEGER,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        page_number INTEGER DEFAULT 1,
+        repetition INTEGER DEFAULT 0,
+        interval INTEGER DEFAULT 1,
+        ease_factor REAL DEFAULT 2.5,
+        due_date TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (pdf_id) REFERENCES pdfs (id) ON DELETE SET NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE personal_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pdf_id INTEGER,
+        page_number INTEGER DEFAULT 1,
+        note_text TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (pdf_id) REFERENCES pdfs (id) ON DELETE CASCADE
+      )
+    ''');
+
     // Create indexes for instant queries
     await db.execute('CREATE INDEX idx_categories_exam ON categories (exam_id)');
     await db.execute('CREATE INDEX idx_categories_parent ON categories (parent_id)');
     await db.execute('CREATE INDEX idx_pdfs_category ON pdfs (category_id)');
     await db.execute('CREATE INDEX idx_pdfs_exam ON pdfs (exam_id)');
+    await db.execute('CREATE INDEX idx_pdfs_fav ON pdfs (is_favorite)');
+    await db.execute('CREATE INDEX idx_pdfs_del ON pdfs (is_deleted)');
     await db.execute('CREATE INDEX idx_quiz_questions_exam ON quiz_questions (exam_id)');
+    await db.execute('CREATE INDEX idx_flashcards_due ON flashcards (due_date)');
   }
 
   Future<void> close() async {

@@ -4,6 +4,8 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:open_file/open_file.dart';
 import '../models/pdf_document.dart';
 import '../database/pdf_repo.dart';
+import '../database/flashcard_repo.dart';
+import '../database/note_repo.dart';
 
 class PdfReaderScreen extends StatefulWidget {
   final PdfDocument pdf;
@@ -18,10 +20,13 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   late PdfViewerController _pdfViewerController;
   late PdfTextSearchResult _searchResult;
   final PdfRepo _pdfRepo = PdfRepo();
+  final FlashcardRepo _flashcardRepo = FlashcardRepo();
+  final NoteRepo _noteRepo = NoteRepo();
 
   bool _isNightMode = false;
   bool _isSearchActive = false;
   bool _isCompleted = false;
+  bool _isFavorite = false;
   int _currentPage = 1;
   int _pageCount = 1;
   final TextEditingController _searchController = TextEditingController();
@@ -32,6 +37,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     _pdfViewerController = PdfViewerController();
     _searchResult = PdfTextSearchResult();
     _isCompleted = widget.pdf.isCompleted == 1;
+    _isFavorite = widget.pdf.isFavorite == 1;
     _currentPage = widget.pdf.lastPage > 0 ? widget.pdf.lastPage : 1;
   }
 
@@ -40,6 +46,166 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     _searchController.dispose();
     _pdfViewerController.dispose();
     super.dispose();
+  }
+
+  void _toggleFavorite() async {
+    final next = !_isFavorite;
+    setState(() => _isFavorite = next);
+    if (widget.pdf.id != null) {
+      await _pdfRepo.toggleFavorite(widget.pdf.id!, next);
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(next ? 'Added to Favorites ★' : 'Removed from Favorites')),
+    );
+  }
+
+  void _showAddFlashcardDialog() {
+    final qCtrl = TextEditingController();
+    final aCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Create Flashcard (Page $_currentPage)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: qCtrl,
+              decoration: const InputDecoration(labelText: 'Question / Concept', border: OutlineInputBorder()),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: aCtrl,
+              decoration: const InputDecoration(labelText: 'Answer / Explanation', border: OutlineInputBorder()),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (qCtrl.text.trim().isNotEmpty && aCtrl.text.trim().isNotEmpty) {
+                await _flashcardRepo.addFlashcard(
+                  pdfId: widget.pdf.id,
+                  pageNumber: _currentPage,
+                  question: qCtrl.text.trim(),
+                  answer: aCtrl.text.trim(),
+                );
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Flashcard created! Scheduled for review.')),
+                );
+              }
+            },
+            child: const Text('Add Card'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showScratchpadDialog() async {
+    final notes = widget.pdf.id != null ? await _noteRepo.getNotesForPdf(widget.pdf.id!) : [];
+    final textCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            top: 20,
+            left: 16,
+            right: 16,
+          ),
+          child: SizedBox(
+            height: 480,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Document Scratchpad', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: textCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'Jot down note on Page $_currentPage...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), foregroundColor: Colors.white),
+                      onPressed: () async {
+                        if (textCtrl.text.trim().isNotEmpty) {
+                          await _noteRepo.addNote(
+                            pdfId: widget.pdf.id,
+                            pageNumber: _currentPage,
+                            noteText: textCtrl.text.trim(),
+                          );
+                          textCtrl.clear();
+                          final updated = await _noteRepo.getNotesForPdf(widget.pdf.id!);
+                          setSheetState(() => notes.clear());
+                          setSheetState(() => notes.addAll(updated));
+                        }
+                      },
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text('Saved Notes:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: notes.isEmpty
+                      ? const Center(child: Text('No notes yet for this document.', style: TextStyle(color: Colors.grey)))
+                      : ListView.builder(
+                          itemCount: notes.length,
+                          itemBuilder: (ctx, i) {
+                            final n = notes[i];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                                  child: Text('P${n.pageNumber}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                ),
+                                title: Text(n.noteText),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                  onPressed: () async {
+                                    await _noteRepo.deleteNote(n.id!);
+                                    final updated = await _noteRepo.getNotesForPdf(widget.pdf.id!);
+                                    setSheetState(() => notes.clear());
+                                    setSheetState(() => notes.addAll(updated));
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _onDocumentLoaded(PdfDocumentLoadedDetails details) {
@@ -148,6 +314,24 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           ],
         ),
         actions: [
+          // Favorite Star Toggle
+          IconButton(
+            icon: Icon(_isFavorite ? Icons.star : Icons.star_border, color: _isFavorite ? Colors.amber : null),
+            tooltip: _isFavorite ? 'Starred' : 'Add to Favorites',
+            onPressed: _toggleFavorite,
+          ),
+          // Scratchpad Modal
+          IconButton(
+            icon: const Icon(Icons.edit_note),
+            tooltip: 'Document Scratchpad',
+            onPressed: _showScratchpadDialog,
+          ),
+          // Create Flashcard
+          IconButton(
+            icon: const Icon(Icons.style),
+            tooltip: 'Create Flashcard',
+            onPressed: _showAddFlashcardDialog,
+          ),
           // Open in Native / Device Viewer
           IconButton(
             icon: const Icon(Icons.open_in_new),

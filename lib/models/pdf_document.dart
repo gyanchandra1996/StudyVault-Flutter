@@ -8,6 +8,9 @@ class PdfDocument {
   final int? categoryId;
   final int? examId;
   final int isCompleted;
+  final int isFavorite;
+  final int isDeleted;
+  final int? deletedAt;
   final int createdAt;
   final int lastOpenedAt;
 
@@ -21,6 +24,9 @@ class PdfDocument {
     this.categoryId,
     this.examId,
     this.isCompleted = 0,
+    this.isFavorite = 0,
+    this.isDeleted = 0,
+    this.deletedAt,
     int? createdAt,
     int? lastOpenedAt,
   })  : createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch,
@@ -37,6 +43,9 @@ class PdfDocument {
       'category_id': categoryId,
       'exam_id': examId,
       'is_completed': isCompleted,
+      'is_favorite': isFavorite,
+      'is_deleted': isDeleted,
+      'deleted_at': deletedAt,
       'created_at': createdAt,
       'last_opened_at': lastOpenedAt,
     };
@@ -53,6 +62,9 @@ class PdfDocument {
       categoryId: map['category_id'] as int?,
       examId: map['exam_id'] as int?,
       isCompleted: (map['is_completed'] as int?) ?? 0,
+      isFavorite: (map['is_favorite'] as int?) ?? 0,
+      isDeleted: (map['is_deleted'] as int?) ?? 0,
+      deletedAt: map['deleted_at'] as int?,
       createdAt: map['created_at'] as int?,
       lastOpenedAt: map['last_opened_at'] as int?,
     );
@@ -68,6 +80,10 @@ class PdfDocument {
     int? categoryId,
     int? examId,
     int? isCompleted,
+    int? isFavorite,
+    int? isDeleted,
+    int? deletedAt,
+    int? createdAt,
     int? lastOpenedAt,
   }) {
     return PdfDocument(
@@ -80,7 +96,10 @@ class PdfDocument {
       categoryId: categoryId ?? this.categoryId,
       examId: examId ?? this.examId,
       isCompleted: isCompleted ?? this.isCompleted,
-      createdAt: createdAt,
+      isFavorite: isFavorite ?? this.isFavorite,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      createdAt: createdAt ?? this.createdAt,
       lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,
     );
   }
