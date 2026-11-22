@@ -4,6 +4,8 @@ import 'question.dart';
 class QuizResult {
   final int? id;
   final String quizTitle;
+  final String? categoryName;
+  final int? categoryId;
   final int totalQuestions;
   final int correctAnswers;
   final int scorePercentage;
@@ -15,6 +17,8 @@ class QuizResult {
   QuizResult({
     this.id,
     required this.quizTitle,
+    this.categoryName,
+    this.categoryId,
     required this.totalQuestions,
     required this.correctAnswers,
     required this.scorePercentage,
@@ -23,6 +27,16 @@ class QuizResult {
     this.userAnswersJson,
     int? createdAt,
   }) : createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch;
+
+  String get displayCategory {
+    if (categoryName != null && categoryName!.trim().isNotEmpty) {
+      return categoryName!.trim();
+    }
+    if (parsedQuestions.isNotEmpty && parsedQuestions.first.subject.trim().isNotEmpty) {
+      return parsedQuestions.first.subject.trim();
+    }
+    return 'General';
+  }
 
   List<QuizQuestion> get parsedQuestions {
     if (questionsJson == null || questionsJson!.isEmpty) return [];
@@ -55,6 +69,8 @@ class QuizResult {
     return {
       'id': id,
       'quiz_title': quizTitle,
+      'category_name': categoryName,
+      'category_id': categoryId,
       'total_questions': totalQuestions,
       'correct_answers': correctAnswers,
       'score_percentage': scorePercentage,
@@ -68,7 +84,9 @@ class QuizResult {
   factory QuizResult.fromMap(Map<String, dynamic> map) {
     return QuizResult(
       id: map['id'] as int?,
-      quizTitle: map['quiz_title'] as String,
+      quizTitle: (map['quiz_title'] as String?) ?? 'Quiz',
+      categoryName: map['category_name'] as String?,
+      categoryId: map['category_id'] as int?,
       totalQuestions: (map['total_questions'] as int?) ?? 0,
       correctAnswers: (map['correct_answers'] as int?) ?? 0,
       scorePercentage: (map['score_percentage'] as int?) ?? 0,

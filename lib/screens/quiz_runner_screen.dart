@@ -9,11 +9,17 @@ import 'quiz_scorecard_screen.dart';
 class QuizRunnerScreen extends StatefulWidget {
   final List<QuizQuestion> questions;
   final String quizTitle;
+  final String? categoryName;
+  final int? categoryId;
+  final int? existingResultId;
 
   const QuizRunnerScreen({
     Key? key,
     required this.questions,
     required this.quizTitle,
+    this.categoryName,
+    this.categoryId,
+    this.existingResultId,
   }) : super(key: key);
 
   @override
@@ -134,7 +140,10 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
     final userAnswersJson = jsonEncode(userAnswersMap);
 
     final result = QuizResult(
+      id: widget.existingResultId,
       quizTitle: widget.quizTitle,
+      categoryName: widget.categoryName ?? (widget.questions.isNotEmpty ? widget.questions.first.subject : 'General'),
+      categoryId: widget.categoryId ?? (widget.questions.isNotEmpty ? widget.questions.first.categoryId : null),
       totalQuestions: total,
       correctAnswers: correct,
       scorePercentage: percentage,
@@ -142,7 +151,12 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
       questionsJson: questionsJson,
       userAnswersJson: userAnswersJson,
     );
-    await _quizRepo.saveQuizResult(result);
+
+    if (widget.existingResultId != null) {
+      await _quizRepo.updateQuizResult(result);
+    } else {
+      await _quizRepo.saveQuizResult(result);
+    }
 
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -150,6 +164,8 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
       MaterialPageRoute(
         builder: (_) => QuizScorecardScreen(
           quizTitle: widget.quizTitle,
+          categoryName: widget.categoryName ?? (widget.questions.isNotEmpty ? widget.questions.first.subject : 'General'),
+          categoryId: widget.categoryId ?? (widget.questions.isNotEmpty ? widget.questions.first.categoryId : null),
           questions: widget.questions,
           selectedAnswers: _selectedAnswers,
           correctCount: correct,

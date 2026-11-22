@@ -407,10 +407,17 @@ class _HomeScreenState extends State<HomeScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: true,
+          isScrollable: false,
           indicatorColor: accent,
           indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelColor: accent,
+          unselectedLabelColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white70
+              : Colors.black87,
+          labelPadding: EdgeInsets.zero,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
           tabs: const [
             Tab(text: 'Dashboard', icon: Icon(Icons.dashboard_outlined, size: 20)),
             Tab(text: 'Study Material', icon: Icon(Icons.menu_book, size: 20)),
@@ -1026,18 +1033,34 @@ class _HomeScreenState extends State<HomeScreen>
                       // Subject Category Filter Chips
                       Builder(
                         builder: (ctx) {
-                          final subjects = {'all', ..._allQuestions.map((q) => q.subject.trim()).where((s) => s.isNotEmpty)};
-                          if (subjects.length > 1) {
+                          final Set<String> categories = {'all'};
+                          for (final c in study.categories) {
+                            if (c.title.trim().isNotEmpty) categories.add(c.title.trim());
+                          }
+                          for (final r in _pastResults) {
+                            if (r.displayCategory.trim().isNotEmpty) categories.add(r.displayCategory.trim());
+                          }
+                          for (final q in _allQuestions) {
+                            if (q.subject.trim().isNotEmpty) categories.add(q.subject.trim());
+                          }
+
+                          if (categories.length > 1) {
                             return SizedBox(
                               height: 38,
                               child: ListView(
                                 scrollDirection: Axis.horizontal,
-                                children: subjects.map((sub) {
+                                children: categories.map((sub) {
                                   final isSelected = _quizFilterSubject == sub;
+                                  final count = sub == 'all'
+                                      ? _pastResults.length
+                                      : _pastResults.where((r) => r.displayCategory.toLowerCase() == sub.toLowerCase()).length;
+                                  final labelText = sub == 'all'
+                                      ? 'All Categories ($count)'
+                                      : '$sub ($count)';
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 6),
                                     child: ChoiceChip(
-                                      label: Text(sub == 'all' ? 'All Subjects (${_allQuestions.length})' : sub),
+                                      label: Text(labelText),
                                       selected: isSelected,
                                       onSelected: (val) {
                                         if (val) setState(() => _quizFilterSubject = sub);
@@ -1053,22 +1076,186 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // Past Quiz Results / Structured Quizzes
-                      if (_pastResults.isNotEmpty) ...[
-                        Row(
-                          children: [
-                            const Icon(Icons.history_edu, color: Colors.indigo, size: 20),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Saved Assessments & History',
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ..._pastResults.map((r) => _buildQuizHistoryCard(r, settings)),
-                        const SizedBox(height: 20),
-                      ],
+                      // Quizzes Display Section
+                      Builder(
+                        builder: (ctx) {
+                          if (_quizFilterSubject != 'all') {
+                            final categoryQuizzes = _pastResults
+                                .where((r) => r.displayCategory.toLowerCase() == _quizFilterSubject.toLowerCase())
+                                .toList();
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.folder, color: Colors.indigo, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '$_quizFilterSubject Quizzes (${categoryQuizzes.length})',
+                                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.add, size: 16),
+                                      label: Text('New Quiz in $_quizFilterSubject'),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => AiQuizModal(
+                                            initialCategory: _quizFilterSubject,
+                                            examId: study.selectedExam?.id,
+                                            onGenerated: _loadAssessmentData,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                if (categoryQuizzes.isEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    margin: const EdgeInsets.only(bottom: 16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.indigo.withOpacity(0.04),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.indigo.withOpacity(0.15)),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Column(
+                                      children: [
+                                        const Icon(Icons.quiz_outlined, size: 40, color: Colors.indigo),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'No quizzes in "$_quizFilterSubject" yet.',
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Generate your first quiz (e.g. $_quizFilterSubject 1) with AI!',
+                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        ElevatedButton.icon(
+                                          icon: const Icon(Icons.auto_awesome, size: 16),
+                                          label: Text('Generate $_quizFilterSubject 1 with AI'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.indigo,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => AiQuizModal(
+                                                initialCategory: _quizFilterSubject,
+                                                examId: study.selectedExam?.id,
+                                                onGenerated: _loadAssessmentData,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else
+                                  ...categoryQuizzes.map((r) => _buildQuizHistoryCard(r, settings)),
+                                const SizedBox(height: 16),
+                              ],
+                            );
+                          }
+
+                          // All Categories View - Grouped by Category!
+                          if (_pastResults.isNotEmpty) {
+                            final Map<String, List<QuizResult>> grouped = {};
+                            for (final r in _pastResults) {
+                              final cat = r.displayCategory;
+                              grouped.putIfAbsent(cat, () => []).add(r);
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.history_edu, color: Colors.indigo, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Saved Assessments (${_pastResults.length} in ${grouped.keys.length} Categories)',
+                                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                ...grouped.entries.map((entry) {
+                                  final catName = entry.key;
+                                  final quizzes = entry.value;
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 6),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.folder_outlined, size: 16, color: Colors.indigo),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  '$catName (${quizzes.length} ${quizzes.length == 1 ? 'Quiz' : 'Quizzes'})',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                    color: Colors.indigo,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            InkWell(
+                                              borderRadius: BorderRadius.circular(4),
+                                              onTap: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (_) => AiQuizModal(
+                                                    initialCategory: catName,
+                                                    examId: study.selectedExam?.id,
+                                                    onGenerated: _loadAssessmentData,
+                                                  ),
+                                                );
+                                              },
+                                              child: const Padding(
+                                                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                                child: Text(
+                                                  '+ Add Quiz',
+                                                  style: TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.w600),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      ...quizzes.map((r) => _buildQuizHistoryCard(r, settings)),
+                                      const SizedBox(height: 8),
+                                    ],
+                                  );
+                                }),
+                                const SizedBox(height: 16),
+                              ],
+                            );
+                          }
+
+                          return const SizedBox.shrink();
+                        },
+                      ),
 
                       // Question Bank
                       Row(
@@ -1145,7 +1332,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   List<QuizQuestion> _getFilteredQuestions() {
     if (_quizFilterSubject == 'all') return _allQuestions;
-    return _allQuestions.where((q) => q.subject.trim() == _quizFilterSubject).toList();
+    return _allQuestions.where((q) => q.subject.trim().toLowerCase() == _quizFilterSubject.trim().toLowerCase()).toList();
   }
 
   Widget _buildMetricTile({
@@ -1245,6 +1432,29 @@ class _HomeScreenState extends State<HomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.indigo.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.folder_outlined, size: 12, color: Colors.indigo),
+                                const SizedBox(width: 3),
+                                Text(
+                                  r.displayCategory,
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
                       Text(
                         r.quizTitle,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -1285,6 +1495,8 @@ class _HomeScreenState extends State<HomeScreen>
                       MaterialPageRoute(
                         builder: (_) => QuizScorecardScreen(
                           quizTitle: r.quizTitle,
+                          categoryName: r.displayCategory,
+                          categoryId: r.categoryId,
                           questions: questionsToReview,
                           selectedAnswers: r.parsedUserAnswers,
                           correctCount: r.correctAnswers,
@@ -1299,11 +1511,11 @@ class _HomeScreenState extends State<HomeScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  icon: const Icon(Icons.replay, size: 16),
-                  label: const Text('Re-attempt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  icon: const Icon(Icons.replay, size: 16, color: Colors.white),
+                  label: const Text('Re-attempt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                   onPressed: () {
                     final questionsToRun = r.parsedQuestions.isNotEmpty ? r.parsedQuestions : _allQuestions;
                     Navigator.push(
@@ -1312,6 +1524,9 @@ class _HomeScreenState extends State<HomeScreen>
                         builder: (_) => QuizRunnerScreen(
                           questions: questionsToRun,
                           quizTitle: r.quizTitle,
+                          categoryName: r.displayCategory,
+                          categoryId: r.categoryId,
+                          existingResultId: r.id,
                         ),
                       ),
                     ).then((_) => _loadAssessmentData());

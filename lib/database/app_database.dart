@@ -19,12 +19,13 @@ class AppDatabase {
 
     final db = await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
     await _upgradeToV3(db);
     await _upgradeToV4(db);
+    await _upgradeToV5(db);
     return db;
   }
 
@@ -38,6 +39,28 @@ class AppDatabase {
     if (oldVersion < 4) {
       await _upgradeToV4(db);
     }
+    if (oldVersion < 5) {
+      await _upgradeToV5(db);
+    }
+  }
+
+  Future<void> _upgradeToV5(Database db) async {
+    try {
+      final qrColumns = await db.rawQuery('PRAGMA table_info(quiz_results)');
+      final qrColNames = qrColumns.map((c) => c['name'] as String).toSet();
+      if (!qrColNames.contains('category_name')) {
+        await db.execute('ALTER TABLE quiz_results ADD COLUMN category_name TEXT');
+      }
+      if (!qrColNames.contains('category_id')) {
+        await db.execute('ALTER TABLE quiz_results ADD COLUMN category_id INTEGER');
+      }
+
+      final qqColumns = await db.rawQuery('PRAGMA table_info(quiz_questions)');
+      final qqColNames = qqColumns.map((c) => c['name'] as String).toSet();
+      if (!qqColNames.contains('category_id')) {
+        await db.execute('ALTER TABLE quiz_questions ADD COLUMN category_id INTEGER');
+      }
+    } catch (_) {}
   }
 
   Future<void> _upgradeToV4(Database db) async {
@@ -158,6 +181,8 @@ class AppDatabase {
       CREATE TABLE quiz_results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         quiz_title TEXT NOT NULL,
+        category_name TEXT,
+        category_id INTEGER,
         total_questions INTEGER NOT NULL,
         correct_answers INTEGER NOT NULL,
         score_percentage INTEGER NOT NULL,

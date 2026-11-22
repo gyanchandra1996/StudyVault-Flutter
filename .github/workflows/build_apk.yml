@@ -57,17 +57,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.4.0
-          name: "StudyVault Flutter v1.4.0 (ID Vault, Hierarchical Folders, Dashboard, List/Grid View & 15Q AI Quiz)"
+          tag_name: v1.4.1
+          name: "StudyVault Flutter v1.4.1 (Multi-Quiz per Category, In-Category Quizzes, Perfect Tab Alignment & Polished UI)"
           body: |
-            ### 📱 StudyVault Flutter v1.4.0 Release APK
-            - **Top Workspace Tabs & All-in-One Dashboard**: 4 unified workspaces (📊 Dashboard, 📚 Study Material, 📝 Quizzes, 🔒 ID Vault) with streaks, currently reading progress ring, 4-metric quick tiles, and shortcuts
-            - **Secure Document & ID Vault**: Offline PIN-protected wallet for Aadhaar Card, PAN Card, Exam Admit Cards, Marksheets, and Certificates with zoomable viewer and native share
-            - **Recursive Hierarchical Folders & Subcategories**: Infinite folder nesting (e.g. Computer Science > Data Structures > Trees > PDF) with interactive breadcrumb navigation
-            - **Category View Toggle (Grid ⊞ vs List ☰)**: Switch anytime between visual card grid and high-density list with persistent preference
-            - **Live PDF & Folder Count Badges**: Real-time counter badge on every subject and subfolder card (e.g. `📄 8 PDFs`)
-            - **Categorized Quiz Management**: Assessments organized by subject/category chips with direct Review & 1-Tap Re-attempt
-            - **Fixed 15-Question AI Generator Limit**: Token capacity boosted to 8192 tokens with resilient JSON auto-repair for smooth 15+ question generation
+            ### 📱 StudyVault Flutter v1.4.1 Release APK
+            - **Multiple Quizzes per Category**: Create and organize multiple distinct quizzes under any category (e.g. Python 1: Basics, Python 2: OOP under Python)
+            - **Category Selector in AI & Manual Quiz Modals**: Directly pick the target category or create a new one on the fly when generating quizzes
+            - **In-Category Quizzes Section**: View, start, review, and re-attempt quizzes directly inside any Category Detail screen
+            - **Fixed Top Tab Alignment**: Symmetrical 4-workspace TabBar with equal 25% width and centered indicators
+            - **Polished Quiz History & Review Cards**: Category badges, score pills, question counters, duration timer, and high-contrast Re-attempt button
+            - **Devanagari Hindi & 15Q AI Quiz Support**: Token capacity up to 8192 tokens with resilient JSON auto-repair
             - **Devanagari Hindi (हिंदी) Quiz Generation Verified**: Live tested with Google Gemini 3.5 Flash for complete Devanagari Hindi MCQs and explanations
             - **Zero Data Regression Guarantee**: Non-destructive SQLite v4 migration preserves all existing PDFs, bookmarks, reading logs, and results
             - **Developed by Gyanchandra**: Prominent developer credits and badges in Settings, Lock Screen, and About Dialog

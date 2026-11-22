@@ -3,11 +3,16 @@ import 'package:provider/provider.dart';
 import '../services/share_service.dart';
 import '../models/category.dart';
 import '../models/pdf_document.dart';
+import '../models/quiz_result.dart';
 import '../database/category_repo.dart';
 import '../database/pdf_repo.dart';
+import '../database/quiz_repo.dart';
 import '../providers/settings_provider.dart';
 import '../services/pdf_storage_service.dart';
+import '../widgets/ai_quiz_modal.dart';
 import 'pdf_reader_screen.dart';
+import 'quiz_runner_screen.dart';
+import 'quiz_scorecard_screen.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final Category category;
@@ -26,10 +31,12 @@ class CategoryDetailScreen extends StatefulWidget {
 class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   final CategoryRepo _catRepo = CategoryRepo();
   final PdfRepo _pdfRepo = PdfRepo();
+  final QuizRepo _quizRepo = QuizRepo();
 
   List<Category> _subcategories = [];
   Map<int, int> _subPdfCounts = {};
   List<PdfDocument> _pdfs = [];
+  List<QuizResult> _quizzes = [];
   bool _isLoading = true;
 
   @override
@@ -50,10 +57,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       }
     }
 
+    final allQuizzes = await _quizRepo.getAllResults();
+    final catQuizzes = allQuizzes.where((r) =>
+      r.displayCategory.toLowerCase() == widget.category.title.toLowerCase() ||
+      r.categoryId == widget.category.id
+    ).toList();
+
     setState(() {
       _subcategories = subs;
       _subPdfCounts = counts;
       _pdfs = pdfDocs;
+      _quizzes = catQuizzes;
       _isLoading = false;
     });
   }
@@ -423,6 +437,63 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         ),
                       );
                     }),
+                  const SizedBox(height: 24),
+
+                  // Category Quizzes Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.quiz_outlined, color: Colors.purple, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Quizzes for ${widget.category.title} (${_quizzes.length})',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
+                        label: const Text('AI Quiz', style: TextStyle(fontSize: 12, color: Colors.purple)),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AiQuizModal(
+                              initialCategory: widget.category.title,
+                              initialCategoryId: widget.category.id,
+                              examId: widget.category.examId,
+                              onGenerated: _loadData,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (_quizzes.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.purple.withOpacity(0.15)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.quiz, size: 18, color: Colors.purple),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'No quizzes created for ${widget.category.title} yet. Tap "+ AI Quiz" to generate one!',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ..._quizzes.map((quiz) => _buildCategoryQuizCard(quiz, settings)),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -507,6 +578,123 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             ),
           ).then((_) => _loadData());
         },
+      ),
+    );
+  }
+
+  Widget _buildCategoryQuizCard(QuizResult r, SettingsProvider settings) {
+    final isPassed = r.scorePercentage >= 60;
+    final statusColor = isPassed ? Colors.green : Colors.orange;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: statusColor.withOpacity(0.3), width: 1.2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: statusColor.withOpacity(0.12),
+                  child: Text(
+                    '${r.scorePercentage}%',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: isPassed ? Colors.green.shade800 : Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        r.quizTitle,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${r.correctAnswers}/${r.totalQuestions} Correct • ⏱️ ${r.formattedDuration}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                if (settings.showDeleteActions)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                    onPressed: () async {
+                      if (r.id != null) {
+                        await _quizRepo.deleteQuizResult(r.id!);
+                        _loadData();
+                      }
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Divider(height: 1),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  icon: const Icon(Icons.visibility_outlined, size: 16, color: Colors.indigo),
+                  label: const Text('Review', style: TextStyle(fontSize: 12, color: Colors.indigo)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => QuizScorecardScreen(
+                          quizTitle: r.quizTitle,
+                          categoryName: r.displayCategory,
+                          categoryId: r.categoryId,
+                          questions: r.parsedQuestions,
+                          selectedAnswers: r.parsedUserAnswers,
+                          correctCount: r.correctAnswers,
+                          durationSeconds: r.durationSeconds,
+                        ),
+                      ),
+                    ).then((_) => _loadData());
+                  },
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.replay, size: 14, color: Colors.white),
+                  label: const Text('Re-attempt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => QuizRunnerScreen(
+                          questions: r.parsedQuestions,
+                          quizTitle: r.quizTitle,
+                          categoryName: r.displayCategory,
+                          categoryId: r.categoryId,
+                          existingResultId: r.id,
+                        ),
+                      ),
+                    ).then((_) => _loadData());
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

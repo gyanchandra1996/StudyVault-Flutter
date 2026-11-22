@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/study_provider.dart';
 import '../services/ai_service.dart';
 import '../database/quiz_repo.dart';
 import '../models/question.dart';
@@ -8,9 +9,17 @@ import '../screens/quiz_runner_screen.dart';
 
 class AiQuizModal extends StatefulWidget {
   final int? examId;
+  final String? initialCategory;
+  final int? initialCategoryId;
   final VoidCallback onGenerated;
 
-  const AiQuizModal({Key? key, this.examId, required this.onGenerated}) : super(key: key);
+  const AiQuizModal({
+    Key? key,
+    this.examId,
+    this.initialCategory,
+    this.initialCategoryId,
+    required this.onGenerated,
+  }) : super(key: key);
 
   @override
   State<AiQuizModal> createState() => _AiQuizModalState();
@@ -19,6 +28,11 @@ class AiQuizModal extends StatefulWidget {
 class _AiQuizModalState extends State<AiQuizModal> {
   final _titleController = TextEditingController();
   final _promptController = TextEditingController();
+  final _customCategoryController = TextEditingController();
+
+  String? _selectedCategory;
+  int? _selectedCategoryId;
+  bool _isCustomCategory = false;
   int _questionCount = 5;
   bool _isLoading = false;
   String? _errorMessage;
@@ -27,16 +41,31 @@ class _AiQuizModalState extends State<AiQuizModal> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+      _selectedCategory = widget.initialCategory;
+      _selectedCategoryId = widget.initialCategoryId;
+      _titleController.text = '${widget.initialCategory} 1';
+    }
     _promptController.addListener(_onPromptChanged);
   }
 
   void _onPromptChanged() {
     if (_titleController.text.isEmpty && _promptController.text.trim().isNotEmpty) {
       final firstLine = _promptController.text.trim().split('\n').first;
-      if (firstLine.length <= 35) {
-        _titleController.text = '$firstLine Quiz';
+      if (firstLine.length <= 30) {
+        final cat = _getActiveCategory();
+        _titleController.text = '$cat - $firstLine';
       }
     }
+  }
+
+  String _getActiveCategory() {
+    if (_isCustomCategory) {
+      return _customCategoryController.text.trim().isNotEmpty
+          ? _customCategoryController.text.trim()
+          : 'General';
+    }
+    return _selectedCategory ?? 'General';
   }
 
   @override
@@ -44,6 +73,7 @@ class _AiQuizModalState extends State<AiQuizModal> {
     _promptController.removeListener(_onPromptChanged);
     _titleController.dispose();
     _promptController.dispose();
+    _customCategoryController.dispose();
     super.dispose();
   }
 
@@ -62,6 +92,8 @@ class _AiQuizModalState extends State<AiQuizModal> {
       return;
     }
 
+    final categoryName = _getActiveCategory();
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -70,7 +102,9 @@ class _AiQuizModalState extends State<AiQuizModal> {
     final fallbackTitle = _promptController.text.trim().split('\n').first;
     final quizTitle = _titleController.text.trim().isNotEmpty
         ? _titleController.text.trim()
-        : (fallbackTitle.length > 30 ? '${fallbackTitle.substring(0, 30)}... Quiz' : '$fallbackTitle Quiz');
+        : (fallbackTitle.length > 25
+            ? '${fallbackTitle.substring(0, 25)}... Quiz'
+            : '$categoryName Quiz');
 
     try {
       final questions = await AiService.generateQuestions(
@@ -90,9 +124,9 @@ class _AiQuizModalState extends State<AiQuizModal> {
         optionD: q.optionD,
         correctOptionIndex: q.correctOptionIndex,
         explanation: q.explanation,
-        subject: quizTitle,
+        subject: categoryName,
         examId: widget.examId,
-        categoryId: q.categoryId,
+        categoryId: _selectedCategoryId,
       )).toList();
 
       await _quizRepo.insertMultipleQuestions(taggedQuestions);
@@ -101,13 +135,15 @@ class _AiQuizModalState extends State<AiQuizModal> {
       if (!mounted) return;
       Navigator.pop(context); // Close the modal
 
-      // Immediately launch the QuizRunnerScreen with live timer!
+      // Immediately launch QuizRunnerScreen with Category and Quiz Title
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => QuizRunnerScreen(
             questions: taggedQuestions,
             quizTitle: quizTitle,
+            categoryName: categoryName,
+            categoryId: _selectedCategoryId,
           ),
         ),
       ).then((_) => widget.onGenerated());
@@ -122,6 +158,25 @@ class _AiQuizModalState extends State<AiQuizModal> {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
+    final study = Provider.of<StudyProvider>(context);
+
+    // Initialize category if not yet set
+    final availableCategories = study.categories;
+    if (_selectedCategory == null && !_isCustomCategory) {
+      if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+        _selectedCategory = widget.initialCategory;
+        _selectedCategoryId = widget.initialCategoryId;
+      } else if (availableCategories.isNotEmpty) {
+        _selectedCategory = availableCategories.first.title;
+        _selectedCategoryId = availableCategories.first.id;
+      } else {
+        _selectedCategory = 'General';
+        _selectedCategoryId = null;
+      }
+      if (_titleController.text.isEmpty) {
+        _titleController.text = '$_selectedCategory 1';
+      }
+    }
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -212,33 +267,111 @@ class _AiQuizModalState extends State<AiQuizModal> {
               ),
               const SizedBox(height: 14),
 
-              // Quiz Name Field
+              // 1. Category / Subject Selector
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.folder_outlined, size: 20, color: Colors.indigo),
+                    const SizedBox(width: 8),
+                    const Text('Category:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isDense: true,
+                          isExpanded: true,
+                          value: _isCustomCategory ? '__custom__' : _selectedCategory,
+                          items: [
+                            ...availableCategories.map((c) => DropdownMenuItem(
+                              value: c.title,
+                              child: Text(c.title, overflow: TextOverflow.ellipsis),
+                            )),
+                            if (!availableCategories.any((c) => c.title == 'General'))
+                              const DropdownMenuItem(value: 'General', child: Text('General')),
+                            const DropdownMenuItem(
+                              value: '__custom__',
+                              child: Text('➕ New Category...', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val == '__custom__') {
+                              setState(() {
+                                _isCustomCategory = true;
+                                _selectedCategoryId = null;
+                              });
+                            } else if (val != null) {
+                              final match = availableCategories.where((c) => c.title == val).toList();
+                              setState(() {
+                                _isCustomCategory = false;
+                                _selectedCategory = val;
+                                _selectedCategoryId = match.isNotEmpty ? match.first.id : null;
+                                if (_titleController.text.isEmpty || _titleController.text.endsWith('1')) {
+                                  _titleController.text = '$val 1';
+                                }
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_isCustomCategory) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _customCategoryController,
+                  decoration: const InputDecoration(
+                    labelText: 'New Category Name (e.g. Python, DBMS)',
+                    hintText: 'e.g. Python',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.create_new_folder_outlined, size: 20),
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      if (_titleController.text.isEmpty || _titleController.text.endsWith('1')) {
+                        _titleController.text = '${val.trim()} 1';
+                      }
+                    });
+                  },
+                ),
+              ],
+              const SizedBox(height: 12),
+
+              // 2. Quiz Title / Name Field
               TextField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Quiz Title / Name',
-                  hintText: 'e.g. DBMS Normalization Test, Reasoning Mock 1',
-                  prefixIcon: Icon(Icons.title, size: 20),
-                  border: OutlineInputBorder(),
+                  hintText: 'e.g. ${_getActiveCategory()} 1: Basics, Test 2',
+                  prefixIcon: const Icon(Icons.title, size: 20),
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
               const SizedBox(height: 12),
 
-              // Topic / Notes Input
+              // 3. Topic / Notes Input
               TextField(
                 controller: _promptController,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Topic / Syllabus / Notes Content',
-                  hintText: 'e.g. Database Normalization 1NF 2NF 3NF BCNF...',
-                  border: OutlineInputBorder(),
+                  hintText: 'e.g. ${_getActiveCategory()} core concepts, questions...',
+                  border: const OutlineInputBorder(),
                   alignLabelWithHint: true,
                 ),
               ),
               const SizedBox(height: 12),
 
-              // Question Count
+              // 4. Question Count
               Row(
                 children: [
                   const Text('Question Count:', style: TextStyle(fontWeight: FontWeight.w500)),

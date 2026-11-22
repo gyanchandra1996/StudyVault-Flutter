@@ -47,9 +47,31 @@ class QuizRepo {
     return res.map((m) => QuizResult.fromMap(m)).toList();
   }
 
+  Future<List<QuizResult>> getResultsByCategory(String categoryName) async {
+    final db = await dbProvider.database;
+    final res = await db.query(
+      'quiz_results',
+      where: 'LOWER(category_name) = ? OR LOWER(quiz_title) LIKE ?',
+      whereArgs: [categoryName.toLowerCase(), '%${categoryName.toLowerCase()}%'],
+      orderBy: 'id DESC',
+    );
+    return res.map((m) => QuizResult.fromMap(m)).toList();
+  }
+
   Future<int> saveQuizResult(QuizResult result) async {
     final db = await dbProvider.database;
     return await db.insert('quiz_results', result.toMap());
+  }
+
+  Future<int> updateQuizResult(QuizResult result) async {
+    final db = await dbProvider.database;
+    if (result.id == null) return 0;
+    return await db.update(
+      'quiz_results',
+      result.toMap(),
+      where: 'id = ?',
+      whereArgs: [result.id],
+    );
   }
 
   Future<int> deleteQuizResult(int id) async {

@@ -4,6 +4,8 @@ import 'quiz_runner_screen.dart';
 
 class QuizScorecardScreen extends StatelessWidget {
   final String quizTitle;
+  final String? categoryName;
+  final int? categoryId;
   final List<QuizQuestion> questions;
   final Map<int, int> selectedAnswers;
   final int correctCount;
@@ -12,6 +14,8 @@ class QuizScorecardScreen extends StatelessWidget {
   const QuizScorecardScreen({
     Key? key,
     this.quizTitle = 'Practice Quiz',
+    this.categoryName,
+    this.categoryId,
     required this.questions,
     required this.selectedAnswers,
     required this.correctCount,
@@ -43,7 +47,14 @@ class QuizScorecardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(quizTitle, overflow: TextOverflow.ellipsis),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(quizTitle, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            if (categoryName != null && categoryName!.isNotEmpty)
+              Text('📁 $categoryName', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          ],
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -169,6 +180,8 @@ class QuizScorecardScreen extends StatelessWidget {
                         builder: (_) => QuizRunnerScreen(
                           questions: questions,
                           quizTitle: quizTitle,
+                          categoryName: categoryName,
+                          categoryId: categoryId,
                         ),
                       ),
                     );
