@@ -121,23 +121,32 @@ class AiService {
         case providerGemini:
         default:
           final targetModel = model.isNotEmpty ? model : 'gemini-1.5-flash';
-          final url = Uri.parse(
+          final endpoints = [
+            'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
             'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-          );
-          final response = await http.post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'contents': [
-                {
-                  'parts': [
-                    {'text': 'Ping test. Reply with OK.'}
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+          ];
+          for (final ep in endpoints) {
+            try {
+              final response = await http.post(
+                Uri.parse(ep),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'contents': [
+                    {
+                      'parts': [
+                        {'text': 'Ping test. Reply with OK.'}
+                      ]
+                    }
                   ]
-                }
-              ]
-            }),
-          );
-          return response.statusCode == 200;
+                }),
+              );
+              if (response.statusCode == 200) return true;
+              if (response.statusCode != 404) return false;
+            } catch (_) {}
+          }
+          return false;
       }
     } catch (_) {
       return false;
@@ -266,30 +275,46 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
       case providerGemini:
       default:
         final targetModel = model.isNotEmpty ? model : 'gemini-1.5-flash';
-        final url = Uri.parse(
+        final endpoints = [
+          'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
           'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-        );
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'contents': [
-              {
-                'parts': [
-                  {'text': '$systemInstruction\n\nTopic / Notes content:\n$prompt'}
-                ]
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+        ];
+
+        http.Response? lastResponse;
+        for (final ep in endpoints) {
+          final response = await http.post(
+            Uri.parse(ep),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'contents': [
+                {
+                  'parts': [
+                    {'text': '$systemInstruction\n\nTopic / Notes content:\n$prompt'}
+                  ]
+                }
+              ],
+              'generationConfig': {
+                'temperature': 0.4,
+                'maxOutputTokens': 2048,
               }
-            ],
-            'generationConfig': {
-              'temperature': 0.4,
-              'maxOutputTokens': 2048,
-            }
-          }),
-        );
-        if (response.statusCode != 200) {
-          throw Exception('Gemini API error (${response.statusCode}): ${response.body}');
+            }),
+          );
+          lastResponse = response;
+          if (response.statusCode == 200) {
+            break;
+          }
+          if (response.statusCode != 404) {
+            break;
+          }
         }
-        final Map<String, dynamic> data = jsonDecode(response.body);
+
+        if (lastResponse == null || lastResponse.statusCode != 200) {
+          throw Exception('Gemini API error (${lastResponse?.statusCode ?? "Unknown"}): ${lastResponse?.body ?? "No response"}');
+        }
+
+        final Map<String, dynamic> data = jsonDecode(lastResponse.body);
         final List<dynamic>? candidates = data['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
           final firstCand = candidates[0] as Map<String, dynamic>?;

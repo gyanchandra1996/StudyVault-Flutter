@@ -57,10 +57,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.3.0
-          name: "StudyVault Flutter v1.3.0 (Multi-AI Agents: ChatGPT, Claude, Gemini & Gyanchandra Credits)"
+          tag_name: v1.3.1
+          name: "StudyVault Flutter v1.3.1 (Fix: Gemini 1.5 Flash Endpoint v1 & Multi-Agent)"
           body: |
-            ### 📱 StudyVault Flutter v1.3.0 Release APK
+            ### 📱 StudyVault Flutter v1.3.1 Release APK
+            - **Fixed Gemini 404 Endpoint**: Switched to official `v1` endpoint + automatic fallback across `v1`, `v1beta`, and `2.0-flash`
             - **Developed by Gyanchandra**: Prominent developer credits and badges in Settings, Lock Screen, and About Dialog
             - **Multi-AI Agents & Engines**:
               - **Google Gemini** (Gemini 1.5 Flash, Gemini 1.5 Pro, Gemini 2.0 Flash)
