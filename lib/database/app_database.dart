@@ -19,9 +19,32 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createReadingLogsTable(db);
+    }
+  }
+
+  Future<void> _createReadingLogsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS reading_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pdf_id INTEGER NOT NULL,
+        session_date TEXT NOT NULL,
+        duration_seconds INTEGER NOT NULL,
+        pages_read INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (pdf_id) REFERENCES pdfs (id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_logs_date ON reading_logs (session_date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_logs_pdf ON reading_logs (pdf_id)');
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -158,6 +181,8 @@ class AppDatabase {
     await db.execute('CREATE INDEX idx_pdfs_del ON pdfs (is_deleted)');
     await db.execute('CREATE INDEX idx_quiz_questions_exam ON quiz_questions (exam_id)');
     await db.execute('CREATE INDEX idx_flashcards_due ON flashcards (due_date)');
+
+    await _createReadingLogsTable(db);
   }
 
   Future<void> close() async {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 import 'home_screen.dart';
 import 'flashcards_screen.dart';
 import 'favorites_screen.dart';
@@ -25,6 +27,9 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+    final accent = settings.activeAccentColor;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -33,31 +38,31 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        indicatorColor: const Color(0xFF6366F1).withOpacity(0.18),
-        destinations: const [
+        indicatorColor: accent.withOpacity(0.2),
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: Color(0xFF6366F1)),
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: accent),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.style_outlined),
-            selectedIcon: Icon(Icons.style, color: Color(0xFF6366F1)),
+            icon: const Icon(Icons.style_outlined),
+            selectedIcon: Icon(Icons.style, color: accent),
             label: 'Flashcards',
           ),
           NavigationDestination(
-            icon: Icon(Icons.star_outline),
-            selectedIcon: Icon(Icons.star, color: Color(0xFF6366F1)),
+            icon: const Icon(Icons.star_outline),
+            selectedIcon: Icon(Icons.star, color: accent),
             label: 'Favorites',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history, color: Color(0xFF6366F1)),
+            icon: const Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history, color: accent),
             label: 'Recent',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings, color: Color(0xFF6366F1)),
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings, color: accent),
             label: 'Settings',
           ),
         ],

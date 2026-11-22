@@ -202,7 +202,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Appearance Section
+          // Appearance & Theme Center
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
@@ -211,21 +211,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: const [
-                      Icon(Icons.palette_outlined, color: Colors.purple),
-                      SizedBox(width: 8),
-                      Text(
-                        'Appearance',
+                    children: [
+                      Icon(Icons.palette_outlined, color: settings.activeAccentColor),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Theme & Eye-Care Modes',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Dark Mode'),
-                    value: settings.isDarkMode,
-                    onChanged: (_) => settings.toggleDarkMode(),
+                  const SizedBox(height: 14),
+                  const Text('Display Mode:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ChoiceChip(
+                        avatar: const Text('☀️', style: TextStyle(fontSize: 12)),
+                        label: const Text('Light'),
+                        selected: settings.themeStyle == 'light',
+                        onSelected: (_) => settings.setThemeStyle('light'),
+                      ),
+                      ChoiceChip(
+                        avatar: const Text('🌙', style: TextStyle(fontSize: 12)),
+                        label: const Text('Dark'),
+                        selected: settings.themeStyle == 'dark',
+                        onSelected: (_) => settings.setThemeStyle('dark'),
+                      ),
+                      ChoiceChip(
+                        avatar: const Text('🖤', style: TextStyle(fontSize: 12)),
+                        label: const Text('AMOLED (Pure Black)'),
+                        selected: settings.themeStyle == 'amoled',
+                        onSelected: (_) => settings.setThemeStyle('amoled'),
+                      ),
+                      ChoiceChip(
+                        avatar: const Text('📜', style: TextStyle(fontSize: 12)),
+                        label: const Text('Sepia (Warm Paper)'),
+                        selected: settings.themeStyle == 'sepia',
+                        onSelected: (_) => settings.setThemeStyle('sepia'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Accent Color:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    children: [
+                      _buildAccentCircle(context, settings, 'indigo', const Color(0xFF6366F1), 'Indigo'),
+                      _buildAccentCircle(context, settings, 'emerald', const Color(0xFF10B981), 'Emerald'),
+                      _buildAccentCircle(context, settings, 'amethyst', const Color(0xFF8B5CF6), 'Purple'),
+                      _buildAccentCircle(context, settings, 'amber', const Color(0xFFF59E0B), 'Amber'),
+                    ],
                   ),
                 ],
               ),
@@ -311,6 +349,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccentCircle(BuildContext context, SettingsProvider settings, String accentName, Color color, String label) {
+    final isSelected = settings.accentName == accentName;
+    return GestureDetector(
+      onTap: () => settings.setAccentName(accentName),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? Colors.white : Colors.transparent,
+                width: 3,
+              ),
+              boxShadow: [
+                if (isSelected)
+                  BoxShadow(
+                    color: color.withOpacity(0.5),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+              ],
+            ),
+            child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
         ],
       ),
     );

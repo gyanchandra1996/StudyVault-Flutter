@@ -7,7 +7,10 @@ class SettingsProvider extends ChangeNotifier {
   String _geminiApiKey = '';
   String _aiModel = 'gemini-1.5-flash';
   bool _showDeleteActions = true;
-  bool _isDarkMode = false;
+  String _themeStyle = 'light'; // 'light', 'dark', 'amoled', 'sepia'
+  String _accentName = 'indigo'; // 'indigo', 'emerald', 'amethyst', 'amber'
+  String _readerFilter = 'original'; // 'original', 'sepia', 'night'
+  String _scrollDirection = 'vertical'; // 'vertical', 'horizontal'
   bool _isTestingApiKey = false;
   String? _apiTestResult;
 
@@ -15,9 +18,29 @@ class SettingsProvider extends ChangeNotifier {
   String get geminiApiKey => _geminiApiKey;
   String get aiModel => _aiModel;
   bool get showDeleteActions => _showDeleteActions;
-  bool get isDarkMode => _isDarkMode;
+  String get themeStyle => _themeStyle;
+  String get accentName => _accentName;
+  String get readerFilter => _readerFilter;
+  String get scrollDirection => _scrollDirection;
+  bool get isDarkMode => _themeStyle == 'dark' || _themeStyle == 'amoled';
+  bool get isAmoled => _themeStyle == 'amoled';
+  bool get isSepia => _themeStyle == 'sepia';
   bool get isTestingApiKey => _isTestingApiKey;
   String? get apiTestResult => _apiTestResult;
+
+  Color get activeAccentColor {
+    switch (_accentName) {
+      case 'emerald':
+        return const Color(0xFF10B981);
+      case 'amethyst':
+        return const Color(0xFF8B5CF6);
+      case 'amber':
+        return const Color(0xFFF59E0B);
+      case 'indigo':
+      default:
+        return const Color(0xFF6366F1);
+    }
+  }
 
   SettingsProvider() {
     _loadFromPrefs();
@@ -29,8 +52,45 @@ class SettingsProvider extends ChangeNotifier {
     _geminiApiKey = prefs.getString('geminiApiKey') ?? '';
     _aiModel = prefs.getString('aiModel') ?? 'gemini-1.5-flash';
     _showDeleteActions = prefs.getBool('showDeleteActions') ?? true;
-    _isDarkMode = prefs.getBool('isDarkMode') ?? false;
+    _themeStyle = prefs.getString('themeStyle') ?? (prefs.getBool('isDarkMode') == true ? 'dark' : 'light');
+    _accentName = prefs.getString('accentName') ?? 'indigo';
+    _readerFilter = prefs.getString('readerFilter') ?? 'original';
+    _scrollDirection = prefs.getString('scrollDirection') ?? 'vertical';
     notifyListeners();
+  }
+
+  Future<void> setThemeStyle(String style) async {
+    _themeStyle = style;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeStyle', style);
+    await prefs.setBool('isDarkMode', style == 'dark' || style == 'amoled');
+    notifyListeners();
+  }
+
+  Future<void> setAccentName(String accent) async {
+    _accentName = accent;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('accentName', accent);
+    notifyListeners();
+  }
+
+  Future<void> setReaderFilter(String filter) async {
+    _readerFilter = filter;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('readerFilter', filter);
+    notifyListeners();
+  }
+
+  Future<void> setScrollDirection(String direction) async {
+    _scrollDirection = direction;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('scrollDirection', direction);
+    notifyListeners();
+  }
+
+  Future<void> toggleDarkMode() async {
+    final next = isDarkMode ? 'light' : 'dark';
+    await setThemeStyle(next);
   }
 
   Future<void> setAiEnabled(bool value) async {
@@ -59,13 +119,6 @@ class SettingsProvider extends ChangeNotifier {
     _showDeleteActions = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('showDeleteActions', value);
-    notifyListeners();
-  }
-
-  Future<void> toggleDarkMode() async {
-    _isDarkMode = !_isDarkMode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', _isDarkMode);
     notifyListeners();
   }
 

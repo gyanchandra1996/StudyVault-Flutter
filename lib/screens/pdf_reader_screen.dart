@@ -6,6 +6,7 @@ import '../models/pdf_document.dart';
 import '../database/pdf_repo.dart';
 import '../database/flashcard_repo.dart';
 import '../database/note_repo.dart';
+import '../database/reading_repo.dart';
 
 class PdfReaderScreen extends StatefulWidget {
   final PdfDocument pdf;
@@ -22,8 +23,12 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   final PdfRepo _pdfRepo = PdfRepo();
   final FlashcardRepo _flashcardRepo = FlashcardRepo();
   final NoteRepo _noteRepo = NoteRepo();
+  final ReadingRepo _readingRepo = ReadingRepo();
+  final DateTime _sessionStart = DateTime.now();
 
-  bool _isNightMode = false;
+  String _filterMode = 'original'; // 'original', 'sepia', 'night'
+  PdfScrollDirection _scrollDirection = PdfScrollDirection.vertical;
+  int _pagesTurned = 0;
   bool _isSearchActive = false;
   bool _isCompleted = false;
   bool _isFavorite = false;
@@ -43,6 +48,10 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
 
   @override
   void dispose() {
+    final duration = DateTime.now().difference(_sessionStart).inSeconds;
+    if (widget.pdf.id != null && duration >= 5) {
+      _readingRepo.logReadingTime(widget.pdf.id!, duration, pagesRead: _pagesTurned);
+    }
     _searchController.dispose();
     _pdfViewerController.dispose();
     super.dispose();
@@ -220,11 +229,29 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   void _onPageChanged(PdfPageChangedDetails details) {
     setState(() {
       _currentPage = details.newPageNumber;
+      _pagesTurned++;
     });
     _pdfRepo.updateReadingProgress(widget.pdf.id!, details.newPageNumber, _pageCount);
 
     if (details.newPageNumber == _pageCount && !_isCompleted) {
       _toggleCompleted(true);
+    }
+  }
+
+  ColorFilter _getActiveColorFilter() {
+    switch (_filterMode) {
+      case 'night':
+        return const ColorFilter.matrix([
+          -1,  0,  0, 0, 255,
+           0, -1,  0, 0, 255,
+           0,  0, -1, 0, 255,
+           0,  0,  0, 1,   0,
+        ]);
+      case 'sepia':
+        return const ColorFilter.mode(Color(0xFFE8D7B8), BlendMode.multiply);
+      case 'original':
+      default:
+        return const ColorFilter.mode(Colors.transparent, BlendMode.multiply);
     }
   }
 
@@ -360,18 +387,10 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
             tooltip: _isCompleted ? 'Marked Complete' : 'Mark as Complete',
             onPressed: () => _toggleCompleted(!_isCompleted),
           ),
-          // Night Mode Toggle
-          IconButton(
-            icon: Icon(_isNightMode ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () {
-              setState(() {
-                _isNightMode = !_isNightMode;
-              });
-            },
-          ),
           // Go to Page
           IconButton(
             icon: const Icon(Icons.dialpad),
+            tooltip: 'Go to Page',
             onPressed: _showJumpToPageDialog,
           ),
         ],
@@ -418,18 +437,107 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
               )
             : null,
       ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          height: 54,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color ?? (isDark ? const Color(0xFF1E293B) : Colors.white),
+            border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.2))),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Eye-Care Reading Filter
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  setState(() {
+                    if (_filterMode == 'original') {
+                      _filterMode = 'sepia';
+                    } else if (_filterMode == 'sepia') {
+                      _filterMode = 'night';
+                    } else {
+                      _filterMode = 'original';
+                    }
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _filterMode == 'night'
+                            ? Icons.dark_mode
+                            : _filterMode == 'sepia'
+                                ? Icons.wb_twilight
+                                : Icons.wb_sunny_outlined,
+                        size: 18,
+                        color: _filterMode == 'sepia' ? Colors.amber[800] : null,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _filterMode == 'night'
+                            ? 'Night Mode'
+                            : _filterMode == 'sepia'
+                                ? 'Sepia Paper'
+                                : 'Day Mode',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: _filterMode == 'sepia' ? Colors.amber[800] : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Scroll Orientation Toggle
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  setState(() {
+                    _scrollDirection = _scrollDirection == PdfScrollDirection.vertical
+                        ? PdfScrollDirection.horizontal
+                        : PdfScrollDirection.vertical;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _scrollDirection == PdfScrollDirection.vertical
+                            ? Icons.swap_vert
+                            : Icons.swap_horiz,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _scrollDirection == PdfScrollDirection.vertical ? 'Vertical' : 'Page Flip',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Estimated Pace Remaining
+              Text(
+                '~${((_pageCount - _currentPage) * 1.5).round().clamp(1, 999)}m left',
+                style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: ColorFiltered(
-        colorFilter: _isNightMode
-            ? const ColorFilter.matrix([
-                -1,  0,  0, 0, 255,
-                 0, -1,  0, 0, 255,
-                 0,  0, -1, 0, 255,
-                 0,  0,  0, 1,   0,
-              ])
-            : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+        colorFilter: _getActiveColorFilter(),
         child: SfPdfViewer.file(
           File(widget.pdf.localPath),
           controller: _pdfViewerController,
+          scrollDirection: _scrollDirection,
           onDocumentLoaded: _onDocumentLoaded,
           onPageChanged: _onPageChanged,
           canShowScrollHead: true,

@@ -8,6 +8,7 @@ import '../providers/study_provider.dart';
 import '../providers/settings_provider.dart';
 import '../database/quiz_repo.dart';
 import '../widgets/pomodoro_widget.dart';
+import '../widgets/reading_tracker_card.dart';
 import '../widgets/question_modal.dart';
 import '../widgets/ai_quiz_modal.dart';
 import 'category_detail_screen.dart';
@@ -164,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.indigo,
+          indicatorColor: settings.activeAccentColor,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           tabs: const [
@@ -184,6 +185,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: ListView(
                     padding: const EdgeInsets.only(bottom: 80),
                     children: [
+                      // Reading Habit & Streak Tracker Banner
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                        child: ReadingTrackerCard(),
+                      ),
+
                       // Exam Selector Bar
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -294,11 +301,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 },
                                 borderRadius: BorderRadius.circular(16),
                                 child: Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: Colors.indigo.withOpacity(0.06),
+                                    color: settings.activeAccentColor.withOpacity(0.08),
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.indigo.withOpacity(0.15)),
+                                    border: Border.all(color: settings.activeAccentColor.withOpacity(0.2)),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +314,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Icon(Icons.folder, color: Colors.indigo),
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: settings.activeAccentColor.withOpacity(0.16),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(Icons.folder, color: settings.activeAccentColor, size: 20),
+                                          ),
                                           if (settings.showDeleteActions)
                                             GestureDetector(
                                               onTap: () => study.deleteCategory(cat.id!),

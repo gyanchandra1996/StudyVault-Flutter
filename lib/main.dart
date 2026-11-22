@@ -14,6 +14,150 @@ void main() async {
 class StudyVaultApp extends StatelessWidget {
   const StudyVaultApp({Key? key}) : super(key: key);
 
+  ThemeData _buildTheme(SettingsProvider settings) {
+    final textTheme = GoogleFonts.notoSansDevanagariTextTheme();
+    final accent = settings.activeAccentColor;
+
+    switch (settings.themeStyle) {
+      case 'amoled':
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          colorSchemeSeed: accent,
+          scaffoldBackgroundColor: Colors.black,
+          textTheme: textTheme.apply(
+            bodyColor: const Color(0xFFE2E8F0),
+            displayColor: Colors.white,
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            titleTextStyle: GoogleFonts.notoSansDevanagari(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          cardTheme: const CardTheme(
+            color: Color(0xFF121212),
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              side: BorderSide(color: Color(0xFF262626), width: 0.8),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: Colors.black,
+            indicatorColor: accent.withOpacity(0.25),
+          ),
+        );
+
+      case 'sepia':
+        const sepiaBg = Color(0xFFFBF0D9);
+        const sepiaCard = Color(0xFFFFF9EE);
+        const sepiaText = Color(0xFF4A3525);
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.light,
+          colorSchemeSeed: accent,
+          scaffoldBackgroundColor: sepiaBg,
+          textTheme: textTheme.apply(
+            bodyColor: sepiaText,
+            displayColor: sepiaText,
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: sepiaCard,
+            foregroundColor: sepiaText,
+            elevation: 0.5,
+            titleTextStyle: GoogleFonts.notoSansDevanagari(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: sepiaText,
+            ),
+          ),
+          cardTheme: const CardTheme(
+            color: sepiaCard,
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              side: BorderSide(color: Color(0xFFE8D7B8), width: 0.8),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: sepiaCard,
+            indicatorColor: accent.withOpacity(0.2),
+          ),
+        );
+
+      case 'dark':
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          colorSchemeSeed: accent,
+          scaffoldBackgroundColor: const Color(0xFF0F172A),
+          textTheme: textTheme.apply(
+            bodyColor: const Color(0xFFF1F5F9),
+            displayColor: const Color(0xFFF1F5F9),
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: const Color(0xFF1E293B),
+            foregroundColor: Colors.white,
+            elevation: 0.5,
+            titleTextStyle: GoogleFonts.notoSansDevanagari(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          cardTheme: const CardTheme(
+            color: Color(0xFF1E293B),
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              side: BorderSide(color: Color(0xFF334155), width: 0.8),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: const Color(0xFF1E293B),
+            indicatorColor: accent.withOpacity(0.25),
+          ),
+        );
+
+      case 'light':
+      default:
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.light,
+          colorSchemeSeed: accent,
+          scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+          textTheme: textTheme,
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF0F172A),
+            elevation: 0.5,
+            titleTextStyle: GoogleFonts.notoSansDevanagari(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          cardTheme: const CardTheme(
+            color: Colors.white,
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              side: BorderSide(color: Color(0xFFE2E8F0), width: 0.8),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: Colors.white,
+            indicatorColor: accent.withOpacity(0.18),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -24,57 +168,10 @@ class StudyVaultApp extends StatelessWidget {
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
-          final textTheme = GoogleFonts.notoSansDevanagariTextTheme();
-
           return MaterialApp(
             title: 'StudyVault',
             debugShowCheckedModeBanner: false,
-            themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            theme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.light,
-              colorSchemeSeed: const Color(0xFF6366F1), // Indigo
-              scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-              textTheme: textTheme,
-              appBarTheme: AppBarTheme(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF0F172A),
-                elevation: 0.5,
-                titleTextStyle: GoogleFonts.notoSansDevanagari(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              cardTheme: const CardTheme(
-                color: Colors.white,
-                elevation: 0.5,
-              ),
-            ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              colorSchemeSeed: const Color(0xFF6366F1),
-              scaffoldBackgroundColor: const Color(0xFF0F172A),
-              textTheme: textTheme.apply(
-                bodyColor: const Color(0xFFF1F5F9),
-                displayColor: const Color(0xFFF1F5F9),
-              ),
-              appBarTheme: AppBarTheme(
-                backgroundColor: const Color(0xFF1E293B),
-                foregroundColor: Colors.white,
-                elevation: 0.5,
-                titleTextStyle: GoogleFonts.notoSansDevanagari(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              cardTheme: const CardTheme(
-                color: Color(0xFF1E293B),
-                elevation: 0.5,
-              ),
-            ),
+            theme: _buildTheme(settings),
             home: const MainScreen(),
           );
         },
