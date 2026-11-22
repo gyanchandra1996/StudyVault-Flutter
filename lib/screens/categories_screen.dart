@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/category.dart';
-import '../models/exam.dart';
 import '../providers/study_provider.dart';
 import '../providers/settings_provider.dart';
 import 'category_detail_screen.dart';
@@ -107,7 +106,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
     final filteredCategories = study.categories.where((cat) {
       if (_searchQuery.trim().isEmpty) return true;
       return cat.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (cat.description ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+          cat.description.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Scaffold(
@@ -278,10 +277,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                               overflow: TextOverflow.ellipsis,
                                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                                             ),
-                                            if (cat.description != null && cat.description!.isNotEmpty) ...[
+                                            if (cat.description.isNotEmpty) ...[
                                               const SizedBox(height: 3),
                                               Text(
-                                                cat.description!,
+                                                cat.description,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(fontSize: 11, color: Colors.grey),
@@ -315,8 +314,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                     ),
                                     subtitle: Text(
-                                      cat.description != null && cat.description!.isNotEmpty
-                                          ? '${cat.description!} • 📄 $pdfCount PDFs'
+                                      cat.description.isNotEmpty
+                                          ? '${cat.description} • 📄 $pdfCount PDFs'
                                           : '📄 $pdfCount PDFs inside',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,

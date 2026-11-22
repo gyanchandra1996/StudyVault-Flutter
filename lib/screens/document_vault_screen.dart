@@ -217,7 +217,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
-                  onPressed: () => ShareService.sharePdf(doc.filePath, doc.title),
+                  onPressed: () => ShareService.sharePdf(doc.filePath, title: doc.title),
                 ),
               ],
             ),
@@ -450,7 +450,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                       IconButton(
                                         icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
                                         tooltip: 'Share Document',
-                                        onPressed: () => ShareService.sharePdf(doc.filePath, doc.title),
+                                        onPressed: () => ShareService.sharePdf(doc.filePath, title: doc.title),
                                       ),
                                       if (settings.showDeleteActions)
                                         IconButton(

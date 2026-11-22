@@ -768,7 +768,7 @@ class _HomeScreenState extends State<HomeScreen>
                                           onSelected: (_) => study.selectExam(exam),
                                         ),
                                       );
-                                    }).toList(),
+                                    }),
                                     ActionChip(
                                       avatar: const Icon(Icons.add, size: 16),
                                       label: const Text('New Exam'),

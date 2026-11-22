@@ -343,7 +343,7 @@ class QuizScorecardScreen extends StatelessWidget {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
 
                     // Explanation Box
                     if (q.explanation.isNotEmpty) ...[

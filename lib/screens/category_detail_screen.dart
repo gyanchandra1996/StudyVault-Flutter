@@ -402,7 +402,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                 icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
                                 tooltip: 'Share PDF',
                                 onPressed: () {
-                                  ShareService.sharePdf(pdf.localPath, pdf.title);
+                                  ShareService.sharePdf(pdf.localPath, title: pdf.title);
                                 },
                               ),
                               if (showDelete)
