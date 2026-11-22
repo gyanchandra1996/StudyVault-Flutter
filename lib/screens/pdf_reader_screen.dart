@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:open_file/open_file.dart';
-import 'package:share_plus/share_plus.dart';
+import '../services/share_service.dart';
 import '../models/pdf_document.dart';
 import '../database/pdf_repo.dart';
 import '../database/flashcard_repo.dart';
@@ -272,22 +272,12 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   }
 
   void _sharePdf() async {
-    try {
-      final file = File(widget.pdf.localPath);
-      if (await file.exists()) {
-        await Share.shareXFiles(
-          [XFile(widget.pdf.localPath)],
-          text: 'StudyVault Document: ${widget.pdf.title}',
-          subject: widget.pdf.title,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File not found on device.')),
-        );
-      }
-    } catch (e) {
+    final file = File(widget.pdf.localPath);
+    if (await file.exists()) {
+      await ShareService.sharePdf(widget.pdf.localPath, title: widget.pdf.title);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error sharing file: $e')),
+        const SnackBar(content: Text('File not found on device.')),
       );
     }
   }

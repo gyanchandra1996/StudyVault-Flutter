@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
+import '../services/share_service.dart';
 import '../models/category.dart';
 import '../models/pdf_document.dart';
 import '../database/category_repo.dart';
@@ -150,7 +150,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                               icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
                               tooltip: 'Share PDF',
                               onPressed: () {
-                                Share.shareXFiles([XFile(pdf.localPath)], text: 'StudyVault Note: ${pdf.title}');
+                                ShareService.sharePdf(pdf.localPath, title: pdf.title);
                               },
                             ),
                             if (showDelete)
