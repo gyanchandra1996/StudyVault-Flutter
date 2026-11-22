@@ -10,6 +10,33 @@ class PdfRepo {
     return await db.insert('pdfs', pdf.toMap());
   }
 
+  Future<List<PdfDocument>> getPdfsByCategory(int categoryId) async {
+    return getAllPdfs(categoryId: categoryId);
+  }
+
+  Future<PdfDocument?> getPdfById(int id) async {
+    final db = await _db.database;
+    final res = await db.query('pdfs', where: 'id = ?', whereArgs: [id]);
+    if (res.isNotEmpty) {
+      return PdfDocument.fromMap(res.first);
+    }
+    return null;
+  }
+
+  Future<int> updatePdf(PdfDocument pdf) async {
+    final db = await _db.database;
+    return await db.update(
+      'pdfs',
+      pdf.toMap(),
+      where: 'id = ?',
+      whereArgs: [pdf.id],
+    );
+  }
+
+  Future<int> deletePdf(int id) async {
+    return await moveToBin(id);
+  }
+
   Future<List<PdfDocument>> getAllPdfs({
     int? categoryId,
     int? examId,
