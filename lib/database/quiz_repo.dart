@@ -51,4 +51,9 @@ class QuizRepo {
     final db = await dbProvider.database;
     return await db.insert('quiz_results', result.toMap());
   }
+
+  Future<int> deleteQuizResult(int id) async {
+    final db = await dbProvider.database;
+    return await db.delete('quiz_results', where: 'id = ?', whereArgs: [id]);
+  }
 }

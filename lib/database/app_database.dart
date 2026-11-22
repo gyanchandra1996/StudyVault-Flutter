@@ -17,18 +17,36 @@ class AppDatabase {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(
+    final db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
+    await _upgradeToV3(db);
+    return db;
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await _createReadingLogsTable(db);
     }
+    if (oldVersion < 3) {
+      await _upgradeToV3(db);
+    }
+  }
+
+  Future<void> _upgradeToV3(Database db) async {
+    try {
+      final columns = await db.rawQuery('PRAGMA table_info(quiz_results)');
+      final colNames = columns.map((c) => c['name'] as String).toSet();
+      if (!colNames.contains('questions_json')) {
+        await db.execute('ALTER TABLE quiz_results ADD COLUMN questions_json TEXT');
+      }
+      if (!colNames.contains('user_answers_json')) {
+        await db.execute('ALTER TABLE quiz_results ADD COLUMN user_answers_json TEXT');
+      }
+    } catch (_) {}
   }
 
   Future<void> _createReadingLogsTable(Database db) async {
@@ -120,6 +138,8 @@ class AppDatabase {
         correct_answers INTEGER NOT NULL,
         score_percentage INTEGER NOT NULL,
         duration_seconds INTEGER NOT NULL,
+        questions_json TEXT,
+        user_answers_json TEXT,
         created_at INTEGER NOT NULL
       )
     ''');

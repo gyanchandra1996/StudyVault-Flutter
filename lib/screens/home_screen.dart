@@ -14,6 +14,7 @@ import '../widgets/ai_quiz_modal.dart';
 import 'category_detail_screen.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
+import 'quiz_scorecard_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -59,6 +60,121 @@ class _HomeScreenState extends State<HomeScreen>
       _pastResults = results;
       _isLoadingAssessment = false;
     });
+  }
+
+  String _formatQuizDate(int timestamp) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    final min = dt.minute.toString().padLeft(2, '0');
+    return '${dt.day} ${months[dt.month - 1]}, $hour:$min $ampm';
+  }
+
+  void _showStartQuizDialog() {
+    final study = Provider.of<StudyProvider>(context, listen: false);
+    final defaultTitle = study.selectedExam != null
+        ? '${study.selectedExam!.title} Mock Test'
+        : 'Practice Assessment';
+
+    final titleController = TextEditingController(text: defaultTitle);
+    final maxCount = _allQuestions.length;
+    int questionCount = maxCount > 5 ? 5 : maxCount;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final countOptions = [3, 5, 10, 15, maxCount]
+              .where((c) => c <= maxCount && c > 0)
+              .toSet()
+              .toList()..sort();
+
+          if (!countOptions.contains(questionCount)) {
+            questionCount = countOptions.last;
+          }
+
+          return AlertDialog(
+            title: Row(
+              children: const [
+                Icon(Icons.quiz, color: Colors.indigo),
+                SizedBox(width: 8),
+                Text('Start Assessment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Enter Quiz Name:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. Reasoning Mock 1',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Question Count:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    DropdownButton<int>(
+                      value: questionCount,
+                      items: countOptions.map((c) {
+                        return DropdownMenuItem(
+                          value: c,
+                          child: Text(c == maxCount ? 'All ($c Qs)' : '$c Questions'),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => questionCount = val);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Begin Quiz'),
+                onPressed: () {
+                  final title = titleController.text.trim().isNotEmpty
+                      ? titleController.text.trim()
+                      : defaultTitle;
+                  final shuffled = List<QuizQuestion>.from(_allQuestions)..shuffle();
+                  final selectedList = shuffled.take(questionCount).toList();
+
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => QuizRunnerScreen(
+                        questions: selectedList,
+                        quizTitle: title,
+                      ),
+                    ),
+                  ).then((_) => _loadAssessmentData());
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _showAboutDialog(BuildContext context, SettingsProvider settings) {
@@ -493,21 +609,7 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                               icon: const Icon(Icons.play_arrow),
                               label: const Text('Start Quiz'),
-                              onPressed: _allQuestions.isEmpty
-                                  ? null
-                                  : () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => QuizRunnerScreen(
-                                            questions: _allQuestions,
-                                            quizTitle: study.selectedExam != null
-                                                ? '${study.selectedExam!.title} Mock Test'
-                                                : 'Practice Quiz',
-                                          ),
-                                        ),
-                                      ).then((_) => _loadAssessmentData());
-                                    },
+                              onPressed: _allQuestions.isEmpty ? null : _showStartQuizDialog,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -621,27 +723,114 @@ class _HomeScreenState extends State<HomeScreen>
                         const SizedBox(height: 8),
                         ..._pastResults.map((r) {
                           final isPassed = r.scorePercentage >= 60;
+                          final statusColor = isPassed ? Colors.green : Colors.orange;
+
                           return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: isPassed
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.orange.withOpacity(0.1),
-                                child: Text(
-                                  '${r.scorePercentage}%',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    color: isPassed ? Colors.green : Colors.orange,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: statusColor.withOpacity(0.3), width: 1.2),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: statusColor.withOpacity(0.12),
+                                        child: Text(
+                                          '${r.scorePercentage}%',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: isPassed ? Colors.green.shade800 : Colors.orange.shade900,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              r.quizTitle,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              '${r.correctAnswers}/${r.totalQuestions} Correct • ⏱️ ${r.formattedDuration} • ${_formatQuizDate(r.createdAt)}',
+                                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (settings.showDeleteActions)
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                                          onPressed: () async {
+                                            if (r.id != null) {
+                                              await _quizRepo.deleteQuizResult(r.id!);
+                                              _loadAssessmentData();
+                                            }
+                                          },
+                                        ),
+                                    ],
                                   ),
-                                ),
-                              ),
-                              title: Text(r.quizTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
-                              subtitle: Text(
-                                '${r.correctAnswers}/${r.totalQuestions} Correct • ${r.durationSeconds}s duration',
-                                style: const TextStyle(fontSize: 12),
+                                  const SizedBox(height: 8),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      TextButton.icon(
+                                        icon: const Icon(Icons.visibility_outlined, size: 16, color: Colors.indigo),
+                                        label: const Text('Review', style: TextStyle(fontSize: 12, color: Colors.indigo)),
+                                        onPressed: () {
+                                          final questionsToReview = r.parsedQuestions.isNotEmpty ? r.parsedQuestions : _allQuestions;
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => QuizScorecardScreen(
+                                                quizTitle: r.quizTitle,
+                                                questions: questionsToReview,
+                                                selectedAnswers: r.parsedUserAnswers,
+                                                correctCount: r.correctAnswers,
+                                                durationSeconds: r.durationSeconds,
+                                              ),
+                                            ),
+                                          ).then((_) => _loadAssessmentData());
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.indigo,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        icon: const Icon(Icons.replay, size: 16),
+                                        label: const Text('Re-attempt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                        onPressed: () {
+                                          final questionsToRun = r.parsedQuestions.isNotEmpty ? r.parsedQuestions : _allQuestions;
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => QuizRunnerScreen(
+                                                questions: questionsToRun,
+                                                quizTitle: r.quizTitle,
+                                              ),
+                                            ),
+                                          ).then((_) => _loadAssessmentData());
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           );

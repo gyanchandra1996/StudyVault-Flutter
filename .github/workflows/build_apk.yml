@@ -57,15 +57,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.3.3
-          name: "StudyVault Flutter v1.3.3 (Verified Working Gemini 3.5 Flash & Butter-Smooth Scroll)"
+          tag_name: v1.3.4
+          name: "StudyVault Flutter v1.3.4 (Interactive Quiz Names, Live Timer, Scorecard & Re-attempt)"
           body: |
-            ### 📱 StudyVault Flutter v1.3.3 Release APK
-            - **Verified Live Working Gemini 3.5 Flash**: Tested and verified working with user's Google AI Studio key!
-            - **Pre-Configured AI Keys**: App launches with AI enabled and user's Gemini key ready to generate MCQs immediately!
-            - **Zero Scroll Flicker**: `cacheExtent: 1500px`, `AutomaticKeepAliveClientMixin`, and `RepaintBoundary` guarantee butter-smooth 120Hz scrolling
-            - **Clear Free vs Paid AI Guidance**: Explicit badges for 100% Free Gemini vs Paid ChatGPT/DeepSeek accounts
-            - **Developed by Gyanchandra**: Prominent developer credits and badges in Settings, Lock Screen, and About Dialog
+            ### 📱 StudyVault Flutter v1.3.4 Release APK
+            - **Custom Quiz Name / Assessment Title**: Name your assessments or use AI-generated titles (e.g., "DBMS Normalization Test", "Reasoning Mock 1")
+            - **Live Quiz Timer & Duration**: Live stopwatch during the assessment and total completion time recorded upon submission
+            - **Comprehensive Assessment Scorecard**: Rich score report with percentage, letter grade, accuracy, time taken, and question-by-question breakdown with explanations
+            - **100% Local DB Offline Persistence**: Every quiz session, questions, and your selected answers are saved in SQLite to review anytime offline
+            - **Instant Re-attempt Quiz**: 1-Tap re-attempt button on the Scorecard and Recent Quiz History to retake any test
+            - **Verified Live Working Gemini 3.5 Flash**: Pre-loaded 100% Free AI generation
+            - **Zero Scroll Flicker**: 1500px pre-caching and persistent client mixins
+            - **Developed by Gyanchandra**: Prominent developer credits and badges
             - **Pre-Seeded Core Categories**: CS & IT, Quantitative Aptitude, Reasoning, GK & Current Affairs, English, Hindi Vyakaran
             - **Dedicated Categories Bottom Tab**: Instant search and exam filtering
             - **App Security & 4-Digit PIN Lock**: Keypad lock protecting study materials
