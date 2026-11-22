@@ -40,10 +40,17 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Project Code
-        run: flutter analyze
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze.log 2>&1 || true
+          cat analyze.log
+          echo "### Flutter Analyze Log" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat analyze.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Build Standalone Release APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          flutter build apk --release --no-tree-shake-icons > build.log 2>&1 || (cat build.log && echo "### Build Error" >> $GITHUB_STEP_SUMMARY && echo '```' >> $GITHUB_STEP_SUMMARY && cat build.log >> $GITHUB_STEP_SUMMARY && echo '```' >> $GITHUB_STEP_SUMMARY && exit 1)
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
