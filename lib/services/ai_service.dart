@@ -10,36 +10,35 @@ class AiService {
   static const String providerDeepSeek = 'deepseek';
 
   static const List<Map<String, String>> providers = [
-    {'id': providerGemini, 'name': 'Google Gemini', 'icon': 'sparkles'},
-    {'id': providerOpenAi, 'name': 'OpenAI ChatGPT', 'icon': 'robot'},
-    {'id': providerClaude, 'name': 'Anthropic Claude', 'icon': 'brain'},
-    {'id': providerDeepSeek, 'name': 'DeepSeek AI', 'icon': 'code'},
+    {'id': providerGemini, 'name': 'Google Gemini (100% Free)', 'badge': 'FREE'},
+    {'id': providerOpenAi, 'name': 'OpenAI ChatGPT (Paid API)', 'badge': 'PAID'},
+    {'id': providerClaude, 'name': 'Anthropic Claude (Paid API)', 'badge': 'PAID'},
+    {'id': providerDeepSeek, 'name': 'DeepSeek AI (Paid API)', 'badge': 'PAID'},
   ];
 
   static List<Map<String, String>> getModelsForProvider(String provider) {
     switch (provider) {
       case providerOpenAi:
         return [
-          {'id': 'gpt-4o-mini', 'name': 'ChatGPT GPT-4o Mini (Fast & Smart)'},
-          {'id': 'gpt-4o', 'name': 'ChatGPT GPT-4o (High Intelligence)'},
-          {'id': 'gpt-3.5-turbo', 'name': 'ChatGPT 3.5 Turbo (Legacy)'},
+          {'id': 'gpt-4o-mini', 'name': 'ChatGPT GPT-4o Mini (Fast)'},
+          {'id': 'gpt-4o', 'name': 'ChatGPT GPT-4o (Paid)'},
         ];
       case providerClaude:
         return [
-          {'id': 'claude-3-5-sonnet-20241022', 'name': 'Claude 3.5 Sonnet (State-of-the-Art)'},
-          {'id': 'claude-3-5-haiku-20241022', 'name': 'Claude 3.5 Haiku (Ultra Fast)'},
+          {'id': 'claude-3-5-haiku-20241022', 'name': 'Claude 3.5 Haiku'},
+          {'id': 'claude-3-5-sonnet-20241022', 'name': 'Claude 3.5 Sonnet'},
         ];
       case providerDeepSeek:
         return [
-          {'id': 'deepseek-chat', 'name': 'DeepSeek V3 (Chat & MCQ)'},
-          {'id': 'deepseek-reasoner', 'name': 'DeepSeek R1 (Deep Reasoning)'},
+          {'id': 'deepseek-chat', 'name': 'DeepSeek V3 (Chat)'},
+          {'id': 'deepseek-reasoner', 'name': 'DeepSeek R1 (Reasoning)'},
         ];
       case providerGemini:
       default:
         return [
-          {'id': 'gemini-1.5-flash', 'name': 'Gemini 1.5 Flash (Super Fast)'},
-          {'id': 'gemini-1.5-pro', 'name': 'Gemini 1.5 Pro (Deep Analysis)'},
-          {'id': 'gemini-2.0-flash', 'name': 'Gemini 2.0 Flash (Next-Gen)'},
+          {'id': 'gemini-2.5-flash', 'name': 'Gemini 2.5 Flash (Recommended • Free)'},
+          {'id': 'gemini-1.5-flash', 'name': 'Gemini 1.5 Flash (High Speed • Free)'},
+          {'id': 'gemini-1.5-pro', 'name': 'Gemini 1.5 Pro (Deep Analysis • Free)'},
         ];
     }
   }
@@ -54,7 +53,7 @@ class AiService {
         return 'deepseek-chat';
       case providerGemini:
       default:
-        return 'gemini-1.5-flash';
+        return 'gemini-2.5-flash';
     }
   }
 
@@ -120,12 +119,14 @@ class AiService {
 
         case providerGemini:
         default:
-          final targetModel = model.isNotEmpty ? model : 'gemini-1.5-flash';
+          final targetModel = (model.isNotEmpty && model != 'gemini-2.0-flash')
+              ? model
+              : 'gemini-2.5-flash';
           final endpoints = [
-            'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
             'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey.trim()}',
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
           ];
           for (final ep in endpoints) {
             try {
@@ -274,12 +275,15 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
 
       case providerGemini:
       default:
-        final targetModel = model.isNotEmpty ? model : 'gemini-1.5-flash';
+        final targetModel = (model.isNotEmpty && model != 'gemini-2.0-flash')
+            ? model
+            : 'gemini-2.5-flash';
+
         final endpoints = [
-          'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
           'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey.trim()}',
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
         ];
 
         http.Response? lastResponse;

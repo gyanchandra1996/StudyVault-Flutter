@@ -190,6 +190,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                           ),
                         )
                       : GridView.builder(
+                          cacheExtent: 1500.0,
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,

@@ -260,6 +260,8 @@ class _HomeScreenState extends State<HomeScreen>
               : RefreshIndicator(
                   onRefresh: () => study.loadInitialData(),
                   child: ListView(
+                    cacheExtent: 1500.0,
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.only(bottom: 80),
                     children: [
                       // Reading Habit & Streak Tracker Banner

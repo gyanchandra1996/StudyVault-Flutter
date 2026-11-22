@@ -57,22 +57,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.3.1
-          name: "StudyVault Flutter v1.3.1 (Fix: Gemini 1.5 Flash Endpoint v1 & Multi-Agent)"
+          tag_name: v1.3.2
+          name: "StudyVault Flutter v1.3.2 (Gemini 2.5 Flash 100% Free & Smooth Scroll Fix)"
           body: |
-            ### 📱 StudyVault Flutter v1.3.1 Release APK
-            - **Fixed Gemini 404 Endpoint**: Switched to official `v1` endpoint + automatic fallback across `v1`, `v1beta`, and `2.0-flash`
+            ### 📱 StudyVault Flutter v1.3.2 Release APK
+            - **100% Free Gemini 2.5 Flash**: Default model upgraded to Google's official `gemini-2.5-flash` with zero cost
+            - **Eliminated Scroll Flicker**: `cacheExtent: 1500px` and `AutomaticKeepAliveClientMixin` prevent re-rendering when scrolling
+            - **Clearly Labeled Free vs Paid AI**: Clear badges distinguish 100% Free Google Gemini from Paid OpenAI/Claude keys
             - **Developed by Gyanchandra**: Prominent developer credits and badges in Settings, Lock Screen, and About Dialog
-            - **Multi-AI Agents & Engines**:
-              - **Google Gemini** (Gemini 1.5 Flash, Gemini 1.5 Pro, Gemini 2.0 Flash)
-              - **OpenAI ChatGPT** (ChatGPT GPT-4o Mini, GPT-4o, GPT-3.5 Turbo)
-              - **Anthropic Claude** (Claude 3.5 Sonnet, Claude 3.5 Haiku)
-              - **DeepSeek AI** (DeepSeek V3, DeepSeek R1)
             - **Zero UI Flicker**: Instant tab switching and cached reading streak states
             - **Pre-Seeded Core Categories**: CS & IT, Quantitative Aptitude, Reasoning, GK & Current Affairs, English, Hindi Vyakaran
             - **Dedicated Categories Bottom Tab**: Instant search and exam filtering
             - **App Security & 4-Digit PIN Lock**: Keypad lock protecting study materials
             - **Direct PDF Sharing**: Native zero-dependency FileProvider sharing to WhatsApp, Drive, etc.
+            - **Native Google Pdfium Indic Rendering Engine**: 100% Hindi/Devanagari text clarity without tofu boxes `□`
             - **Native Google Pdfium Indic Rendering Engine**: 100% Hindi/Devanagari text clarity without tofu boxes `□`
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

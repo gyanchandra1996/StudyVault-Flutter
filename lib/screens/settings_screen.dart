@@ -191,30 +191,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       runSpacing: 8,
                       children: [
                         _buildProviderChip(
-                          label: 'Google Gemini',
+                          label: 'Google Gemini (100% Free)',
                           providerId: AiService.providerGemini,
                           icon: Icons.bolt,
                           settings: settings,
                         ),
                         _buildProviderChip(
-                          label: 'OpenAI ChatGPT',
+                          label: 'OpenAI ChatGPT (Paid Key)',
                           providerId: AiService.providerOpenAi,
                           icon: Icons.smart_toy_outlined,
                           settings: settings,
                         ),
                         _buildProviderChip(
-                          label: 'Anthropic Claude',
+                          label: 'Anthropic Claude (Paid Key)',
                           providerId: AiService.providerClaude,
                           icon: Icons.psychology_outlined,
                           settings: settings,
                         ),
                         _buildProviderChip(
-                          label: 'DeepSeek AI',
+                          label: 'DeepSeek AI (Paid Key)',
                           providerId: AiService.providerDeepSeek,
                           icon: Icons.code,
                           settings: settings,
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Google Gemini is 100% Free (No credit card needed). OpenAI & Claude require a paid billing account.',
+                              style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextField(

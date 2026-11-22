@@ -100,6 +100,9 @@ class SettingsProvider extends ChangeNotifier {
     _claudeApiKey = prefs.getString('claudeApiKey') ?? '';
     _deepseekApiKey = prefs.getString('deepseekApiKey') ?? '';
     _aiModel = prefs.getString('aiModel') ?? AiService.getDefaultModel(_aiProvider);
+    if (_aiModel == 'gemini-2.0-flash' || _aiModel.isEmpty) {
+      _aiModel = 'gemini-2.5-flash';
+    }
     _showDeleteActions = prefs.getBool('showDeleteActions') ?? true;
     _themeStyle = prefs.getString('themeStyle') ?? (prefs.getBool('isDarkMode') == true ? 'dark' : 'light');
     _accentName = prefs.getString('accentName') ?? 'indigo';

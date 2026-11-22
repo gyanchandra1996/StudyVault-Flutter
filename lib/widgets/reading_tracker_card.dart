@@ -13,9 +13,12 @@ class ReadingTrackerCard extends StatefulWidget {
   State<ReadingTrackerCard> createState() => _ReadingTrackerCardState();
 }
 
-class _ReadingTrackerCardState extends State<ReadingTrackerCard> {
+class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticKeepAliveClientMixin {
   final ReadingRepo _readingRepo = ReadingRepo();
   final PdfRepo _pdfRepo = PdfRepo();
+
+  @override
+  bool get wantKeepAlive => true;
 
   int _streakDays = 0;
   int _todayMinutes = 0;
@@ -53,11 +56,13 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
 
     final settings = Provider.of<SettingsProvider>(context);
     final accent = settings.activeAccentColor;
 
-    return Column(
+    return RepaintBoundary(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Top Greeting Banner
@@ -309,6 +314,7 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> {
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 }

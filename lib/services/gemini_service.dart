@@ -3,14 +3,16 @@ import 'package:http/http.dart' as http;
 import '../models/question.dart';
 
 class GeminiService {
-  static Future<bool> testApiKey(String apiKey, {String model = 'gemini-1.5-flash'}) async {
+  static Future<bool> testApiKey(String apiKey, {String model = 'gemini-2.5-flash'}) async {
     if (apiKey.trim().isEmpty) return false;
-    final targetModel = model.isNotEmpty ? model : 'gemini-1.5-flash';
+    final targetModel = (model.isNotEmpty && model != 'gemini-2.0-flash')
+        ? model
+        : 'gemini-2.5-flash';
     final endpoints = [
-      'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
       'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey.trim()}',
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+      'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}',
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
     ];
     for (final ep in endpoints) {
       try {
@@ -38,7 +40,7 @@ class GeminiService {
     required String apiKey,
     required String prompt,
     int count = 5,
-    String model = 'gemini-1.5-flash',
+    String model = 'gemini-2.5-flash',
     int? examId,
     int? categoryId,
   }) async {
@@ -65,12 +67,14 @@ Format your response ONLY as a JSON array of objects with these exact keys:
 Do not wrap with markdown backticks or commentary. Only return raw JSON.
 ''';
 
-    final targetModel = model.isNotEmpty ? model : 'gemini-1.5-flash';
+    final targetModel = (model.isNotEmpty && model != 'gemini-2.0-flash')
+        ? model
+        : 'gemini-2.5-flash';
     final endpoints = [
-      'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
       'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey.trim()}',
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+      'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}',
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
     ];
 
     http.Response? lastResponse;
