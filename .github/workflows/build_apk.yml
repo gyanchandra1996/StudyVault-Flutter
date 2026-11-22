@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Release APK
@@ -37,7 +40,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Standalone Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -46,3 +49,18 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create or Update GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.0
+          name: "StudyVault Flutter v1.0.0 APK"
+          body: |
+            ### 📱 StudyVault Flutter Edition Release APK
+            - **100% Native Indic / Hindi PDF Viewer** powered by Google Pdfium (Zero Tofu boxes `□`)
+            - **Gemini AI Quiz Generator** from study notes & prompts
+            - **Timed Quiz Runner & Scorecard**
+            - **Spaced Repetition & Study Pomodoro Timer**
+            - **100% Offline SQLite Storage**
+          files: build/app/outputs/flutter-apk/app-release.apk
