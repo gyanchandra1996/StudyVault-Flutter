@@ -75,4 +75,3 @@ jobs:
             - **100% Native Google Pdfium Indic Rendering Engine** (No Tofu Boxes `□`)
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true
-          files: build/app/outputs/flutter-apk/app-release.apk
