@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/ai_service.dart';
 import 'flashcards_screen.dart';
 import 'notes_screen.dart';
 import 'recent_screen.dart';
@@ -16,12 +17,16 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _apiKeyController = TextEditingController();
+  String _lastSyncedProvider = '';
 
   @override
-  void initState() {
-    super.initState();
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    _apiKeyController.text = settings.geminiApiKey;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final settings = Provider.of<SettingsProvider>(context);
+    if (_lastSyncedProvider != settings.aiProvider) {
+      _lastSyncedProvider = settings.aiProvider;
+      _apiKeyController.text = settings.activeApiKey;
+    }
   }
 
   @override
@@ -61,21 +66,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Hide delete buttons across exams, categories, and PDF notes to prevent accidental deletion while studying.',
+                    'When disabled, destructive delete buttons are hidden across categories and documents to avoid accidental deletions during exam preparation.',
                     style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Show Delete Buttons'),
+                    title: const Text('Show Delete Actions'),
                     subtitle: Text(
-                      settings.showDeleteActions
-                          ? 'Delete actions are visible'
-                          : 'Delete actions are hidden (Safe Mode ON)',
-                      style: TextStyle(
-                        color: settings.showDeleteActions ? Colors.grey : Colors.green,
-                        fontSize: 12,
-                      ),
+                      settings.showDeleteActions ? 'Actions are visible' : 'Delete buttons hidden for safety',
+                      style: const TextStyle(fontSize: 12),
                     ),
                     value: settings.showDeleteActions,
                     onChanged: (val) => settings.setShowDeleteActions(val),
@@ -95,10 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: [
-                      Icon(Icons.lock_outline, color: settings.activeAccentColor),
-                      const SizedBox(width: 8),
-                      const Text(
+                    children: const [
+                      Icon(Icons.lock_outline_rounded, color: Colors.amber),
+                      SizedBox(width: 8),
+                      Text(
                         'App Security & PIN Lock',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -106,19 +106,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Lock StudyVault with a 4-digit PIN to keep your notes and study materials private.',
+                    'Lock StudyVault with a 4-digit PIN code to secure your study notes, questions, and revision material from unauthorized access.',
                     style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Require PIN on Launch'),
+                    title: const Text('Enable 4-Digit PIN Lock'),
                     subtitle: Text(
-                      settings.isLockEnabled ? 'PIN lock is active' : 'Disabled',
-                      style: TextStyle(
-                        color: settings.isLockEnabled ? Colors.green : Colors.grey,
-                        fontSize: 12,
-                      ),
+                      settings.isLockEnabled ? 'App is protected with PIN' : 'No PIN required',
+                      style: const TextStyle(fontSize: 12),
                     ),
                     value: settings.isLockEnabled,
                     onChanged: (val) {
@@ -134,15 +131,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        TextButton.icon(
-                          icon: const Icon(Icons.key, size: 16),
-                          label: const Text('Change PIN'),
-                          onPressed: () => _showSetPinDialog(context, settings),
+                        const Text(
+                          'Status: PIN Active (****)',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.green),
                         ),
                         TextButton.icon(
-                          icon: const Icon(Icons.lock, size: 16),
-                          label: const Text('Lock Now'),
-                          onPressed: () => settings.lockApp(),
+                          icon: const Icon(Icons.edit, size: 16),
+                          label: const Text('Change PIN'),
+                          onPressed: () => _showSetPinDialog(context, settings),
                         ),
                       ],
                     ),
@@ -153,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Gemini AI Configuration Section
+          // Multi-AI Agents Configuration Section
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
@@ -166,14 +162,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Icon(Icons.auto_awesome, color: Colors.indigo),
                       SizedBox(width: 8),
                       Text(
-                        'Google Gemini AI',
+                        'AI Study Agents & Quiz Master',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Enable AI to automatically generate exam quizzes, question explanations, and study summaries.',
+                    'Generate high-yield exam quizzes, explanations, and summaries with ChatGPT, Claude, Gemini, or DeepSeek.',
                     style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
@@ -184,44 +180,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: (val) => settings.setAiEnabled(val),
                   ),
                   if (settings.isAiEnabled) ...[
-                    const Divider(height: 24),
+                    const Divider(height: 20),
+                    const Text(
+                      'Select AI Agent / Engine:',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildProviderChip(
+                          label: 'Google Gemini',
+                          providerId: AiService.providerGemini,
+                          icon: Icons.bolt,
+                          settings: settings,
+                        ),
+                        _buildProviderChip(
+                          label: 'OpenAI ChatGPT',
+                          providerId: AiService.providerOpenAi,
+                          icon: Icons.smart_toy_outlined,
+                          settings: settings,
+                        ),
+                        _buildProviderChip(
+                          label: 'Anthropic Claude',
+                          providerId: AiService.providerClaude,
+                          icon: Icons.psychology_outlined,
+                          settings: settings,
+                        ),
+                        _buildProviderChip(
+                          label: 'DeepSeek AI',
+                          providerId: AiService.providerDeepSeek,
+                          icon: Icons.code,
+                          settings: settings,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     TextField(
                       controller: _apiKeyController,
                       obscureText: true,
                       decoration: InputDecoration(
-                        labelText: 'Gemini API Key',
-                        hintText: 'AIzaSy...',
+                        labelText: '${settings.activeProviderDisplayName} API Key',
+                        hintText: _getApiKeyHint(settings.aiProvider),
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.save),
                           tooltip: 'Save Key',
                           onPressed: () {
-                            settings.setGeminiApiKey(_apiKeyController.text.trim());
+                            settings.setProviderApiKey(settings.aiProvider, _apiKeyController.text.trim());
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('API Key saved!')),
+                              SnackBar(content: Text('${settings.activeProviderDisplayName} API Key saved!')),
                             );
                           },
                         ),
                       ),
-                      onChanged: (v) => settings.setGeminiApiKey(v.trim()),
+                      onChanged: (v) => settings.setProviderApiKey(settings.aiProvider, v.trim()),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('AI Model:'),
+                        const Text('Model / Agent:'),
                         DropdownButton<String>(
-                          value: settings.aiModel,
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'gemini-1.5-flash',
-                              child: Text('Gemini 1.5 Flash (Fast)'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'gemini-1.5-pro',
-                              child: Text('Gemini 1.5 Pro (Deep)'),
-                            ),
-                          ],
+                          value: _getSafeModelValue(settings.aiModel, settings.aiProvider),
+                          items: AiService.getModelsForProvider(settings.aiProvider).map((m) {
+                            return DropdownMenuItem(
+                              value: m['id'],
+                              child: Text(m['name']!),
+                            );
+                          }).toList(),
                           onChanged: (v) {
                             if (v != null) settings.setAiModel(v);
                           },
@@ -240,7 +268,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               )
                             : const Icon(Icons.network_check),
                         label: Text(
-                          settings.isTestingApiKey ? 'Testing...' : 'Test Gemini Connection',
+                          settings.isTestingApiKey
+                              ? 'Testing...'
+                              : 'Test ${settings.activeProviderDisplayName} Connection',
                         ),
                         onPressed: settings.isTestingApiKey
                             ? null
@@ -256,9 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: settings.apiTestResult!.startsWith('✓')
-                              ? Colors.green
-                              : Colors.red,
+                          color: settings.apiTestResult!.startsWith('✓') ? Colors.green : Colors.red,
                         ),
                       ),
                     ],
@@ -278,58 +306,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: [
-                      Icon(Icons.palette_outlined, color: settings.activeAccentColor),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Theme & Eye-Care Modes',
+                    children: const [
+                      Icon(Icons.palette_outlined, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text(
+                        'Appearance & Theme Center',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  const Text('Display Mode:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  const Text('Base Theme Style:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
-                    runSpacing: 8,
                     children: [
                       ChoiceChip(
-                        avatar: const Text('☀️', style: TextStyle(fontSize: 12)),
-                        label: const Text('Light'),
+                        label: const Text('Light Paper'),
                         selected: settings.themeStyle == 'light',
-                        onSelected: (_) => settings.setThemeStyle('light'),
+                        onSelected: (val) {
+                          if (val) settings.setThemeStyle('light');
+                        },
                       ),
                       ChoiceChip(
-                        avatar: const Text('🌙', style: TextStyle(fontSize: 12)),
-                        label: const Text('Dark'),
+                        label: const Text('Dark Slate'),
                         selected: settings.themeStyle == 'dark',
-                        onSelected: (_) => settings.setThemeStyle('dark'),
+                        onSelected: (val) {
+                          if (val) settings.setThemeStyle('dark');
+                        },
                       ),
                       ChoiceChip(
-                        avatar: const Text('🖤', style: TextStyle(fontSize: 12)),
-                        label: const Text('AMOLED (Pure Black)'),
+                        label: const Text('AMOLED Pure Black'),
                         selected: settings.themeStyle == 'amoled',
-                        onSelected: (_) => settings.setThemeStyle('amoled'),
+                        onSelected: (val) {
+                          if (val) settings.setThemeStyle('amoled');
+                        },
                       ),
                       ChoiceChip(
-                        avatar: const Text('📜', style: TextStyle(fontSize: 12)),
-                        label: const Text('Sepia (Warm Paper)'),
+                        label: const Text('Warm Sepia'),
                         selected: settings.themeStyle == 'sepia',
-                        onSelected: (_) => settings.setThemeStyle('sepia'),
+                        onSelected: (val) {
+                          if (val) settings.setThemeStyle('sepia');
+                        },
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text('Accent Color:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                  const Text('Accent Theme Color:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildAccentCircle(context, settings, 'indigo', const Color(0xFF6366F1), 'Indigo'),
-                      _buildAccentCircle(context, settings, 'emerald', const Color(0xFF10B981), 'Emerald'),
-                      _buildAccentCircle(context, settings, 'amethyst', const Color(0xFF8B5CF6), 'Purple'),
-                      _buildAccentCircle(context, settings, 'amber', const Color(0xFFF59E0B), 'Amber'),
+                      _buildAccentCircle(context, settings, 'indigo', const Color(0xFF6366F1), 'Classic Indigo'),
+                      _buildAccentCircle(context, settings, 'emerald', const Color(0xFF10B981), 'Emerald Green'),
+                      _buildAccentCircle(context, settings, 'amethyst', const Color(0xFF8B5CF6), 'Amethyst Purple'),
+                      _buildAccentCircle(context, settings, 'amber', const Color(0xFFF59E0B), 'Amber Gold'),
                     ],
                   ),
                 ],
@@ -338,18 +369,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Study Tools & Data Management
+          // Reading & Document Defaults
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.menu_book_outlined, color: Colors.teal),
+                      SizedBox(width: 8),
+                      Text(
+                        'Reading Experience Defaults',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Default Eye-Comfort Filter:'),
+                      DropdownButton<String>(
+                        value: settings.readerFilter,
+                        items: const [
+                          DropdownMenuItem(value: 'original', child: Text('Clear Day')),
+                          DropdownMenuItem(value: 'sepia', child: Text('Warm Sepia')),
+                          DropdownMenuItem(value: 'night', child: Text('Night Vision')),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) settings.setReaderFilter(v);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('PDF Page Scroll Mode:'),
+                      DropdownButton<String>(
+                        value: settings.scrollDirection,
+                        items: const [
+                          DropdownMenuItem(value: 'vertical', child: Text('Continuous Vertical')),
+                          DropdownMenuItem(value: 'horizontal', child: Text('Horizontal Page Flip')),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) settings.setScrollDirection(v);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Study Data & Tools Section
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Column(
               children: [
                 ListTile(
                   leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFEFF6FF),
-                    child: Icon(Icons.style, color: Color(0xFF3B82F6)),
+                    backgroundColor: Color(0xFFF3E8FF),
+                    child: Icon(Icons.style, color: Color(0xFF9333EA)),
                   ),
-                  title: const Text('Flashcards Hub (SM-2)', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Spaced repetition revision cards'),
+                  title: const Text('Flashcards & Spaced Repetition', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('SM-2 Algorithm memory deck'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
@@ -359,11 +449,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFFDF2F8),
-                    child: Icon(Icons.edit_note, color: Color(0xFFEC4899)),
+                    backgroundColor: Color(0xFFFEF3C7),
+                    child: Icon(Icons.note_alt_outlined, color: Color(0xFFD97706)),
                   ),
-                  title: const Text('Consolidated Study Notes', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('All notes created in PDF reader'),
+                  title: const Text('Study Notes & Bookmarks', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Quick exam references & highlights'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
@@ -373,10 +463,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFF0FDF4),
-                    child: Icon(Icons.history, color: Color(0xFF10B981)),
+                    backgroundColor: Color(0xFFE0E7FF),
+                    child: Icon(Icons.history, color: Color(0xFF4F46E5)),
                   ),
-                  title: const Text('Reading History', style: TextStyle(fontWeight: FontWeight.bold)),
+                  title: const Text('Recent Study Materials', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Chronological document history'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
@@ -415,9 +505,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Developer Credit & App Info Card
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    settings.activeAccentColor.withOpacity(0.08),
+                    settings.activeAccentColor.withOpacity(0.02),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: settings.activeAccentColor.withOpacity(0.18),
+                    child: Icon(Icons.code_rounded, size: 32, color: settings.activeAccentColor),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'StudyVault Mobile',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Version 1.3.0 • Offline Indic Exam & Study Companion',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: settings.activeAccentColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: settings.activeAccentColor.withOpacity(0.25)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.favorite, size: 16, color: Colors.red),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Developed by Gyanchandra',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildInfoBadge('Flutter 3.27'),
+                      _buildInfoBadge('100% Offline SQLite'),
+                      _buildInfoBadge('Material 3'),
+                      _buildInfoBadge('Multi-AI Agent Engine'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _buildProviderChip({
+    required String label,
+    required String providerId,
+    required IconData icon,
+    required SettingsProvider settings,
+  }) {
+    final isSelected = settings.aiProvider == providerId;
+    return ChoiceChip(
+      avatar: Icon(icon, size: 16, color: isSelected ? Colors.white : settings.activeAccentColor),
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (val) {
+        if (val) {
+          settings.setAiProvider(providerId);
+          _apiKeyController.text = settings.getApiKeyForProvider(providerId);
+        }
+      },
+    );
+  }
+
+  String _getApiKeyHint(String provider) {
+    switch (provider) {
+      case AiService.providerOpenAi:
+        return 'sk-proj-...';
+      case AiService.providerClaude:
+        return 'sk-ant-...';
+      case AiService.providerDeepSeek:
+        return 'sk-...';
+      case AiService.providerGemini:
+      default:
+        return 'AIzaSy...';
+    }
+  }
+
+  String _getSafeModelValue(String currentModel, String provider) {
+    final validModels = AiService.getModelsForProvider(provider).map((e) => e['id']).toList();
+    if (validModels.contains(currentModel)) {
+      return currentModel;
+    }
+    return AiService.getDefaultModel(provider);
+  }
+
+  Widget _buildInfoBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
     );
   }
 

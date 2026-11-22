@@ -64,17 +64,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.2.0
-          name: "StudyVault Flutter v1.2.0 (PIN Lock, Categories Tab & PDF Share)"
+          tag_name: v1.3.0
+          name: "StudyVault Flutter v1.3.0 (Multi-AI Agents: ChatGPT, Claude, Gemini & Gyanchandra Credits)"
           body: |
-            ### 📱 StudyVault Flutter v1.2.0 Release APK
-            - **Butter-Smooth UI (Zero Flickering)** with permanent state preservation
-            - **Pre-Seeded Core Categories**: Computer Science, Arithmetic, Reasoning, GK, English, Hindi Vyakaran
-            - **Dedicated Categories Bottom Tab** with instant search & exam filtering
-            - **App Security & 4-Digit PIN Lock** to protect study materials and notes
-            - **Direct PDF Sharing** to WhatsApp, Google Drive, and other apps
-            - **Reading Streak Tracker (🔥)** with Daily & Weekly Activity Charts
-            - **Eye-Care Reading Modes**: Day, Sepia Warm Paper, and AMOLED Pure Black
-            - **100% Native Google Pdfium Indic Rendering Engine** (No Tofu Boxes `□`)
+            ### 📱 StudyVault Flutter v1.3.0 Release APK
+            - **Developed by Gyanchandra**: Prominent developer credits and badges in Settings, Lock Screen, and About Dialog
+            - **Multi-AI Agents & Engines**:
+              - **Google Gemini** (Gemini 1.5 Flash, Gemini 1.5 Pro, Gemini 2.0 Flash)
+              - **OpenAI ChatGPT** (ChatGPT GPT-4o Mini, GPT-4o, GPT-3.5 Turbo)
+              - **Anthropic Claude** (Claude 3.5 Sonnet, Claude 3.5 Haiku)
+              - **DeepSeek AI** (DeepSeek V3, DeepSeek R1)
+            - **Zero UI Flicker**: Instant tab switching and cached reading streak states
+            - **Pre-Seeded Core Categories**: CS & IT, Quantitative Aptitude, Reasoning, GK & Current Affairs, English, Hindi Vyakaran
+            - **Dedicated Categories Bottom Tab**: Instant search and exam filtering
+            - **App Security & 4-Digit PIN Lock**: Keypad lock protecting study materials
+            - **Direct PDF Sharing**: Native zero-dependency FileProvider sharing to WhatsApp, Drive, etc.
+            - **Native Google Pdfium Indic Rendering Engine**: 100% Hindi/Devanagari text clarity without tofu boxes `□`
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

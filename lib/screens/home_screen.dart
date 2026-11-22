@@ -61,6 +61,72 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
+  void _showAboutDialog(BuildContext context, SettingsProvider settings) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: settings.activeAccentColor.withOpacity(0.18),
+              child: Icon(Icons.school, color: settings.activeAccentColor),
+            ),
+            const SizedBox(width: 12),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('StudyVault', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('v1.3.0', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Offline Indic Exam & Study Companion with Native PDF, AI Quiz & Safe Study Mode.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: settings.activeAccentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: settings.activeAccentColor.withOpacity(0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.favorite, size: 16, color: Colors.red),
+                  SizedBox(width: 6),
+                  Text(
+                    'Developed by Gyanchandra',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'AI Agents: Google Gemini, OpenAI ChatGPT, Anthropic Claude, DeepSeek AI.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddExamDialog() {
     final titleController = TextEditingController();
     final descController = TextEditingController();
@@ -158,6 +224,11 @@ class _HomeScreenState extends State<HomeScreen>
       appBar: AppBar(
         title: const Text('StudyVault', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'About StudyVault',
+            onPressed: () => _showAboutDialog(context, settings),
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {

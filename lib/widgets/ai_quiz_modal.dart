@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
-import '../services/gemini_service.dart';
+import '../services/ai_service.dart';
 import '../database/quiz_repo.dart';
 
 class AiQuizModal extends StatefulWidget {
@@ -33,8 +33,8 @@ class _AiQuizModalState extends State<AiQuizModal> {
       setState(() => _errorMessage = 'Please enable AI in Settings first.');
       return;
     }
-    if (settings.geminiApiKey.trim().isEmpty) {
-      setState(() => _errorMessage = 'Please set your Gemini API key in Settings.');
+    if (settings.activeApiKey.trim().isEmpty) {
+      setState(() => _errorMessage = 'Please set your ${settings.activeProviderDisplayName} API key in Settings.');
       return;
     }
     if (_promptController.text.trim().isEmpty) {
@@ -48,11 +48,12 @@ class _AiQuizModalState extends State<AiQuizModal> {
     });
 
     try {
-      final questions = await GeminiService.generateQuestions(
-        apiKey: settings.geminiApiKey,
+      final questions = await AiService.generateQuestions(
+        provider: settings.aiProvider,
+        apiKey: settings.activeApiKey,
+        model: settings.aiModel,
         prompt: _promptController.text.trim(),
         count: _questionCount,
-        model: settings.aiModel,
         examId: widget.examId,
       );
 
@@ -69,6 +70,8 @@ class _AiQuizModalState extends State<AiQuizModal> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
@@ -79,21 +82,42 @@ class _AiQuizModalState extends State<AiQuizModal> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: const [
-                Icon(Icons.auto_awesome, color: Colors.indigo),
-                SizedBox(width: 8),
-                Text(
-                  'Generate Quiz with AI',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              children: [
+                const Icon(Icons.auto_awesome, color: Colors.indigo),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Generate Quiz with AI',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.indigo.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.smart_toy_outlined, size: 14, color: Colors.indigo),
+                      const SizedBox(width: 4),
+                      Text(
+                        settings.activeProviderDisplayName,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Enter an exam topic, chapter name, or paste study notes to instantly generate multiple-choice questions.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+            Text(
+              'Active Agent: ${settings.aiModel}',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             TextField(
               controller: _promptController,
               maxLines: 4,
@@ -139,8 +163,8 @@ class _AiQuizModalState extends State<AiQuizModal> {
                       )
                     : const Icon(Icons.flash_on),
                 label: Text(
-                  _isLoading ? 'Generating Questions...' : 'Generate with Gemini AI',
-                  style: const TextStyle(fontSize: 16),
+                  _isLoading ? 'Generating Questions...' : 'Generate with ${settings.activeProviderDisplayName}',
+                  style: const TextStyle(fontSize: 15),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.indigo,

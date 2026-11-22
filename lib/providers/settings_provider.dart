@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/gemini_service.dart';
+import '../services/ai_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   bool _isAiEnabled = false;
+  String _aiProvider = AiService.providerGemini; // 'gemini', 'openai', 'claude', 'deepseek'
   String _geminiApiKey = '';
+  String _openaiApiKey = '';
+  String _claudeApiKey = '';
+  String _deepseekApiKey = '';
   String _aiModel = 'gemini-1.5-flash';
   bool _showDeleteActions = true;
   String _themeStyle = 'light'; // 'light', 'dark', 'amoled', 'sepia'
@@ -18,8 +22,41 @@ class SettingsProvider extends ChangeNotifier {
   String? _apiTestResult;
 
   bool get isAiEnabled => _isAiEnabled;
+  String get aiProvider => _aiProvider;
   String get geminiApiKey => _geminiApiKey;
+  String get openaiApiKey => _openaiApiKey;
+  String get claudeApiKey => _claudeApiKey;
+  String get deepseekApiKey => _deepseekApiKey;
   String get aiModel => _aiModel;
+
+  String get activeApiKey {
+    switch (_aiProvider) {
+      case AiService.providerOpenAi:
+        return _openaiApiKey;
+      case AiService.providerClaude:
+        return _claudeApiKey;
+      case AiService.providerDeepSeek:
+        return _deepseekApiKey;
+      case AiService.providerGemini:
+      default:
+        return _geminiApiKey;
+    }
+  }
+
+  String get activeProviderDisplayName {
+    switch (_aiProvider) {
+      case AiService.providerOpenAi:
+        return 'OpenAI ChatGPT';
+      case AiService.providerClaude:
+        return 'Anthropic Claude';
+      case AiService.providerDeepSeek:
+        return 'DeepSeek AI';
+      case AiService.providerGemini:
+      default:
+        return 'Google Gemini';
+    }
+  }
+
   bool get showDeleteActions => _showDeleteActions;
   String get themeStyle => _themeStyle;
   String get accentName => _accentName;
@@ -55,8 +92,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     _isAiEnabled = prefs.getBool('isAiEnabled') ?? false;
+    _aiProvider = prefs.getString('aiProvider') ?? AiService.providerGemini;
     _geminiApiKey = prefs.getString('geminiApiKey') ?? '';
-    _aiModel = prefs.getString('aiModel') ?? 'gemini-1.5-flash';
+    _openaiApiKey = prefs.getString('openaiApiKey') ?? '';
+    _claudeApiKey = prefs.getString('claudeApiKey') ?? '';
+    _deepseekApiKey = prefs.getString('deepseekApiKey') ?? '';
+    _aiModel = prefs.getString('aiModel') ?? AiService.getDefaultModel(_aiProvider);
     _showDeleteActions = prefs.getBool('showDeleteActions') ?? true;
     _themeStyle = prefs.getString('themeStyle') ?? (prefs.getBool('isDarkMode') == true ? 'dark' : 'light');
     _accentName = prefs.getString('accentName') ?? 'indigo';
@@ -135,12 +176,44 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setGeminiApiKey(String key) async {
-    _geminiApiKey = key;
+  Future<void> setAiProvider(String provider) async {
+    _aiProvider = provider;
+    _aiModel = AiService.getDefaultModel(provider);
     _apiTestResult = null;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('geminiApiKey', key);
+    await prefs.setString('aiProvider', provider);
+    await prefs.setString('aiModel', _aiModel);
     notifyListeners();
+  }
+
+  Future<void> setProviderApiKey(String provider, String key) async {
+    final cleanKey = key.trim();
+    _apiTestResult = null;
+    final prefs = await SharedPreferences.getInstance();
+    switch (provider) {
+      case AiService.providerOpenAi:
+        _openaiApiKey = cleanKey;
+        await prefs.setString('openaiApiKey', cleanKey);
+        break;
+      case AiService.providerClaude:
+        _claudeApiKey = cleanKey;
+        await prefs.setString('claudeApiKey', cleanKey);
+        break;
+      case AiService.providerDeepSeek:
+        _deepseekApiKey = cleanKey;
+        await prefs.setString('deepseekApiKey', cleanKey);
+        break;
+      case AiService.providerGemini:
+      default:
+        _geminiApiKey = cleanKey;
+        await prefs.setString('geminiApiKey', cleanKey);
+        break;
+    }
+    notifyListeners();
+  }
+
+  Future<void> setGeminiApiKey(String key) async {
+    await setProviderApiKey(AiService.providerGemini, key);
   }
 
   Future<void> setAiModel(String model) async {
@@ -158,8 +231,9 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<bool> testApiKey() async {
-    if (_geminiApiKey.trim().isEmpty) {
-      _apiTestResult = 'Please enter a Gemini API key first.';
+    final key = activeApiKey;
+    if (key.trim().isEmpty) {
+      _apiTestResult = 'Please enter an API key for $activeProviderDisplayName first.';
       notifyListeners();
       return false;
     }
@@ -167,11 +241,15 @@ class SettingsProvider extends ChangeNotifier {
     _apiTestResult = null;
     notifyListeners();
 
-    final success = await GeminiService.testApiKey(_geminiApiKey, model: _aiModel);
+    final success = await AiService.testApiKey(
+      provider: _aiProvider,
+      apiKey: key,
+      model: _aiModel,
+    );
     _isTestingApiKey = false;
     _apiTestResult = success
-        ? '✓ Gemini AI connection verified successfully!'
-        : '✕ Failed to connect. Check key & internet.';
+        ? '✓ $activeProviderDisplayName connected & verified successfully!'
+        : '✕ Connection failed. Please check key & internet.';
     notifyListeners();
     return success;
   }
