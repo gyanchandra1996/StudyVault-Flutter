@@ -23,7 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final settings = Provider.of<SettingsProvider>(context);
-    if (_lastSyncedProvider != settings.aiProvider) {
+    if (_lastSyncedProvider != settings.aiProvider || (_apiKeyController.text.isEmpty && settings.activeApiKey.isNotEmpty)) {
       _lastSyncedProvider = settings.aiProvider;
       _apiKeyController.text = settings.activeApiKey;
     }

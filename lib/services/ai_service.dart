@@ -20,7 +20,7 @@ class AiService {
     switch (provider) {
       case providerOpenAi:
         return [
-          {'id': 'gpt-4o-mini', 'name': 'ChatGPT GPT-4o Mini (Fast)'},
+          {'id': 'gpt-4o-mini', 'name': 'ChatGPT GPT-4o Mini (Requires Credits)'},
           {'id': 'gpt-4o', 'name': 'ChatGPT GPT-4o (Paid)'},
         ];
       case providerClaude:
@@ -36,9 +36,8 @@ class AiService {
       case providerGemini:
       default:
         return [
-          {'id': 'gemini-2.5-flash', 'name': 'Gemini 2.5 Flash (Recommended • Free)'},
-          {'id': 'gemini-1.5-flash', 'name': 'Gemini 1.5 Flash (High Speed • Free)'},
-          {'id': 'gemini-1.5-pro', 'name': 'Gemini 1.5 Pro (Deep Analysis • Free)'},
+          {'id': 'gemini-3.5-flash', 'name': 'Gemini 3.5 Flash (Recommended • 100% Free)'},
+          {'id': 'gemini-3.5-flash-lite', 'name': 'Gemini 3.5 Flash Lite (Fast • 100% Free)'},
         ];
     }
   }
@@ -53,7 +52,7 @@ class AiService {
         return 'deepseek-chat';
       case providerGemini:
       default:
-        return 'gemini-2.5-flash';
+        return 'gemini-3.5-flash';
     }
   }
 
@@ -119,14 +118,11 @@ class AiService {
 
         case providerGemini:
         default:
-          final targetModel = (model.isNotEmpty && model != 'gemini-2.0-flash')
-              ? model
-              : 'gemini-2.5-flash';
+          final targetModel = model.isNotEmpty ? model : 'gemini-3.5-flash';
           final endpoints = [
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey.trim()}',
             'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-            'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}',
-            'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
           ];
           for (final ep in endpoints) {
             try {
@@ -144,7 +140,7 @@ class AiService {
                 }),
               );
               if (response.statusCode == 200) return true;
-              if (response.statusCode != 404) return false;
+              if (response.statusCode != 404 && response.statusCode != 503) return false;
             } catch (_) {}
           }
           return false;
@@ -275,15 +271,11 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
 
       case providerGemini:
       default:
-        final targetModel = (model.isNotEmpty && model != 'gemini-2.0-flash')
-            ? model
-            : 'gemini-2.5-flash';
-
+        final targetModel = model.isNotEmpty ? model : 'gemini-3.5-flash';
         final endpoints = [
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey.trim()}',
           'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
-          'https://generativelanguage.googleapis.com/v1/models/$targetModel:generateContent?key=${apiKey.trim()}',
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}',
-          'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
         ];
 
         http.Response? lastResponse;
@@ -309,7 +301,7 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
           if (response.statusCode == 200) {
             break;
           }
-          if (response.statusCode != 404) {
+          if (response.statusCode != 404 && response.statusCode != 503) {
             break;
           }
         }

@@ -112,10 +112,47 @@ class _AiQuizModalState extends State<AiQuizModal> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Active Agent: ${settings.aiModel}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.psychology, size: 18, color: Colors.indigo),
+                  const SizedBox(width: 8),
+                  const Text('Agent:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isDense: true,
+                        isExpanded: true,
+                        value: AiService.getModelsForProvider(settings.aiProvider).any((m) => m['id'] == settings.aiModel)
+                            ? settings.aiModel
+                            : AiService.getDefaultModel(settings.aiProvider),
+                        items: AiService.getModelsForProvider(settings.aiProvider).map((m) {
+                          return DropdownMenuItem<String>(
+                            value: m['id'],
+                            child: Text(
+                              m['name'] ?? m['id']!,
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            settings.setAiModel(val);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -145,9 +182,50 @@ class _AiQuizModalState extends State<AiQuizModal> {
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 10),
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.red.shade900, fontSize: 12),
+                    ),
+                    if (settings.aiProvider != AiService.providerGemini ||
+                        _errorMessage!.contains('429') ||
+                        _errorMessage!.contains('quota') ||
+                        _errorMessage!.contains('404')) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 34,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.bolt, size: 16, color: Colors.indigo),
+                          label: const Text(
+                            'Switch to Free Gemini 3.5 Flash (100% Free)',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.indigo),
+                            backgroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            settings.setAiProvider(AiService.providerGemini);
+                            settings.setAiModel('gemini-3.5-flash');
+                            setState(() {
+                              _errorMessage = null;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
             const SizedBox(height: 16),
