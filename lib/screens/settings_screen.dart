@@ -244,9 +244,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const Text('Model / Agent:'),
                         DropdownButton<String>(
                           value: _getSafeModelValue(settings.aiModel, settings.aiProvider),
-                          items: AiService.getModelsForProvider(settings.aiProvider).map((m) {
-                            return DropdownMenuItem(
-                              value: m['id'],
+                          items: AiService.getModelsForProvider(settings.aiProvider).map<DropdownMenuItem<String>>((m) {
+                            return DropdownMenuItem<String>(
+                              value: m['id']!,
                               child: Text(m['name']!),
                             );
                           }).toList(),

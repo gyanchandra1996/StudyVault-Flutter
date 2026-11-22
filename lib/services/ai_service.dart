@@ -198,8 +198,13 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
         if (response.statusCode != 200) {
           throw Exception('OpenAI API error (${response.statusCode}): ${response.body}');
         }
-        final data = jsonDecode(response.body);
-        responseText = data['choices']?[0]?['message']?['content'] ?? '';
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List<dynamic>? choices = data['choices'] as List<dynamic>?;
+        if (choices != null && choices.isNotEmpty) {
+          final firstChoice = choices[0] as Map<String, dynamic>?;
+          final message = firstChoice?['message'] as Map<String, dynamic>?;
+          responseText = message?['content']?.toString() ?? '';
+        }
         break;
 
       case providerClaude:
@@ -222,9 +227,12 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
         if (response.statusCode != 200) {
           throw Exception('Claude API error (${response.statusCode}): ${response.body}');
         }
-        final data = jsonDecode(response.body);
-        final contentList = data['content'] as List<dynamic>?;
-        responseText = contentList?.isNotEmpty == true ? (contentList![0]['text'] ?? '') : '';
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List<dynamic>? contentList = data['content'] as List<dynamic>?;
+        if (contentList != null && contentList.isNotEmpty) {
+          final firstBlock = contentList[0] as Map<String, dynamic>?;
+          responseText = firstBlock?['text']?.toString() ?? '';
+        }
         break;
 
       case providerDeepSeek:
@@ -246,8 +254,13 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
         if (response.statusCode != 200) {
           throw Exception('DeepSeek API error (${response.statusCode}): ${response.body}');
         }
-        final data = jsonDecode(response.body);
-        responseText = data['choices']?[0]?['message']?['content'] ?? '';
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List<dynamic>? choices = data['choices'] as List<dynamic>?;
+        if (choices != null && choices.isNotEmpty) {
+          final firstChoice = choices[0] as Map<String, dynamic>?;
+          final message = firstChoice?['message'] as Map<String, dynamic>?;
+          responseText = message?['content']?.toString() ?? '';
+        }
         break;
 
       case providerGemini:
@@ -276,10 +289,17 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
         if (response.statusCode != 200) {
           throw Exception('Gemini API error (${response.statusCode}): ${response.body}');
         }
-        final data = jsonDecode(response.body);
-        responseText = data['candidates']?[0]?['content']?[0]?['text'] ??
-            data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
-            '';
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List<dynamic>? candidates = data['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final firstCand = candidates[0] as Map<String, dynamic>?;
+          final content = firstCand?['content'] as Map<String, dynamic>?;
+          final parts = content?['parts'] as List<dynamic>?;
+          if (parts != null && parts.isNotEmpty) {
+            final firstPart = parts[0] as Map<String, dynamic>?;
+            responseText = firstPart?['text']?.toString() ?? '';
+          }
+        }
         break;
     }
 
@@ -294,15 +314,16 @@ Do not wrap with markdown backticks or commentary. Only return raw JSON.
     final List<dynamic> parsedList = jsonDecode(jsonSubstring);
 
     return parsedList.map((item) {
+      final map = item as Map<String, dynamic>;
       return QuizQuestion(
-        questionText: item['question'] ?? 'Question',
-        optionA: item['optionA'] ?? 'Option A',
-        optionB: item['optionB'] ?? 'Option B',
-        optionC: item['optionC'] ?? 'Option C',
-        optionD: item['optionD'] ?? 'Option D',
-        correctOptionIndex: item['correctIndex'] is int ? item['correctIndex'] : 0,
-        explanation: item['explanation'] ?? '',
-        subject: item['subject'] ?? 'AI Quiz',
+        questionText: map['question']?.toString() ?? 'Question',
+        optionA: map['optionA']?.toString() ?? 'Option A',
+        optionB: map['optionB']?.toString() ?? 'Option B',
+        optionC: map['optionC']?.toString() ?? 'Option C',
+        optionD: map['optionD']?.toString() ?? 'Option D',
+        correctOptionIndex: map['correctIndex'] is int ? map['correctIndex'] as int : 0,
+        explanation: map['explanation']?.toString() ?? '',
+        subject: map['subject']?.toString() ?? 'AI Quiz',
         examId: examId,
         categoryId: categoryId,
       );

@@ -73,9 +73,10 @@ class _HomeScreenState extends State<HomeScreen>
               child: Icon(Icons.school, color: settings.activeAccentColor),
             ),
             const SizedBox(width: 12),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              mainAxisSize: MainAxisSize.min,
+              children: const [
                 Text('StudyVault', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 Text('v1.3.0', style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
