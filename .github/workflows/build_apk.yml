@@ -57,20 +57,23 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.5.0
-          name: "StudyVault Flutter v1.5.0 (AI Assistant, Custom Quiz Timer, Category Bank, PDF Tools Suite, Smooth PDF)"
+          tag_name: v1.6.0
+          name: "StudyVault Flutter v1.6.0 (Negative Marking, Mistake Notebook, Question Search, PDF Compressor, 1-Click Backup & Restore, Exam Countdown)"
           body: |
-            ### 📱 StudyVault Flutter v1.5.0 Release APK
-            - **1. General AI Study Q&A Assistant**: Full conversational AI study tutor with quick prompt chips, markdown explanations, copy button, and save to notes / flashcards
-            - **2. Custom Number of Questions**: Choose presets (3, 5, 10, 15, 20, 25, 30, All) or enter custom question count in quizzes and AI generation
-            - **3. Category-Wise Question Bank**: Filter question bank by category with horizontal chips, subject count badges, and category labels on every question card
-            - **4. Eliminated Dashboard Duplicate**: Removed duplicate display of currently reading document from recent materials carousel
-            - **5. Compact Recent Quiz Performance Cards**: 50% height reduction for recent quiz performance cards on dashboard tab for optimal space efficiency
-            - **6. AI Flashcards Generator**: Generate spaced-repetition flashcard decks with AI, with batch count configured from Settings (3, 5, 10, 15, 20)
-            - **7. AI PDF Notes Generator**: Generate structured study notes and export directly into real multi-page PDF documents stored in your vault
-            - **8. Complete PDF Tools Suite**: Image to PDF, Merge Multiple PDFs, Edit & Trim PDF Pages, and PDF to Image View
-            - **9. Smooth Flicker-Free PDF Reader**: Eliminated screen flicker during scroll with RepaintBoundary, continuous layout mode, and conditional hardware rendering
-            - **10. Guided App Walkthrough (Intro.js Style)**: Interactive spotlight walkthrough on first app install with replay option from Settings
-            - **11. Quiz Duration & Countdown Timers**: Configurable timer (5m, 10m, 15m, 20m, 30m, 45m, 60m, custom minutes) with live countdown and auto-submit on timeout
+            ### 📱 StudyVault Flutter v1.6.0 Ultimate Release APK
+            - **1. Negative Marking & Realistic Exam Patterns**: Configurable penalty deduction (SSC/Banking -0.25, UPSC/BPSC -0.66, Railway -0.33) with full scorecard penalty breakdowns.
+            - **2. Weak Area / Mistake Notebook**: Automatically tracks incorrect quiz questions with 1-tap "Revise Mistakes Only" test runner directly from the Quizzes tab.
+            - **3. Instant Question Bank Search Bar**: Real-time keyword search across question stems, options, and explanations with instant highlighting.
+            - **4. PDF Compressor Tool**: Compress and optimize large textbook PDFs directly inside the app with best-stream compression.
+            - **5. 1-Click SQLite & Study Data Backup & Restore**: Export all questions, notes, flashcards, bookmarks, and quiz history into a portable JSON backup file, with 1-tap restore.
+            - **6. Target Exam Countdown Widget**: Live countdown banner on dashboard tracking remaining days until exam with motivational preparation phases.
+            - **7. General AI Study Q&A Assistant**: Full conversational AI study tutor with quick prompt chips, markdown explanations, copy button, and save to notes / flashcards.
+            - **8. Custom Number of Questions & Timers**: Choose presets or enter custom question count & duration countdown for mock exams.
+            - **9. Category-Wise Question Bank**: Filter question bank by category with horizontal chips and subject badges.
+            - **10. Eliminated Dashboard Duplicate**: Removed duplicate display of currently reading document from recent materials carousel.
+            - **11. Compact Recent Quiz Performance Cards**: 50% height reduction for recent quiz performance cards on dashboard tab.
+            - **12. AI Flashcards & PDF Notes Generator**: Generate spaced-repetition flashcards and draft structured PDF study notes.
+            - **13. Smooth Flicker-Free PDF Reader & Full PDF Tools Suite**: Continuous layout mode with Image to PDF, Merge, and Page Trimming tools.
+            - **14. Guided App Walkthrough**: Interactive intro tour for first-time users with replay option.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

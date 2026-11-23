@@ -40,10 +40,14 @@ class _PdfToolsModalState extends State<PdfToolsModal> with SingleTickerProvider
   final TextEditingController _editTitleController = TextEditingController();
   bool _isSavingEditedPdf = false;
 
+  // 4. Compress PDF State
+  PdfDocument? _selectedCompressPdf;
+  bool _isCompressingPdf = false;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadPdfs();
   }
 
@@ -223,6 +227,36 @@ class _PdfToolsModalState extends State<PdfToolsModal> with SingleTickerProvider
     }
   }
 
+  void _compressPdf() async {
+    if (_selectedCompressPdf == null) return;
+    setState(() => _isCompressingPdf = true);
+    try {
+      final study = Provider.of<StudyProvider>(context, listen: false);
+      final pdfDoc = await PdfToolsService.compressPdfDocument(
+        _selectedCompressPdf!.localPath,
+        '${_selectedCompressPdf!.title} (Optimized)',
+        categoryId: _selectedCompressPdf!.categoryId,
+        examId: _selectedCompressPdf!.examId,
+      );
+      await study.loadInitialData();
+      widget.onUpdated();
+      if (mounted) {
+        setState(() {
+          _isCompressingPdf = false;
+        });
+        Navigator.pop(context);
+        _showSuccessDialog('PDF Compressed & Optimized! 🗜️', pdfDoc);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCompressingPdf = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Compress error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   void _showSuccessDialog(String title, PdfDocument pdf) {
     showDialog(
       context: context,
@@ -327,6 +361,7 @@ class _PdfToolsModalState extends State<PdfToolsModal> with SingleTickerProvider
                 Tab(icon: Icon(Icons.add_photo_alternate, size: 18), text: 'Image to PDF'),
                 Tab(icon: Icon(Icons.merge, size: 18), text: 'Merge PDFs'),
                 Tab(icon: Icon(Icons.cut, size: 18), text: 'Edit / Trim'),
+                Tab(icon: Icon(Icons.compress, size: 18), text: 'Compress'),
                 Tab(icon: Icon(Icons.image, size: 18), text: 'PDF to Image'),
               ],
             ),
@@ -633,7 +668,108 @@ class _PdfToolsModalState extends State<PdfToolsModal> with SingleTickerProvider
                     ),
                   ),
 
-                  // Tab 4: PDF to Image
+                  // Tab 4: Compress PDF
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Compress & Optimize PDF File Size',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Reduce PDF size for online government job exam forms, email, and faster loading.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 14),
+
+                        if (_selectedCompressPdf == null) ...[
+                          const Text(
+                            'Select a PDF from your vault to compress:',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_allPdfs.isEmpty)
+                            const Text('No PDFs found in library.')
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _allPdfs.length,
+                              itemBuilder: (ctx, idx) {
+                                final pdf = _allPdfs[idx];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: ListTile(
+                                    leading: const CircleAvatar(
+                                      backgroundColor: Color(0xFFFEF3C7),
+                                      child: Icon(Icons.compress, color: Colors.amber, size: 20),
+                                    ),
+                                    title: Text(pdf.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    subtitle: Text('${(pdf.fileSize / 1024).toStringAsFixed(1)} KB • ${pdf.totalPages} pages'),
+                                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                                    onTap: () => setState(() => _selectedCompressPdf = pdf),
+                                  ),
+                                );
+                              },
+                            ),
+                        ] else ...[
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.amber.shade300),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.description, color: Colors.amber, size: 24),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(_selectedCompressPdf!.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                          Text('Original Size: ${(_selectedCompressPdf!.fileSize / 1024).toStringAsFixed(1)} KB • ${_selectedCompressPdf!.totalPages} pages', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => setState(() => _selectedCompressPdf = null),
+                                      child: const Text('Change'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 46,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber.shade800,
+                                foregroundColor: Colors.white,
+                              ),
+                              icon: _isCompressingPdf
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.compress),
+                              label: Text(_isCompressingPdf ? 'Compressing & Optimizing...' : 'Compress PDF Now'),
+                              onPressed: _isCompressingPdf ? null : _compressPdf,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // Tab 5: PDF to Image
                   SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
                     child: Column(

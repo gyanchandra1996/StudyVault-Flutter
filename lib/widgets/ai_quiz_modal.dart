@@ -37,6 +37,8 @@ class _AiQuizModalState extends State<AiQuizModal> {
   final TextEditingController _customCountController = TextEditingController(text: '5');
   int _durationMinutes = 10;
   bool _isUntimed = false;
+  double _negativeRate = 0.0;
+  double _marksPerQuestion = 1.0;
   bool _isLoading = false;
   String? _errorMessage;
   final QuizRepo _quizRepo = QuizRepo();
@@ -155,6 +157,8 @@ class _AiQuizModalState extends State<AiQuizModal> {
             categoryName: categoryName,
             categoryId: _selectedCategoryId,
             durationMinutes: _isUntimed ? null : _durationMinutes,
+            negativeRate: _negativeRate,
+            marksPerQuestion: _marksPerQuestion,
           ),
         ),
       ).then((_) => widget.onGenerated());
@@ -486,6 +490,48 @@ class _AiQuizModalState extends State<AiQuizModal> {
                       }).toList(),
                     ),
                   ],
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 6. Exam Marking Scheme / Negative Marking
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.balance, size: 16, color: Colors.indigo),
+                      SizedBox(width: 6),
+                      Text('Marking Pattern:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      {'label': 'No Negative', 'neg': 0.0, 'marks': 1.0},
+                      {'label': 'SSC / Bank (-0.25)', 'neg': 0.25, 'marks': 1.0},
+                      {'label': 'UPSC / BPSC (+2/-0.66)', 'neg': 0.33, 'marks': 2.0},
+                      {'label': 'Railway (-0.33)', 'neg': 0.33, 'marks': 1.0},
+                    ].map((pattern) {
+                      final isSel = _negativeRate == (pattern['neg'] as double) && _marksPerQuestion == (pattern['marks'] as double);
+                      return ChoiceChip(
+                        label: Text(
+                          pattern['label'] as String,
+                          style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null),
+                        ),
+                        selected: isSel,
+                        selectedColor: Colors.indigo,
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (_) {
+                          setState(() {
+                            _negativeRate = pattern['neg'] as double;
+                            _marksPerQuestion = pattern['marks'] as double;
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
 

@@ -19,6 +19,8 @@ import '../widgets/ai_flashcard_modal.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
+import '../widgets/exam_countdown_widget.dart';
+import '../widgets/backup_restore_modal.dart';
 import 'category_detail_screen.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
@@ -41,10 +43,12 @@ class _HomeScreenState extends State<HomeScreen>
   final PdfRepo _pdfRepo = PdfRepo();
 
   List<QuizQuestion> _allQuestions = [];
+  List<QuizQuestion> _mistakeQuestions = [];
   List<QuizResult> _pastResults = [];
   int _docVaultCount = 0;
   bool _isLoadingAssessment = true;
   String _quizFilterSubject = 'all';
+  String _questionSearchQuery = '';
   final Set<String> _expandedQuestionCategories = {};
 
   @override
@@ -79,11 +83,13 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadAssessmentData() async {
     final questions = await _quizRepo.getAllQuestions();
     final results = await _quizRepo.getAllResults();
+    final mistakes = await _quizRepo.getMistakeQuestions();
     final docCount = await _docRepo.getDocumentCount();
     if (mounted) {
       setState(() {
         _allQuestions = questions;
         _pastResults = results;
+        _mistakeQuestions = mistakes;
         _docVaultCount = docCount;
         _isLoadingAssessment = false;
       });
@@ -297,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen>
               mainAxisSize: MainAxisSize.min,
               children: const [
                 Text('StudyVault', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('v1.4.0', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text('v1.6.0', style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ],
@@ -531,9 +537,12 @@ class _HomeScreenState extends State<HomeScreen>
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.only(bottom: 80),
               children: [
+                // 0. Target Exam Countdown Widget
+                const ExamCountdownWidget(),
+
                 // 1. Reading Streak & Habit Tracker Card
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  padding: EdgeInsets.fromLTRB(16, 6, 16, 8),
                   child: ReadingTrackerCard(),
                 ),
 
@@ -667,6 +676,20 @@ class _HomeScreenState extends State<HomeScreen>
                           label: 'Scan ID / Doc',
                           color: Colors.deepOrange,
                           onTap: () => _tabController.animateTo(3),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildActionPill(
+                          icon: Icons.cloud_sync,
+                          label: 'Backup Data',
+                          color: Colors.blueGrey,
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => BackupRestoreModal(
+                                onRestored: _loadAssessmentData,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -1311,6 +1334,68 @@ class _HomeScreenState extends State<HomeScreen>
                         },
                       ),
 
+                      // Mistake Notebook & Weak Revision (High-Yield Practice)
+                      if (_mistakeQuestions.isNotEmpty) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.deepOrange.shade50, Colors.orange.shade50],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.deepOrange.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Colors.deepOrange.withOpacity(0.15),
+                                child: const Icon(Icons.fitness_center, color: Colors.deepOrange, size: 22),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Mistake Notebook & Weak Areas',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${_mistakeQuestions.length} questions previously missed in quizzes',
+                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.deepOrange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => QuizRunnerScreen(
+                                        questions: _mistakeQuestions,
+                                        quizTitle: '🎯 Mistake Notebook Revision',
+                                        categoryName: 'Mistake Revision',
+                                      ),
+                                    ),
+                                  ).then((_) => _loadAssessmentData());
+                                },
+                                child: const Text('Revise Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
                       // Question Bank
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1327,6 +1412,26 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ],
                       ),
+                      // Question Bank Search Bar
+                      if (_allQuestions.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search question, concept, or answer...',
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            suffixIcon: _questionSearchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 18),
+                                    onPressed: () => setState(() => _questionSearchQuery = ''),
+                                  )
+                                : null,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            isDense: true,
+                          ),
+                          onChanged: (val) => setState(() => _questionSearchQuery = val),
+                        ),
+                      ],
                       // Category Filter Chips for Question Bank (Feature 3)
                       if (_allQuestions.isNotEmpty) ...[
                         Builder(
@@ -1557,8 +1662,18 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   List<QuizQuestion> _getFilteredQuestions() {
-    if (_quizFilterSubject == 'all') return _allQuestions;
-    return _allQuestions.where((q) => q.subject.trim().toLowerCase() == _quizFilterSubject.trim().toLowerCase()).toList();
+    var list = _allQuestions;
+    if (_quizFilterSubject != 'all') {
+      list = list.where((q) => q.subject.trim().toLowerCase() == _quizFilterSubject.trim().toLowerCase()).toList();
+    }
+    if (_questionSearchQuery.trim().isNotEmpty) {
+      final query = _questionSearchQuery.trim().toLowerCase();
+      list = list.where((item) =>
+          item.questionText.toLowerCase().contains(query) ||
+          item.explanation.toLowerCase().contains(query) ||
+          item.options.any((opt) => opt.toLowerCase().contains(query))).toList();
+    }
+    return list;
   }
 
   Widget _buildMetricTile({

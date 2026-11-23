@@ -78,4 +78,21 @@ class QuizRepo {
     final db = await dbProvider.database;
     return await db.delete('quiz_results', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<List<QuizQuestion>> getMistakeQuestions() async {
+    final results = await getAllResults();
+    final Map<String, QuizQuestion> mistakes = {};
+    for (final r in results) {
+      final questions = r.parsedQuestions;
+      final userAnswers = r.parsedUserAnswers;
+      for (int i = 0; i < questions.length; i++) {
+        final selected = userAnswers[i];
+        final q = questions[i];
+        if (selected != null && selected != q.correctOptionIndex) {
+          mistakes[q.questionText.trim()] = q;
+        }
+      }
+    }
+    return mistakes.values.toList();
+  }
 }

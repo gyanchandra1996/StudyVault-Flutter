@@ -336,4 +336,45 @@ class PdfToolsService {
     final id = await _pdfRepo.insertPdf(pdfDoc);
     return pdfDoc.copyWith(id: id);
   }
+
+  /// 5. Compresses and optimizes PDF document structure and stream objects
+  static Future<PdfDocument> compressPdfDocument(
+    String sourcePdfPath,
+    String title, {
+    int? categoryId,
+    int? examId,
+  }) async {
+    final file = File(sourcePdfPath);
+    if (!await file.exists()) throw Exception('Source PDF not found.');
+
+    final bytes = await file.readAsBytes();
+    final document = PdfDocument(inputBytes: bytes);
+    document.compressionLevel = PdfCompressionLevel.best;
+    document.fileStructure.crossReferenceType = PdfCrossReferenceType.crossReferenceStream;
+
+    final compressedBytes = await document.save();
+    final totalPages = document.pages.count;
+    document.dispose();
+
+    final dir = await _getPdfDirectory();
+    final safeTitle = title.trim().replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final filename = '${DateTime.now().millisecondsSinceEpoch}_compressed_$safeTitle.pdf';
+    final targetPath = p.join(dir.path, filename);
+
+    final targetFile = File(targetPath);
+    await targetFile.writeAsBytes(compressedBytes);
+    final size = await targetFile.length();
+
+    final pdfDoc = PdfDocument(
+      title: title.trim().isNotEmpty ? title.trim() : 'Compressed Document',
+      localPath: targetPath,
+      fileSize: size,
+      totalPages: totalPages > 0 ? totalPages : 1,
+      categoryId: categoryId,
+      examId: examId,
+    );
+
+    final id = await _pdfRepo.insertPdf(pdfDoc);
+    return pdfDoc.copyWith(id: id);
+  }
 }

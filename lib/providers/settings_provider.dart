@@ -14,6 +14,8 @@ class SettingsProvider extends ChangeNotifier {
   bool _isAiFlashcardsEnabled = true;
   int _aiFlashcardCount = 5;
   bool _hasCompletedAppTour = false;
+  String _targetExamName = '';
+  String _targetExamDate = ''; // 'YYYY-MM-DD'
   bool _showDeleteActions = true;
   String _themeStyle = 'light'; // 'light', 'dark', 'amoled', 'sepia'
   String _accentName = 'indigo'; // 'indigo', 'emerald', 'amethyst', 'amber'
@@ -36,6 +38,22 @@ class SettingsProvider extends ChangeNotifier {
   bool get isAiFlashcardsEnabled => _isAiFlashcardsEnabled;
   int get aiFlashcardCount => _aiFlashcardCount;
   bool get hasCompletedAppTour => _hasCompletedAppTour;
+  String get targetExamName => _targetExamName;
+  String get targetExamDate => _targetExamDate;
+
+  int? get daysUntilTargetExam {
+    if (_targetExamDate.isEmpty) return null;
+    try {
+      final parts = _targetExamDate.split('-');
+      if (parts.length != 3) return null;
+      final target = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return target.difference(today).inDays;
+    } catch (_) {
+      return null;
+    }
+  }
 
   String getApiKeyForProvider(String provider) {
     switch (provider) {
@@ -148,6 +166,8 @@ class SettingsProvider extends ChangeNotifier {
     _aiFlashcardCount = prefs.getInt('aiFlashcardCount') ?? 5;
     _isAiFlashcardsEnabled = prefs.getBool('isAiFlashcardsEnabled') ?? true;
     _hasCompletedAppTour = prefs.getBool('hasCompletedAppTour') ?? false;
+    _targetExamName = prefs.getString('targetExamName') ?? '';
+    _targetExamDate = prefs.getString('targetExamDate') ?? '';
     _showDeleteActions = prefs.getBool('showDeleteActions') ?? true;
     _themeStyle = prefs.getString('themeStyle') ?? (prefs.getBool('isDarkMode') == true ? 'dark' : 'light');
     _accentName = prefs.getString('accentName') ?? 'indigo';
@@ -178,6 +198,24 @@ class SettingsProvider extends ChangeNotifier {
     _hasCompletedAppTour = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasCompletedAppTour', value);
+    notifyListeners();
+  }
+
+  Future<void> setTargetExam(String name, String dateStr) async {
+    _targetExamName = name;
+    _targetExamDate = dateStr;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('targetExamName', name);
+    await prefs.setString('targetExamDate', dateStr);
+    notifyListeners();
+  }
+
+  Future<void> clearTargetExam() async {
+    _targetExamName = '';
+    _targetExamDate = '';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('targetExamName');
+    await prefs.remove('targetExamDate');
     notifyListeners();
   }
 

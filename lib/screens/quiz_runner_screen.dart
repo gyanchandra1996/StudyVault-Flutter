@@ -13,6 +13,8 @@ class QuizRunnerScreen extends StatefulWidget {
   final int? categoryId;
   final int? existingResultId;
   final int? durationMinutes;
+  final double negativeRate;
+  final double marksPerQuestion;
 
   const QuizRunnerScreen({
     Key? key,
@@ -22,6 +24,8 @@ class QuizRunnerScreen extends StatefulWidget {
     this.categoryId,
     this.existingResultId,
     this.durationMinutes,
+    this.negativeRate = 0.0,
+    this.marksPerQuestion = 1.0,
   }) : super(key: key);
 
   @override
@@ -188,6 +192,8 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
           selectedAnswers: _selectedAnswers,
           correctCount: correct,
           durationSeconds: _secondsElapsed,
+          negativeRate: widget.negativeRate,
+          marksPerQuestion: widget.marksPerQuestion,
         ),
       ),
     );

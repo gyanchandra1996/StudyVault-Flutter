@@ -10,6 +10,8 @@ class QuizScorecardScreen extends StatelessWidget {
   final Map<int, int> selectedAnswers;
   final int correctCount;
   final int durationSeconds;
+  final double negativeRate;
+  final double marksPerQuestion;
 
   const QuizScorecardScreen({
     Key? key,
@@ -20,6 +22,8 @@ class QuizScorecardScreen extends StatelessWidget {
     required this.selectedAnswers,
     required this.correctCount,
     required this.durationSeconds,
+    this.negativeRate = 0.0,
+    this.marksPerQuestion = 1.0,
   }) : super(key: key);
 
   String _formatDuration(int seconds) {
@@ -32,9 +36,16 @@ class QuizScorecardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = questions.length;
+    final totalMarks = total * marksPerQuestion;
+    final grossMarks = correctCount * marksPerQuestion;
+    final penaltyMarks = incorrectCount * negativeRate * marksPerQuestion;
+    final netMarks = (grossMarks - penaltyMarks).clamp(0.0, totalMarks);
     final percentage = total > 0 ? ((correctCount / total) * 100).round() : 0;
-    final isPassed = percentage >= 60;
-    final isMastery = percentage >= 80;
+    final displayPercentage = negativeRate > 0 && totalMarks > 0
+        ? ((netMarks / totalMarks) * 100).round()
+        : percentage;
+    final isPassed = displayPercentage >= 60;
+    final isMastery = displayPercentage >= 80;
     final answeredCount = selectedAnswers.length;
     final skippedCount = total - answeredCount;
     final incorrectCount = answeredCount - correctCount;
@@ -155,6 +166,45 @@ class QuizScorecardScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (negativeRate > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      const Text('Gross Marks', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      const SizedBox(height: 2),
+                      Text('+${grossMarks.toStringAsFixed(1)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                    ],
+                  ),
+                  Container(width: 1, height: 28, color: Colors.amber.shade300),
+                  Column(
+                    children: [
+                      Text('Negative (${(negativeRate * 100).round()}%)', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      const SizedBox(height: 2),
+                      Text('-${penaltyMarks.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red)),
+                    ],
+                  ),
+                  Container(width: 1, height: 28, color: Colors.amber.shade300),
+                  Column(
+                    children: [
+                      const Text('Net Score', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      const SizedBox(height: 2),
+                      Text('${netMarks.toStringAsFixed(2)} / ${totalMarks.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Action Buttons: Re-attempt & Home
@@ -182,6 +232,8 @@ class QuizScorecardScreen extends StatelessWidget {
                           quizTitle: quizTitle,
                           categoryName: categoryName,
                           categoryId: categoryId,
+                          negativeRate: negativeRate,
+                          marksPerQuestion: marksPerQuestion,
                         ),
                       ),
                     );
@@ -199,6 +251,51 @@ class QuizScorecardScreen extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
               ),
             ],
+          ),
+          Builder(
+            builder: (ctx) {
+              final mistakeQuestions = questions.asMap().entries
+                  .where((e) => selectedAnswers[e.key] != null && selectedAnswers[e.key] != e.value.correctOptionIndex)
+                  .map((e) => e.value)
+                  .toList();
+
+              if (mistakeQuestions.isEmpty) return const SizedBox.shrink();
+
+              return Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepOrange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.fitness_center),
+                    label: Text(
+                      '🎯 Revise Mistakes Only (${mistakeQuestions.length} Questions)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuizRunnerScreen(
+                            questions: mistakeQuestions,
+                            quizTitle: '$quizTitle (Mistake Revision)',
+                            categoryName: categoryName,
+                            categoryId: categoryId,
+                            negativeRate: negativeRate,
+                            marksPerQuestion: marksPerQuestion,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 24),
 

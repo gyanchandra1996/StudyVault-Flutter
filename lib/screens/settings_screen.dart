@@ -11,6 +11,7 @@ import '../widgets/ai_assistant_modal.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
+import '../widgets/backup_restore_modal.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -568,6 +569,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     MaterialPageRoute(builder: (_) => const RecycleBinScreen()),
                   ),
                 ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFE0F2FE),
+                    child: Icon(Icons.cloud_sync, color: Color(0xFF0284C7)),
+                  ),
+                  title: const Text('1-Click Backup & Restore', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Export/import offline SQLite data & questions'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => const BackupRestoreModal(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -715,7 +730,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Version 1.3.0 • Offline Indic Exam & Study Companion',
+                    'Version 1.6.0 • Offline Indic Exam & Study Companion',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 14),
