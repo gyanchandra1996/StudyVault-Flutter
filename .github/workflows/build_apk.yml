@@ -25,20 +25,18 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.5'
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.4'
           channel: 'stable'
-          cache: true
+          cache: false
 
       - name: Verify Flutter Installation
         run: flutter --version
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x android/gradlew
 
       - name: Install Dependencies
         run: flutter pub get
@@ -46,13 +44,6 @@ jobs:
       - name: Analyze Project Code
         continue-on-error: true
         run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
-
-      - name: Generate Android Gradle Wrapper
-        run: |
-          cd android
-          gradle wrapper --gradle-version 8.5
-          chmod +x gradlew
-          cd ..
 
       - name: Build Standalone Release APK
         run: |
