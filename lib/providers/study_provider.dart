@@ -21,6 +21,7 @@ class StudyProvider extends ChangeNotifier {
   List<Exam> get exams => _exams;
   Exam? get selectedExam => _selectedExam;
   List<Category> get categories => _categories;
+  Category? get selectedCategory => _categories.isNotEmpty ? _categories.first : null;
   Map<int, int> get categoryPdfCounts => _categoryPdfCounts;
   List<PdfDocument> get recentPdfs => _recentPdfs;
   bool get isLoading => _isLoading;

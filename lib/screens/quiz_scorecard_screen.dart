@@ -36,6 +36,10 @@ class QuizScorecardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = questions.length;
+    final answeredCount = selectedAnswers.length;
+    final skippedCount = total - answeredCount;
+    final incorrectCount = answeredCount - correctCount;
+
     final totalMarks = total * marksPerQuestion;
     final grossMarks = correctCount * marksPerQuestion;
     final penaltyMarks = incorrectCount * negativeRate * marksPerQuestion;
@@ -46,9 +50,6 @@ class QuizScorecardScreen extends StatelessWidget {
         : percentage;
     final isPassed = displayPercentage >= 60;
     final isMastery = displayPercentage >= 80;
-    final answeredCount = selectedAnswers.length;
-    final skippedCount = total - answeredCount;
-    final incorrectCount = answeredCount - correctCount;
 
     Color themeColor = isMastery
         ? Colors.green

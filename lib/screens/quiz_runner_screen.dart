@@ -58,7 +58,7 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
             _secondsRemaining--;
           } else {
             _timer?.cancel();
-            _submitQuiz();
+            _finishQuiz();
           }
         }
       });

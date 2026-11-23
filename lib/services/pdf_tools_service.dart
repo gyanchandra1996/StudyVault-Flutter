@@ -3,7 +3,7 @@ import 'package:flutter/material.dart' show Color, Rect, Offset, Size;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
-import '../models/pdf_document.dart';
+import '../models/pdf_document.dart' as model;
 import '../database/pdf_repo.dart';
 
 class PdfToolsService {
@@ -19,7 +19,7 @@ class PdfToolsService {
   }
 
   /// 1. Converts images to a standardized multi-page PDF and adds to vault
-  static Future<PdfDocument> convertImagesToPdf(
+  static Future<model.PdfDocument> convertImagesToPdf(
     List<String> imagePaths,
     String title, {
     int? categoryId,
@@ -64,7 +64,7 @@ class PdfToolsService {
     await targetFile.writeAsBytes(pdfBytes);
     final size = await targetFile.length();
 
-    final pdfDoc = PdfDocument(
+    final pdfDoc = model.PdfDocument(
       title: title.trim().isNotEmpty ? title.trim() : 'Image Notes',
       localPath: targetPath,
       fileSize: size,
@@ -78,7 +78,7 @@ class PdfToolsService {
   }
 
   /// 2. Merges multiple PDFs into a single master document
-  static Future<PdfDocument> mergeMultiplePdfs(
+  static Future<model.PdfDocument> mergeMultiplePdfs(
     List<String> pdfPaths,
     String title, {
     int? categoryId,
@@ -117,7 +117,7 @@ class PdfToolsService {
     await targetFile.writeAsBytes(mergedBytes);
     final size = await targetFile.length();
 
-    final pdfDoc = PdfDocument(
+    final pdfDoc = model.PdfDocument(
       title: title.trim().isNotEmpty ? title.trim() : 'Merged Document',
       localPath: targetPath,
       fileSize: size,
@@ -131,7 +131,7 @@ class PdfToolsService {
   }
 
   /// 3. Edits a PDF by keeping only selected pages
-  static Future<PdfDocument> editPdfDocumentPages(
+  static Future<model.PdfDocument> editPdfDocumentPages(
     String sourcePdfPath,
     List<int> pagesToKeep,
     String title, {
@@ -172,7 +172,7 @@ class PdfToolsService {
     await targetFile.writeAsBytes(newBytes);
     final size = await targetFile.length();
 
-    final pdfDoc = PdfDocument(
+    final pdfDoc = model.PdfDocument(
       title: title.trim().isNotEmpty ? title.trim() : 'Edited Document',
       localPath: targetPath,
       fileSize: size,
@@ -186,7 +186,7 @@ class PdfToolsService {
   }
 
   /// 4. Generates a formatted PDF from AI Study Notes and saves to vault
-  static Future<PdfDocument> generateAiNotesPdf({
+  static Future<model.PdfDocument> generateAiNotesPdf({
     required String title,
     required String topic,
     required Map<String, dynamic> notesData,
@@ -324,7 +324,7 @@ class PdfToolsService {
     await targetFile.writeAsBytes(pdfBytes);
     final size = await targetFile.length();
 
-    final pdfDoc = PdfDocument(
+    final pdfDoc = model.PdfDocument(
       title: title.trim().isNotEmpty ? title.trim() : 'AI Study Notes - $topic',
       localPath: targetPath,
       fileSize: size,
@@ -338,7 +338,7 @@ class PdfToolsService {
   }
 
   /// 5. Compresses and optimizes PDF document structure and stream objects
-  static Future<PdfDocument> compressPdfDocument(
+  static Future<model.PdfDocument> compressPdfDocument(
     String sourcePdfPath,
     String title, {
     int? categoryId,
@@ -365,7 +365,7 @@ class PdfToolsService {
     await targetFile.writeAsBytes(compressedBytes);
     final size = await targetFile.length();
 
-    final pdfDoc = PdfDocument(
+    final pdfDoc = model.PdfDocument(
       title: title.trim().isNotEmpty ? title.trim() : 'Compressed Document',
       localPath: targetPath,
       fileSize: size,
