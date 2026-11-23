@@ -10,6 +10,7 @@ import '../database/quiz_repo.dart';
 import '../providers/settings_provider.dart';
 import '../services/pdf_storage_service.dart';
 import '../widgets/ai_quiz_modal.dart';
+import '../widgets/ai_notes_generator_modal.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
@@ -181,6 +182,41 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 onTap: () {
                   Navigator.pop(ctx);
                   _addPdf();
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFF3E8FF),
+                  child: Icon(Icons.auto_awesome, color: Colors.purple),
+                ),
+                title: const Text('Generate AI PDF Notes', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('AI writes structured notes and saves directly as PDF'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showDialog(
+                    context: context,
+                    builder: (_) => AiNotesGeneratorModal(onGenerated: _loadData),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.quiz, color: Colors.blue),
+                ),
+                title: const Text('Create AI Quiz', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Generate MCQs and test your knowledge'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showDialog(
+                    context: context,
+                    builder: (_) => AiQuizModal(
+                      initialCategory: widget.category.title,
+                      initialCategoryId: widget.category.id,
+                      examId: widget.category.examId,
+                      onGenerated: _loadData,
+                    ),
+                  );
                 },
               ),
             ],

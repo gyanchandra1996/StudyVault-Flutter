@@ -34,6 +34,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   bool _isCompleted = false;
   bool _isFavorite = false;
   int _currentPage = 1;
+  late final ValueNotifier<int> _currentPageNotifier;
   int _pageCount = 1;
   final TextEditingController _searchController = TextEditingController();
 
@@ -45,10 +46,12 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     _isCompleted = widget.pdf.isCompleted == 1;
     _isFavorite = widget.pdf.isFavorite == 1;
     _currentPage = widget.pdf.lastPage > 0 ? widget.pdf.lastPage : 1;
+    _currentPageNotifier = ValueNotifier<int>(_currentPage);
   }
 
   @override
   void dispose() {
+    _currentPageNotifier.dispose();
     final duration = DateTime.now().difference(_sessionStart).inSeconds;
     if (widget.pdf.id != null && duration >= 5) {
       _readingRepo.logReadingTime(widget.pdf.id!, duration, pagesRead: _pagesTurned);
@@ -231,12 +234,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   void _onPageChanged(PdfPageChangedDetails details) {
     if (_lastRecordedPage == details.newPageNumber) return;
     _lastRecordedPage = details.newPageNumber;
-    if (mounted) {
-      setState(() {
-        _currentPage = details.newPageNumber;
-        _pagesTurned++;
-      });
-    }
+    _currentPage = details.newPageNumber;
+    _currentPageNotifier.value = details.newPageNumber;
+    _pagesTurned++;
     _pdfRepo.updateReadingProgress(widget.pdf.id!, details.newPageNumber, _pageCount);
 
     if (details.newPageNumber == _pageCount && !_isCompleted) {
@@ -339,6 +339,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   Widget _buildPdfView() {
     final pdfViewer = SfPdfViewer.file(
       File(widget.pdf.localPath),
+      key: ValueKey('sf_viewer_${widget.pdf.id ?? widget.pdf.localPath}'),
       controller: _pdfViewerController,
       scrollDirection: _scrollDirection,
       pageLayoutMode: PdfPageLayoutMode.continuous,
@@ -348,7 +349,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       canShowScrollStatus: false,
       canShowPaginationDialog: false,
       enableDoubleTapZooming: true,
-      pageSpacing: 6,
+      pageSpacing: 4,
     );
 
     if (_filterMode == 'original') {
@@ -378,9 +379,12 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            Text(
-              'Page $_currentPage of $_pageCount',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ValueListenableBuilder<int>(
+              valueListenable: _currentPageNotifier,
+              builder: (ctx, page, _) => Text(
+                'Page $page of $_pageCount',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
             ),
           ],
         ),
@@ -574,9 +578,12 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
               ),
 
               // Estimated Pace Remaining
-              Text(
-                '~${((_pageCount - _currentPage) * 1.5).round().clamp(1, 999)}m left',
-                style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+              ValueListenableBuilder<int>(
+                valueListenable: _currentPageNotifier,
+                builder: (ctx, page, _) => Text(
+                  '~${((_pageCount - page) * 1.5).round().clamp(1, 999)}m left',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                ),
               ),
             ],
           ),

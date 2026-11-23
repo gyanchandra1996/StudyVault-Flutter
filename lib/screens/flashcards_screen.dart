@@ -95,20 +95,24 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+    final canUseAi = settings.isAiEnabled && settings.isAiFlashcardsEnabled;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Spaced Repetition Flashcards'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.auto_awesome, color: Colors.purple),
-            tooltip: 'Generate Flashcards with AI',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => AiFlashcardModal(onGenerated: _loadCards),
-              );
-            },
-          ),
+          if (canUseAi)
+            IconButton(
+              icon: const Icon(Icons.auto_awesome, color: Colors.purple),
+              tooltip: 'Generate Flashcards with AI',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => AiFlashcardModal(onGenerated: _loadCards),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Flashcard',
@@ -141,21 +145,23 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.purple,
-                                foregroundColor: Colors.white,
+                            if (canUseAi) ...[
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.purple,
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AiFlashcardModal(onGenerated: _loadCards),
+                                  );
+                                },
+                                icon: const Icon(Icons.auto_awesome),
+                                label: const Text('AI Generate Deck'),
                               ),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => AiFlashcardModal(onGenerated: _loadCards),
-                                );
-                              },
-                              icon: const Icon(Icons.auto_awesome),
-                              label: const Text('AI Generate Deck'),
-                            ),
-                            const SizedBox(width: 12),
+                              const SizedBox(width: 12),
+                            ],
                             OutlinedButton.icon(
                               onPressed: _showAddCardDialog,
                               icon: const Icon(Icons.add),
