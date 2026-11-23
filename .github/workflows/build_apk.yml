@@ -57,7 +57,13 @@ jobs:
       - name: Build Standalone Release APK
         run: |
           set -o pipefail
-          flutter build apk --release --no-tree-shake-icons 2>&1 | tee build_output.log
+          if ! flutter build apk --release --no-tree-shake-icons 2>&1 | tee build_output.log; then
+            echo "## ❌ Build Failure Log" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 120 build_output.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Upload Build Output Log
         if: always()
