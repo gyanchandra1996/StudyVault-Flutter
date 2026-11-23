@@ -1,7 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 import '../database/flashcard_repo.dart';
 import '../models/flashcard.dart';
+import '../widgets/ai_flashcard_modal.dart';
 
 class FlashcardsScreen extends StatefulWidget {
   const FlashcardsScreen({Key? key}) : super(key: key);
@@ -97,6 +100,16 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
         title: const Text('Spaced Repetition Flashcards'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.auto_awesome, color: Colors.purple),
+            tooltip: 'Generate Flashcards with AI',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => AiFlashcardModal(onGenerated: _loadCards),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Flashcard',
             onPressed: _showAddCardDialog,
@@ -125,10 +138,30 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                           style: TextStyle(color: Colors.grey),
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: _showAddCardDialog,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Create New Flashcard'),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purple,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => AiFlashcardModal(onGenerated: _loadCards),
+                                );
+                              },
+                              icon: const Icon(Icons.auto_awesome),
+                              label: const Text('AI Generate Deck'),
+                            ),
+                            const SizedBox(width: 12),
+                            OutlinedButton.icon(
+                              onPressed: _showAddCardDialog,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Create Card'),
+                            ),
+                          ],
                         ),
                       ],
                     ),

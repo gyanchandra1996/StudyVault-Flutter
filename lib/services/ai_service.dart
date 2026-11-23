@@ -376,4 +376,316 @@ Do not wrap with commentary. Return raw valid JSON.
       );
     }).toList();
   }
+
+  static Future<String> _callAiRaw({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String systemPrompt,
+    required String userPrompt,
+    List<Map<String, String>> history = const [],
+    int maxTokens = 4096,
+  }) async {
+    if (apiKey.trim().isEmpty) {
+      throw Exception('API key is not configured for $provider in Settings.');
+    }
+
+    switch (provider) {
+      case providerOpenAi:
+        final messages = <Map<String, String>>[
+          {'role': 'system', 'content': systemPrompt},
+        ];
+        for (final h in history) {
+          messages.add({
+            'role': h['role'] == 'user' ? 'user' : 'assistant',
+            'content': h['content'] ?? '',
+          });
+        }
+        messages.add({'role': 'user', 'content': userPrompt});
+
+        final response = await http.post(
+          Uri.parse('https://api.openai.com/v1/chat/completions'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${apiKey.trim()}',
+          },
+          body: jsonEncode({
+            'model': model.isNotEmpty ? model : 'gpt-4o-mini',
+            'messages': messages,
+            'temperature': 0.5,
+            'max_tokens': maxTokens,
+          }),
+        );
+        if (response.statusCode != 200) {
+          throw Exception('OpenAI error (${response.statusCode}): ${response.body}');
+        }
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final choices = data['choices'] as List<dynamic>?;
+        if (choices != null && choices.isNotEmpty) {
+          final first = choices[0] as Map<String, dynamic>?;
+          return first?['message']?['content']?.toString() ?? '';
+        }
+        return '';
+
+      case providerClaude:
+        final messages = <Map<String, String>>[];
+        for (final h in history) {
+          messages.add({
+            'role': h['role'] == 'user' ? 'user' : 'assistant',
+            'content': h['content'] ?? '',
+          });
+        }
+        messages.add({'role': 'user', 'content': userPrompt});
+
+        final response = await http.post(
+          Uri.parse('https://api.anthropic.com/v1/messages'),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey.trim(),
+            'anthropic-version': '2023-06-01',
+          },
+          body: jsonEncode({
+            'model': model.isNotEmpty ? model : 'claude-3-5-haiku-20241022',
+            'max_tokens': maxTokens,
+            'system': systemPrompt,
+            'messages': messages,
+          }),
+        );
+        if (response.statusCode != 200) {
+          throw Exception('Claude error (${response.statusCode}): ${response.body}');
+        }
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final contentList = data['content'] as List<dynamic>?;
+        if (contentList != null && contentList.isNotEmpty) {
+          return contentList[0]?['text']?.toString() ?? '';
+        }
+        return '';
+
+      case providerDeepSeek:
+        final messages = <Map<String, String>>[
+          {'role': 'system', 'content': systemPrompt},
+        ];
+        for (final h in history) {
+          messages.add({
+            'role': h['role'] == 'user' ? 'user' : 'assistant',
+            'content': h['content'] ?? '',
+          });
+        }
+        messages.add({'role': 'user', 'content': userPrompt});
+
+        final response = await http.post(
+          Uri.parse('https://api.deepseek.com/chat/completions'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${apiKey.trim()}',
+          },
+          body: jsonEncode({
+            'model': model.isNotEmpty ? model : 'deepseek-chat',
+            'messages': messages,
+            'temperature': 0.5,
+            'max_tokens': maxTokens,
+          }),
+        );
+        if (response.statusCode != 200) {
+          throw Exception('DeepSeek error (${response.statusCode}): ${response.body}');
+        }
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final choices = data['choices'] as List<dynamic>?;
+        if (choices != null && choices.isNotEmpty) {
+          final first = choices[0] as Map<String, dynamic>?;
+          return first?['message']?['content']?.toString() ?? '';
+        }
+        return '';
+
+      case providerGemini:
+      default:
+        final targetModel = model.isNotEmpty ? model : 'gemini-3.5-flash';
+        final endpoints = [
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
+        ];
+
+        final contents = <Map<String, dynamic>>[];
+        for (final h in history) {
+          contents.add({
+            'role': h['role'] == 'user' ? 'user' : 'model',
+            'parts': [{'text': h['content'] ?? ''}],
+          });
+        }
+        contents.add({
+          'role': 'user',
+          'parts': [{'text': '$systemPrompt\n\n$userPrompt'}],
+        });
+
+        http.Response? lastResponse;
+        for (final ep in endpoints) {
+          final res = await http.post(
+            Uri.parse(ep),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'contents': contents,
+              'generationConfig': {
+                'temperature': 0.5,
+                'maxOutputTokens': maxTokens,
+              }
+            }),
+          );
+          lastResponse = res;
+          if (res.statusCode == 200) break;
+          if (res.statusCode != 404 && res.statusCode != 503) break;
+        }
+
+        if (lastResponse == null || lastResponse.statusCode != 200) {
+          throw Exception('Gemini error (${lastResponse?.statusCode ?? "Unknown"}): ${lastResponse?.body ?? "No response"}');
+        }
+
+        final Map<String, dynamic> data = jsonDecode(lastResponse.body);
+        final candidates = data['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final firstCand = candidates[0] as Map<String, dynamic>?;
+          final content = firstCand?['content'] as Map<String, dynamic>?;
+          final parts = content?['parts'] as List<dynamic>?;
+          if (parts != null && parts.isNotEmpty) {
+            return parts[0]?['text']?.toString() ?? '';
+          }
+        }
+        return '';
+    }
+  }
+
+  static Future<String> askGeneralAi({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String prompt,
+    List<Map<String, String>> history = const [],
+    String? contextNotes,
+  }) async {
+    const systemPrompt = '''
+You are StudyVault AI, an expert academic tutor and exam preparation assistant.
+Help the student by explaining concepts clearly, answering their questions, solving problems step-by-step, or summarizing study material.
+Use clear headings, markdown bullets, bold key terms, and concise examples.
+Support both English and Hindi (Devanagari) naturally according to what the student asks.
+Keep responses focused, encouraging, and academically accurate.
+''';
+
+    final userPrompt = contextNotes != null && contextNotes.trim().isNotEmpty
+        ? 'Context notes from document:\n$contextNotes\n\nStudent question:\n$prompt'
+        : prompt;
+
+    return _callAiRaw(
+      provider: provider,
+      apiKey: apiKey,
+      model: model,
+      systemPrompt: systemPrompt,
+      userPrompt: userPrompt,
+      history: history,
+      maxTokens: 4096,
+    );
+  }
+
+  static Future<List<Map<String, String>>> generateFlashcards({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String topic,
+    int count = 5,
+    String? contextNotes,
+  }) async {
+    final systemPrompt = '''
+You are an expert educator and memory retention specialist using spaced repetition.
+Create exactly $count high-yield flashcards for the student on the requested topic.
+Format your response ONLY as a JSON array of objects with "question" and "answer":
+[
+  {
+    "question": "Clear concept, term, or question",
+    "answer": "Concise, memorable answer, formula, or definition"
+  }
+]
+Do not wrap with markdown backticks or extra text. Output valid raw JSON only.
+''';
+
+    final userPrompt = contextNotes != null && contextNotes.trim().isNotEmpty
+        ? 'Reference Notes:\n$contextNotes\n\nTopic:\n$topic\n\nPlease create $count flashcards.'
+        : 'Topic:\n$topic\n\nPlease create $count flashcards.';
+
+    final raw = await _callAiRaw(
+      provider: provider,
+      apiKey: apiKey,
+      model: model,
+      systemPrompt: systemPrompt,
+      userPrompt: userPrompt,
+      maxTokens: 4096,
+    );
+
+    final cleaned = raw.replaceAll(RegExp(r'```json|```'), '').trim();
+    final firstBracket = cleaned.indexOf('[');
+    final lastBracket = cleaned.lastIndexOf(']');
+    if (firstBracket == -1 || lastBracket == -1) {
+      throw Exception('Could not parse flashcards JSON from AI response:\n$raw');
+    }
+
+    final jsonStr = cleaned.substring(firstBracket, lastBracket + 1);
+    final List<dynamic> decoded = jsonDecode(jsonStr);
+
+    return decoded.map((item) {
+      final map = item as Map<String, dynamic>;
+      return {
+        'question': map['question']?.toString() ?? '',
+        'answer': map['answer']?.toString() ?? '',
+      };
+    }).where((c) => c['question']!.isNotEmpty && c['answer']!.isNotEmpty).toList();
+  }
+
+  static Future<Map<String, dynamic>> generateStudyNotes({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String topic,
+    String? contextNotes,
+  }) async {
+    const systemPrompt = '''
+You are an expert academic curriculum designer and textbook author.
+Generate a structured, high-yield study notes summary on the requested topic.
+Format your response ONLY as a JSON object with these exact keys:
+{
+  "title": "Document Title",
+  "overview": "Comprehensive 2-3 paragraph overview of the subject",
+  "keyConcepts": [
+    "Key concept 1 with brief explanation",
+    "Key concept 2 with brief explanation",
+    "Key concept 3 with brief explanation",
+    "Key concept 4 with brief explanation"
+  ],
+  "deepDive": "Detailed in-depth breakdown of the primary principles, mechanisms, formulas, or history",
+  "examTakeaways": "High-priority revision checklist and quick exam tips"
+}
+Do not wrap with markdown backticks. Return valid raw JSON only.
+''';
+
+    final userPrompt = contextNotes != null && contextNotes.trim().isNotEmpty
+        ? 'Context Notes:\n$contextNotes\n\nTopic:\n$topic'
+        : 'Topic:\n$topic';
+
+    final raw = await _callAiRaw(
+      provider: provider,
+      apiKey: apiKey,
+      model: model,
+      systemPrompt: systemPrompt,
+      userPrompt: userPrompt,
+      maxTokens: 8192,
+    );
+
+    final cleaned = raw.replaceAll(RegExp(r'```json|```'), '').trim();
+    final firstBrace = cleaned.indexOf('{');
+    final lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace == -1 || lastBrace == -1) {
+      throw Exception('Could not parse study notes JSON from AI response:\n$raw');
+    }
+
+    final jsonStr = cleaned.substring(firstBrace, lastBrace + 1);
+    final Map<String, dynamic> decoded = jsonDecode(jsonStr);
+    return decoded;
+  }
 }

@@ -12,6 +12,7 @@ class QuizRunnerScreen extends StatefulWidget {
   final String? categoryName;
   final int? categoryId;
   final int? existingResultId;
+  final int? durationMinutes;
 
   const QuizRunnerScreen({
     Key? key,
@@ -20,6 +21,7 @@ class QuizRunnerScreen extends StatefulWidget {
     this.categoryName,
     this.categoryId,
     this.existingResultId,
+    this.durationMinutes,
   }) : super(key: key);
 
   @override
@@ -30,16 +32,32 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
   int _currentIndex = 0;
   final Map<int, int> _selectedAnswers = {};
   int _secondsElapsed = 0;
+  int _secondsRemaining = 0;
+  bool _isTimed = false;
   Timer? _timer;
   final QuizRepo _quizRepo = QuizRepo();
 
   @override
   void initState() {
     super.initState();
+    if (widget.durationMinutes != null && widget.durationMinutes! > 0) {
+      _isTimed = true;
+      _secondsRemaining = widget.durationMinutes! * 60;
+    }
+
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() => _secondsElapsed++);
-      }
+      if (!mounted) return;
+      setState(() {
+        _secondsElapsed++;
+        if (_isTimed) {
+          if (_secondsRemaining > 0) {
+            _secondsRemaining--;
+          } else {
+            _timer?.cancel();
+            _submitQuiz();
+          }
+        }
+      });
     });
   }
 
@@ -186,7 +204,9 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
 
     final q = widget.questions[_currentIndex];
     final selectedOption = _selectedAnswers[_currentIndex];
-    final timeStr = _formatDuration(_secondsElapsed);
+    final isLowTime = _isTimed && _secondsRemaining <= 60;
+    final timerColor = _isTimed ? (isLowTime ? Colors.red : Colors.indigo) : Colors.indigo;
+    final timeStr = _isTimed ? _formatDuration(_secondsRemaining) : _formatDuration(_secondsElapsed);
 
     return PopScope(
       canPop: false,
@@ -219,20 +239,24 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
                 margin: const EdgeInsets.only(right: 14),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.withOpacity(0.12),
+                  color: timerColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.indigo.withOpacity(0.3)),
+                  border: Border.all(color: timerColor.withOpacity(0.4), width: isLowTime ? 1.5 : 1.0),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.timer_outlined, size: 16, color: Colors.indigo),
+                    Icon(
+                      _isTimed ? (isLowTime ? Icons.alarm_on : Icons.hourglass_bottom) : Icons.timer_outlined,
+                      size: 16,
+                      color: timerColor,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      timeStr,
-                      style: const TextStyle(
+                      _isTimed ? '$timeStr left' : timeStr,
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.indigo,
+                        color: timerColor,
                         fontSize: 13,
                       ),
                     ),

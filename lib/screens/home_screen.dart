@@ -14,6 +14,11 @@ import '../widgets/pomodoro_widget.dart';
 import '../widgets/reading_tracker_card.dart';
 import '../widgets/question_modal.dart';
 import '../widgets/ai_quiz_modal.dart';
+import '../widgets/ai_assistant_modal.dart';
+import '../widgets/ai_flashcard_modal.dart';
+import '../widgets/ai_notes_generator_modal.dart';
+import '../widgets/pdf_tools_modal.dart';
+import '../widgets/app_intro_walkthrough.dart';
 import 'category_detail_screen.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
@@ -40,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen>
   int _docVaultCount = 0;
   bool _isLoadingAssessment = true;
   String _quizFilterSubject = 'all';
+  final Set<String> _expandedQuestionCategories = {};
 
   @override
   bool get wantKeepAlive => true;
@@ -48,9 +54,19 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<StudyProvider>(context, listen: false).loadInitialData();
       _loadAssessmentData();
+      final showIntro = await AppIntroWalkthrough.shouldShowIntro();
+      if (showIntro && mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AppIntroWalkthrough(
+            onComplete: () => Navigator.pop(ctx),
+          ),
+        );
+      }
     });
   }
 
@@ -91,22 +107,22 @@ class _HomeScreenState extends State<HomeScreen>
 
     final titleController = TextEditingController(text: defaultTitle);
     final maxCount = _allQuestions.length;
-    int questionCount = maxCount > 5 ? 5 : maxCount;
+    int questionCount = maxCount > 5 ? 5 : (maxCount > 0 ? maxCount : 5);
+    final customCountController = TextEditingController(text: '$questionCount');
+    int durationMinutes = 10;
+    bool isUntimed = false;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final countOptions = [3, 5, 10, 15, maxCount]
+          final countPresets = [3, 5, 10, 15, 20, maxCount]
               .where((c) => c <= maxCount && c > 0)
               .toSet()
               .toList()..sort();
 
-          if (!countOptions.contains(questionCount)) {
-            questionCount = countOptions.last;
-          }
-
           return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(
               children: const [
                 Icon(Icons.quiz, color: Colors.indigo),
@@ -114,42 +130,116 @@ class _HomeScreenState extends State<HomeScreen>
                 Text('Start Assessment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Enter Quiz Name:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. Reasoning Mock 1',
-                    border: OutlineInputBorder(),
-                    isDense: true,
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Quiz Name:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. Reasoning Mock 1',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Question Count:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                    DropdownButton<int>(
-                      value: questionCount,
-                      items: countOptions.map((c) {
-                        return DropdownMenuItem(
-                          value: c,
-                          child: Text(c == maxCount ? 'All ($c Qs)' : '$c Questions'),
+                  const SizedBox(height: 14),
+
+                  // Question Count
+                  const Text('Number of Questions:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: countPresets.map((c) {
+                      final isSel = questionCount == c;
+                      return ChoiceChip(
+                        label: Text(c == maxCount ? 'All ($c)' : '$c Qs', style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null)),
+                        selected: isSel,
+                        selectedColor: Colors.indigo,
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (_) {
+                          setDialogState(() {
+                            questionCount = c;
+                            customCountController.text = '$c';
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Text('Custom No:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 70,
+                        height: 34,
+                        child: TextField(
+                          controller: customCountController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          ),
+                          onChanged: (val) {
+                            final n = int.tryParse(val.trim());
+                            if (n != null && n > 0) {
+                              setDialogState(() => questionCount = n.clamp(1, maxCount));
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text('of $maxCount available', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Quiz Duration
+                  Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, size: 16, color: Colors.indigo),
+                      const SizedBox(width: 4),
+                      const Text('Time Duration:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      const Spacer(),
+                      InkWell(
+                        onTap: () => setDialogState(() => isUntimed = !isUntimed),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: isUntimed,
+                              activeColor: Colors.indigo,
+                              visualDensity: VisualDensity.compact,
+                              onChanged: (val) => setDialogState(() => isUntimed = val ?? false),
+                            ),
+                            const Text('Untimed', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!isUntimed) ...[
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      children: [5, 10, 15, 20, 30, 45, 60].map((m) {
+                        final isSel = durationMinutes == m;
+                        return ChoiceChip(
+                          label: Text('${m}m', style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null)),
+                          selected: isSel,
+                          selectedColor: Colors.indigo,
+                          visualDensity: VisualDensity.compact,
+                          onSelected: (_) => setDialogState(() => durationMinutes = m),
                         );
                       }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() => questionCount = val);
-                        }
-                      },
                     ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -177,6 +267,7 @@ class _HomeScreenState extends State<HomeScreen>
                       builder: (_) => QuizRunnerScreen(
                         questions: selectedList,
                         quizTitle: title,
+                        durationMinutes: isUntimed ? null : durationMinutes,
                       ),
                     ),
                   ).then((_) => _loadAssessmentData());
@@ -446,103 +537,7 @@ class _HomeScreenState extends State<HomeScreen>
                   child: ReadingTrackerCard(),
                 ),
 
-                // 2. Currently Reading Resume Card (if user has opened a PDF)
-                if (study.recentPdfs.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Builder(
-                      builder: (ctx) {
-                        final topPdf = study.recentPdfs.first;
-                        final percent = topPdf.totalPages > 0
-                            ? ((topPdf.lastPage / topPdf.totalPages) * 100).round()
-                            : 0;
-
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey.shade200),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 48,
-                                    height: 48,
-                                    child: CircularProgressIndicator(
-                                      value: topPdf.totalPages > 0 ? (topPdf.lastPage / topPdf.totalPages) : 0,
-                                      strokeWidth: 4,
-                                      color: accent,
-                                      backgroundColor: accent.withOpacity(0.15),
-                                    ),
-                                  ),
-                                  Text(
-                                    '$percent%',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: accent),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'CURRENTLY READING',
-                                      style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      topPdf.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                    ),
-                                    Text(
-                                      'Page ${topPdf.lastPage} of ${topPdf.totalPages}',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: accent,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Text('Resume'),
-                                    SizedBox(width: 4),
-                                    Icon(Icons.arrow_forward_ios, size: 12),
-                                  ],
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => PdfReaderScreen(pdf: topPdf)),
-                                  ).then((_) => study.refreshRecentPdfs());
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-
-                // 3. Quick Stats Grid (4 Metrics)
+                // 2. Quick Stats Grid (4 Metrics)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Row(
@@ -591,23 +586,57 @@ class _HomeScreenState extends State<HomeScreen>
                     child: Row(
                       children: [
                         _buildActionPill(
-                          icon: Icons.add,
-                          label: 'Import PDF',
-                          color: Colors.indigo,
-                          onTap: _pickAndAddGlobalPdf,
+                          icon: Icons.question_answer,
+                          label: 'AI Tutor / Q&A',
+                          color: Colors.blue.shade700,
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => const AiAssistantModal(),
+                            );
+                          },
                         ),
                         const SizedBox(width: 8),
                         _buildActionPill(
-                          icon: Icons.add_a_photo,
-                          label: 'Scan ID / Doc',
+                          icon: Icons.auto_stories,
+                          label: 'AI Notes to PDF',
+                          color: Colors.teal,
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AiNotesGeneratorModal(onGenerated: _loadAssessmentData),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildActionPill(
+                          icon: Icons.build,
+                          label: 'PDF Tools',
                           color: Colors.deepOrange,
-                          onTap: () => _tabController.animateTo(3),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => PdfToolsModal(onUpdated: _loadAssessmentData),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildActionPill(
+                          icon: Icons.style,
+                          label: 'AI Flashcards',
+                          color: Colors.purple,
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AiFlashcardModal(onGenerated: _loadAssessmentData),
+                            );
+                          },
                         ),
                         const SizedBox(width: 8),
                         _buildActionPill(
                           icon: Icons.auto_awesome,
                           label: 'AI Quiz',
-                          color: Colors.purple,
+                          color: Colors.purple.shade700,
                           onTap: () {
                             showDialog(
                               context: context,
@@ -625,6 +654,20 @@ class _HomeScreenState extends State<HomeScreen>
                           color: Colors.green,
                           onTap: _allQuestions.isEmpty ? null : _showStartQuizDialog,
                         ),
+                        const SizedBox(width: 8),
+                        _buildActionPill(
+                          icon: Icons.add,
+                          label: 'Import PDF',
+                          color: Colors.indigo,
+                          onTap: _pickAndAddGlobalPdf,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildActionPill(
+                          icon: Icons.add_a_photo,
+                          label: 'Scan ID / Doc',
+                          color: Colors.deepOrange,
+                          onTap: () => _tabController.animateTo(3),
+                        ),
                       ],
                     ),
                   ),
@@ -634,89 +677,100 @@ class _HomeScreenState extends State<HomeScreen>
                 // 5. Pomodoro Focus Timer
                 const PomodoroWidget(),
 
-                // 6. Recent Reading Carousel
-                if (study.recentPdfs.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // 6. Recent Reading Carousel (excluding the currently reading PDF above)
+                Builder(
+                  builder: (ctx) {
+                    final topPdfId = study.recentPdfs.isNotEmpty ? study.recentPdfs.first.id : null;
+                    final otherRecentPdfs = study.recentPdfs.where((p) => p.id != topPdfId).toList();
+                    if (otherRecentPdfs.isEmpty) return const SizedBox.shrink();
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Recent Study Materials',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Other Recent Materials',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                              ),
+                              TextButton(
+                                onPressed: () => _tabController.animateTo(1),
+                                child: const Text('View All'),
+                              ),
+                            ],
+                          ),
                         ),
-                        TextButton(
-                          onPressed: () => _tabController.animateTo(1),
-                          child: const Text('View All'),
+                        SizedBox(
+                          height: 140,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: otherRecentPdfs.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 10),
+                            itemBuilder: (ctx, idx) {
+                              final pdf = otherRecentPdfs[idx];
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => PdfReaderScreen(pdf: pdf)),
+                                  ).then((_) => study.refreshRecentPdfs());
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  width: 180,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey.shade200),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const CircleAvatar(
+                                            radius: 14,
+                                            backgroundColor: Color(0xFFFEE2E2),
+                                            child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 16),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            'p.${pdf.lastPage}/${pdf.totalPages}',
+                                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        pdf.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      ),
+                                      LinearProgressIndicator(
+                                        value: pdf.totalPages > 0 ? (pdf.lastPage / pdf.totalPages) : 0,
+                                        backgroundColor: Colors.grey.shade200,
+                                        color: accent,
+                                        minHeight: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: 140,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: study.recentPdfs.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (ctx, idx) {
-                        final pdf = study.recentPdfs[idx];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => PdfReaderScreen(pdf: pdf)),
-                            ).then((_) => study.refreshRecentPdfs());
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 180,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    const CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: Color(0xFFFEE2E2),
-                                      child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 16),
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      'p.${pdf.lastPage}/${pdf.totalPages}',
-                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  pdf.title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                ),
-                                LinearProgressIndicator(
-                                  value: pdf.totalPages > 0 ? (pdf.lastPage / pdf.totalPages) : 0,
-                                  backgroundColor: Colors.grey.shade200,
-                                  color: accent,
-                                  minHeight: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
 
-                // 7. Recent Quiz Activity Preview
+                // 7. Recent Quiz Activity Preview (Compact Card Height)
                 if (_pastResults.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -734,7 +788,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                   ),
-                  ..._pastResults.take(3).map((r) => _buildQuizHistoryCard(r, settings)),
+                  ..._pastResults.take(3).map((r) => _buildCompactQuizHistoryCard(r, settings)),
                 ],
               ],
             ),
@@ -1273,7 +1327,47 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      // Category Filter Chips for Question Bank (Feature 3)
+                      if (_allQuestions.isNotEmpty) ...[
+                        Builder(
+                          builder: (ctx) {
+                            final subjects = <String>{'all'};
+                            final subjectCounts = <String, int>{'all': _allQuestions.length};
+                            for (final q in _allQuestions) {
+                              final s = q.subject.trim().isNotEmpty ? q.subject.trim() : 'General';
+                              subjects.add(s);
+                              subjectCounts[s] = (subjectCounts[s] ?? 0) + 1;
+                            }
+
+                            return Container(
+                              height: 38,
+                              margin: const EdgeInsets.only(top: 8, bottom: 8),
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: subjects.map((sub) {
+                                  final isSel = _quizFilterSubject.toLowerCase() == sub.toLowerCase();
+                                  final count = subjectCounts[sub] ?? 0;
+                                  final label = sub == 'all' ? 'All ($count)' : '$sub ($count)';
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: ChoiceChip(
+                                      label: Text(label, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null)),
+                                      selected: isSel,
+                                      selectedColor: Colors.indigo,
+                                      visualDensity: VisualDensity.compact,
+                                      onSelected: (_) {
+                                        setState(() => _quizFilterSubject = sub);
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 6),
                       if (_allQuestions.isEmpty)
                         Container(
                           padding: const EdgeInsets.all(32),
@@ -1291,33 +1385,165 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         )
                       else
-                        ..._getFilteredQuestions().take(25).map((q) {
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            child: ListTile(
-                              title: Text(
-                                q.questionText,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                              ),
-                              subtitle: Text(
-                                'Correct: ${String.fromCharCode(65 + q.correctOptionIndex)} • Subject: ${q.subject}',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                              trailing: settings.showDeleteActions
-                                  ? IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 18),
-                                      onPressed: () async {
-                                        await _quizRepo.deleteQuestion(q.id!);
-                                        _loadAssessmentData();
-                                      },
-                                    )
-                                  : null,
-                            ),
-                          );
-                        }),
+                        Builder(
+                          builder: (ctx) {
+                            final filtered = _getFilteredQuestions();
+                            final Map<String, List<QuizQuestion>> grouped = {};
+                            for (final q in filtered) {
+                              final cat = q.subject.trim().isNotEmpty ? q.subject.trim() : 'General';
+                              grouped.putIfAbsent(cat, () => []).add(q);
+                            }
+
+                            return Column(
+                              children: grouped.entries.map((entry) {
+                                final categoryName = entry.key;
+                                final categoryQuestions = entry.value;
+                                final isExpanded = _expandedQuestionCategories.contains(categoryName) || _quizFilterSubject != 'all' || grouped.length == 1;
+
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 1,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Category Header Bar
+                                      InkWell(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                        onTap: () {
+                                          setState(() {
+                                            if (_expandedQuestionCategories.contains(categoryName)) {
+                                              _expandedQuestionCategories.remove(categoryName);
+                                            } else {
+                                              _expandedQuestionCategories.add(categoryName);
+                                            }
+                                          });
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                          child: Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 16,
+                                                backgroundColor: Colors.indigo.withOpacity(0.12),
+                                                child: const Icon(Icons.folder_special_outlined, size: 18, color: Colors.indigo),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      categoryName,
+                                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                    ),
+                                                    Text(
+                                                      '${categoryQuestions.length} ${categoryQuestions.length == 1 ? "Question" : "Questions"}',
+                                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              // Start Quiz for this Category
+                                              ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.indigo,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  minimumSize: const Size(0, 30),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) => QuizRunnerScreen(
+                                                        questions: categoryQuestions,
+                                                        quizTitle: '$categoryName Quiz',
+                                                        categoryName: categoryName,
+                                                        categoryId: categoryQuestions.first.categoryId,
+                                                      ),
+                                                    ),
+                                                  ).then((_) => _loadAssessmentData());
+                                                },
+                                                child: const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.play_arrow, size: 14),
+                                                    SizedBox(width: 3),
+                                                    Text('Play Quiz', style: TextStyle(fontSize: 11)),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                color: Colors.grey,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
+                                      // Expanded Questions List
+                                      if (isExpanded) ...[
+                                        const Divider(height: 1),
+                                        ...categoryQuestions.map((q) {
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                            decoration: BoxDecoration(
+                                              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          Text(
+                                                            'Ans: Option ${String.fromCharCode(65 + q.correctOptionIndex)} (${q.options[q.correctOptionIndex.clamp(0, 3)]})',
+                                                            style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.bold),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        q.questionText,
+                                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                                      ),
+                                                      if (q.explanation.isNotEmpty) ...[
+                                                        const SizedBox(height: 3),
+                                                        Text(
+                                                          '💡 ${q.explanation}',
+                                                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ),
+                                                if (settings.showDeleteActions)
+                                                  IconButton(
+                                                    icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 16),
+                                                    onPressed: () async {
+                                                      await _quizRepo.deleteQuestion(q.id!);
+                                                      _loadAssessmentData();
+                                                    },
+                                                  ),
+                                              ],
+                                            ),
+                                          );
+                                        }),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -1394,6 +1620,130 @@ class _HomeScreenState extends State<HomeScreen>
       icon: Icon(icon, size: 16),
       label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
       onPressed: onTap,
+    );
+  }
+
+  Widget _buildCompactQuizHistoryCard(QuizResult r, SettingsProvider settings) {
+    final isPassed = r.scorePercentage >= 60;
+    final statusColor = isPassed ? Colors.green : Colors.orange;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: statusColor.withOpacity(0.3), width: 1.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: statusColor.withOpacity(0.12),
+              child: Text(
+                '${r.scorePercentage}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                  color: isPassed ? Colors.green.shade800 : Colors.orange.shade900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          r.displayCategory,
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.indigo),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          r.quizTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${r.correctAnswers}/${r.totalQuestions} Correct • ⏱️ ${r.formattedDuration}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            InkWell(
+              onTap: () {
+                final questionsToReview = r.parsedQuestions.isNotEmpty ? r.parsedQuestions : _allQuestions;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => QuizScorecardScreen(
+                      quizTitle: r.quizTitle,
+                      categoryName: r.displayCategory,
+                      categoryId: r.categoryId,
+                      questions: questionsToReview,
+                      selectedAnswers: r.parsedUserAnswers,
+                      correctCount: r.correctAnswers,
+                      durationSeconds: r.durationSeconds,
+                    ),
+                  ),
+                ).then((_) => _loadAssessmentData());
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text('Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo)),
+              ),
+            ),
+            const SizedBox(width: 6),
+            InkWell(
+              onTap: () {
+                final questionsToRun = r.parsedQuestions.isNotEmpty ? r.parsedQuestions : _allQuestions;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => QuizRunnerScreen(
+                      questions: questionsToRun,
+                      quizTitle: r.quizTitle,
+                      categoryName: r.displayCategory,
+                      categoryId: r.categoryId,
+                      existingResultId: r.id,
+                    ),
+                  ),
+                ).then((_) => _loadAssessmentData());
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.indigo,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.replay, size: 14, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

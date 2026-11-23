@@ -11,6 +11,9 @@ class SettingsProvider extends ChangeNotifier {
   String _claudeApiKey = '';
   String _deepseekApiKey = '';
   String _aiModel = 'gemini-1.5-flash';
+  bool _isAiFlashcardsEnabled = true;
+  int _aiFlashcardCount = 5;
+  bool _hasCompletedAppTour = false;
   bool _showDeleteActions = true;
   String _themeStyle = 'light'; // 'light', 'dark', 'amoled', 'sepia'
   String _accentName = 'indigo'; // 'indigo', 'emerald', 'amethyst', 'amber'
@@ -30,6 +33,9 @@ class SettingsProvider extends ChangeNotifier {
   String get claudeApiKey => _claudeApiKey;
   String get deepseekApiKey => _deepseekApiKey;
   String get aiModel => _aiModel;
+  bool get isAiFlashcardsEnabled => _isAiFlashcardsEnabled;
+  int get aiFlashcardCount => _aiFlashcardCount;
+  bool get hasCompletedAppTour => _hasCompletedAppTour;
 
   String getApiKeyForProvider(String provider) {
     switch (provider) {
@@ -139,6 +145,9 @@ class SettingsProvider extends ChangeNotifier {
     if (_aiModel.contains('1.5') || _aiModel.contains('2.0') || _aiModel.contains('2.5') || _aiModel.isEmpty) {
       _aiModel = 'gemini-3.5-flash';
     }
+    _aiFlashcardCount = prefs.getInt('aiFlashcardCount') ?? 5;
+    _isAiFlashcardsEnabled = prefs.getBool('isAiFlashcardsEnabled') ?? true;
+    _hasCompletedAppTour = prefs.getBool('hasCompletedAppTour') ?? false;
     _showDeleteActions = prefs.getBool('showDeleteActions') ?? true;
     _themeStyle = prefs.getString('themeStyle') ?? (prefs.getBool('isDarkMode') == true ? 'dark' : 'light');
     _accentName = prefs.getString('accentName') ?? 'indigo';
@@ -148,6 +157,27 @@ class SettingsProvider extends ChangeNotifier {
     _lockPin = prefs.getString('lockPin') ?? '';
     _categoryViewMode = prefs.getString('categoryViewMode') ?? 'grid';
     _isAppUnlocked = !_isLockEnabled;
+    notifyListeners();
+  }
+
+  Future<void> setAiFlashcardCount(int count) async {
+    _aiFlashcardCount = count;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('aiFlashcardCount', count);
+    notifyListeners();
+  }
+
+  Future<void> setAiFlashcardsEnabled(bool value) async {
+    _isAiFlashcardsEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAiFlashcardsEnabled', value);
+    notifyListeners();
+  }
+
+  Future<void> setCompletedAppTour(bool value) async {
+    _hasCompletedAppTour = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasCompletedAppTour', value);
     notifyListeners();
   }
 

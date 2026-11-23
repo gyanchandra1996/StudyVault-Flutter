@@ -7,6 +7,10 @@ import 'notes_screen.dart';
 import 'recent_screen.dart';
 import 'storage_screen.dart';
 import 'recycle_bin_screen.dart';
+import '../widgets/ai_assistant_modal.dart';
+import '../widgets/ai_notes_generator_modal.dart';
+import '../widgets/pdf_tools_modal.dart';
+import '../widgets/app_intro_walkthrough.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -311,6 +315,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ],
+                    const Divider(height: 24),
+                    const Row(
+                      children: [
+                        Icon(Icons.style_outlined, size: 18, color: Colors.indigo),
+                        SizedBox(width: 8),
+                        Text(
+                          'AI Flashcard Generator',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable AI Flashcards Generation'),
+                      subtitle: const Text('Allow generating flashcards with AI from topics or notes'),
+                      value: settings.isAiFlashcardsEnabled,
+                      onChanged: (val) => settings.setAiFlashcardsEnabled(val),
+                    ),
+                    if (settings.isAiFlashcardsEnabled) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Cards Generated per Batch:'),
+                          DropdownButton<int>(
+                            value: [3, 5, 10, 15, 20].contains(settings.aiFlashcardCount)
+                                ? settings.aiFlashcardCount
+                                : 5,
+                            items: [3, 5, 10, 15, 20].map((count) {
+                              return DropdownMenuItem<int>(
+                                value: count,
+                                child: Text('$count Flashcards'),
+                              );
+                            }).toList(),
+                            onChanged: (v) {
+                              if (v != null) settings.setAiFlashcardCount(v);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -524,6 +569,117 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // PDF Utilities & General Tools Suite
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.build_circle_outlined, color: Colors.deepOrange),
+                      SizedBox(width: 8),
+                      Text(
+                        'PDF Utilities & Study Tools',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Convert images to PDF, merge documents, trim or delete pages, and ask AI academic questions.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFFFEDD5),
+                      child: Icon(Icons.build, color: Colors.deepOrange, size: 20),
+                    ),
+                    title: const Text('Open PDF Tools Suite', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Image to PDF • Merge • Edit • PDF to Image', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => PdfToolsModal(onUpdated: () {}),
+                      );
+                    },
+                  ),
+                  const Divider(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFCCFBF1),
+                      child: Icon(Icons.picture_as_pdf, color: Colors.teal, size: 20),
+                    ),
+                    title: const Text('AI PDF Notes Generator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Draft and compile real PDF study notes', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AiNotesGeneratorModal(onGenerated: () {}),
+                      );
+                    },
+                  ),
+                  const Divider(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFDBEAFE),
+                      child: Icon(Icons.question_answer, color: Colors.blue, size: 20),
+                    ),
+                    title: const Text('AI Study Q&A Assistant', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Ask doubts, problem solving, concept explanations', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => const AiAssistantModal(),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // App Guided Tour & Walkthrough
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: settings.activeAccentColor.withOpacity(0.15),
+                child: Icon(Icons.explore_outlined, color: settings.activeAccentColor),
+              ),
+              title: const Text('App Tour & Section Walkthrough', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: const Text('Replay the step-by-step feature intro tour', style: TextStyle(fontSize: 12)),
+              trailing: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: settings.activeAccentColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                child: const Text('Replay Tour', style: TextStyle(fontSize: 12)),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (ctx) => AppIntroWalkthrough(
+                      onComplete: () => Navigator.pop(ctx),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(height: 16),

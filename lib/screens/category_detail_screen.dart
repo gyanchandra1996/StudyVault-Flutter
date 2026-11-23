@@ -686,6 +686,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           categoryName: r.displayCategory,
                           categoryId: r.categoryId,
                           existingResultId: r.id,
+                          durationMinutes: r.durationSeconds > 0 ? ((r.durationSeconds + 59) ~/ 60) : null,
                         ),
                       ),
                     ).then((_) => _loadData());

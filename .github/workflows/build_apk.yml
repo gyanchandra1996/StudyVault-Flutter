@@ -57,18 +57,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.4.1
-          name: "StudyVault Flutter v1.4.1 (Multi-Quiz per Category, In-Category Quizzes, Perfect Tab Alignment & Polished UI)"
+          tag_name: v1.5.0
+          name: "StudyVault Flutter v1.5.0 (AI Assistant, Custom Quiz Timer, Category Bank, PDF Tools Suite, Smooth PDF)"
           body: |
-            ### 📱 StudyVault Flutter v1.4.1 Release APK
-            - **Multiple Quizzes per Category**: Create and organize multiple distinct quizzes under any category (e.g. Python 1: Basics, Python 2: OOP under Python)
-            - **Category Selector in AI & Manual Quiz Modals**: Directly pick the target category or create a new one on the fly when generating quizzes
-            - **In-Category Quizzes Section**: View, start, review, and re-attempt quizzes directly inside any Category Detail screen
-            - **Fixed Top Tab Alignment**: Symmetrical 4-workspace TabBar with equal 25% width and centered indicators
-            - **Polished Quiz History & Review Cards**: Category badges, score pills, question counters, duration timer, and high-contrast Re-attempt button
-            - **Devanagari Hindi & 15Q AI Quiz Support**: Token capacity up to 8192 tokens with resilient JSON auto-repair
-            - **Devanagari Hindi (हिंदी) Quiz Generation Verified**: Live tested with Google Gemini 3.5 Flash for complete Devanagari Hindi MCQs and explanations
-            - **Zero Data Regression Guarantee**: Non-destructive SQLite v4 migration preserves all existing PDFs, bookmarks, reading logs, and results
-            - **Developed by Gyanchandra**: Prominent developer credits and badges in Settings, Lock Screen, and About Dialog
+            ### 📱 StudyVault Flutter v1.5.0 Release APK
+            - **1. General AI Study Q&A Assistant**: Full conversational AI study tutor with quick prompt chips, markdown explanations, copy button, and save to notes / flashcards
+            - **2. Custom Number of Questions**: Choose presets (3, 5, 10, 15, 20, 25, 30, All) or enter custom question count in quizzes and AI generation
+            - **3. Category-Wise Question Bank**: Filter question bank by category with horizontal chips, subject count badges, and category labels on every question card
+            - **4. Eliminated Dashboard Duplicate**: Removed duplicate display of currently reading document from recent materials carousel
+            - **5. Compact Recent Quiz Performance Cards**: 50% height reduction for recent quiz performance cards on dashboard tab for optimal space efficiency
+            - **6. AI Flashcards Generator**: Generate spaced-repetition flashcard decks with AI, with batch count configured from Settings (3, 5, 10, 15, 20)
+            - **7. AI PDF Notes Generator**: Generate structured study notes and export directly into real multi-page PDF documents stored in your vault
+            - **8. Complete PDF Tools Suite**: Image to PDF, Merge Multiple PDFs, Edit & Trim PDF Pages, and PDF to Image View
+            - **9. Smooth Flicker-Free PDF Reader**: Eliminated screen flicker during scroll with RepaintBoundary, continuous layout mode, and conditional hardware rendering
+            - **10. Guided App Walkthrough (Intro.js Style)**: Interactive spotlight walkthrough on first app install with replay option from Settings
+            - **11. Quiz Duration & Countdown Timers**: Configurable timer (5m, 10m, 15m, 20m, 30m, 45m, 60m, custom minutes) with live countdown and auto-submit on timeout
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

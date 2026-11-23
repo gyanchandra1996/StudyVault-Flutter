@@ -227,11 +227,16 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     }
   }
 
+  int _lastRecordedPage = -1;
   void _onPageChanged(PdfPageChangedDetails details) {
-    setState(() {
-      _currentPage = details.newPageNumber;
-      _pagesTurned++;
-    });
+    if (_lastRecordedPage == details.newPageNumber) return;
+    _lastRecordedPage = details.newPageNumber;
+    if (mounted) {
+      setState(() {
+        _currentPage = details.newPageNumber;
+        _pagesTurned++;
+      });
+    }
     _pdfRepo.updateReadingProgress(widget.pdf.id!, details.newPageNumber, _pageCount);
 
     if (details.newPageNumber == _pageCount && !_isCompleted) {
@@ -327,6 +332,33 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
             child: const Text('Go'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPdfView() {
+    final pdfViewer = SfPdfViewer.file(
+      File(widget.pdf.localPath),
+      controller: _pdfViewerController,
+      scrollDirection: _scrollDirection,
+      pageLayoutMode: PdfPageLayoutMode.continuous,
+      onDocumentLoaded: _onDocumentLoaded,
+      onPageChanged: _onPageChanged,
+      canShowScrollHead: false,
+      canShowScrollStatus: false,
+      canShowPaginationDialog: false,
+      enableDoubleTapZooming: true,
+      pageSpacing: 6,
+    );
+
+    if (_filterMode == 'original') {
+      return RepaintBoundary(child: pdfViewer);
+    }
+
+    return RepaintBoundary(
+      child: ColorFiltered(
+        colorFilter: _getActiveColorFilter(),
+        child: pdfViewer,
       ),
     );
   }
@@ -550,20 +582,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           ),
         ),
       ),
-      body: ColorFiltered(
-        colorFilter: _getActiveColorFilter(),
-        child: SfPdfViewer.file(
-          File(widget.pdf.localPath),
-          controller: _pdfViewerController,
-          scrollDirection: _scrollDirection,
-          onDocumentLoaded: _onDocumentLoaded,
-          onPageChanged: _onPageChanged,
-          canShowScrollHead: true,
-          canShowScrollStatus: true,
-          enableDoubleTapZooming: true,
-          pageSpacing: 4,
-        ),
-      ),
+      body: _buildPdfView(),
     );
   }
 }

@@ -34,6 +34,9 @@ class _AiQuizModalState extends State<AiQuizModal> {
   int? _selectedCategoryId;
   bool _isCustomCategory = false;
   int _questionCount = 5;
+  final TextEditingController _customCountController = TextEditingController(text: '5');
+  int _durationMinutes = 10;
+  bool _isUntimed = false;
   bool _isLoading = false;
   String? _errorMessage;
   final QuizRepo _quizRepo = QuizRepo();
@@ -74,6 +77,7 @@ class _AiQuizModalState extends State<AiQuizModal> {
     _titleController.dispose();
     _promptController.dispose();
     _customCategoryController.dispose();
+    _customCountController.dispose();
     super.dispose();
   }
 
@@ -106,13 +110,19 @@ class _AiQuizModalState extends State<AiQuizModal> {
             ? '${fallbackTitle.substring(0, 25)}... Quiz'
             : '$categoryName Quiz');
 
+    int finalCount = _questionCount;
+    final parsedCustom = int.tryParse(_customCountController.text.trim());
+    if (parsedCustom != null && parsedCustom > 0) {
+      finalCount = parsedCustom.clamp(1, 30);
+    }
+
     try {
       final questions = await AiService.generateQuestions(
         provider: settings.aiProvider,
         apiKey: settings.activeApiKey,
         model: settings.aiModel,
         prompt: _promptController.text.trim(),
-        count: _questionCount,
+        count: finalCount,
         examId: widget.examId,
       );
 
@@ -135,7 +145,7 @@ class _AiQuizModalState extends State<AiQuizModal> {
       if (!mounted) return;
       Navigator.pop(context); // Close the modal
 
-      // Immediately launch QuizRunnerScreen with Category and Quiz Title
+      // Immediately launch QuizRunnerScreen with Category, Quiz Title, and Timer Duration
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -144,6 +154,7 @@ class _AiQuizModalState extends State<AiQuizModal> {
             quizTitle: quizTitle,
             categoryName: categoryName,
             categoryId: _selectedCategoryId,
+            durationMinutes: _isUntimed ? null : _durationMinutes,
           ),
         ),
       ).then((_) => widget.onGenerated());
@@ -371,20 +382,110 @@ class _AiQuizModalState extends State<AiQuizModal> {
               ),
               const SizedBox(height: 12),
 
-              // 4. Question Count
-              Row(
+              // 4. Question Count (Preset Chips + Custom Input)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Question Count:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(width: 12),
-                  DropdownButton<int>(
-                    value: _questionCount,
-                    items: [3, 5, 10, 15, 20].map((c) {
-                      return DropdownMenuItem(value: c, child: Text('$c Questions'));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _questionCount = val);
-                    },
+                  Row(
+                    children: [
+                      const Text('Question Count:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 6,
+                          children: [3, 5, 10, 15, 20].map((c) {
+                            final isSel = _questionCount == c;
+                            return ChoiceChip(
+                              label: Text('$c', style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null)),
+                              selected: isSel,
+                              selectedColor: Colors.indigo,
+                              visualDensity: VisualDensity.compact,
+                              onSelected: (_) {
+                                setState(() {
+                                  _questionCount = c;
+                                  _customCountController.text = '$c';
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Text('Custom No:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 70,
+                        height: 34,
+                        child: TextField(
+                          controller: _customCountController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            hintText: '1-30',
+                          ),
+                          onChanged: (val) {
+                            final num = int.tryParse(val.trim());
+                            if (num != null) setState(() => _questionCount = num);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text('questions (max 30)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 5. Quiz Duration / Timer
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, size: 16, color: Colors.indigo),
+                      const SizedBox(width: 6),
+                      const Text('Quiz Duration:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const Spacer(),
+                      InkWell(
+                        onTap: () => setState(() => _isUntimed = !_isUntimed),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: _isUntimed,
+                              activeColor: Colors.indigo,
+                              visualDensity: VisualDensity.compact,
+                              onChanged: (val) => setState(() => _isUntimed = val ?? false),
+                            ),
+                            const Text('Untimed Practice', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!_isUntimed) ...[
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      children: [5, 10, 15, 20, 30, 45].map((d) {
+                        final isSel = _durationMinutes == d;
+                        return ChoiceChip(
+                          label: Text('${d}m', style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null)),
+                          selected: isSel,
+                          selectedColor: Colors.indigo,
+                          visualDensity: VisualDensity.compact,
+                          onSelected: (_) => setState(() => _durationMinutes = d),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ],
               ),
 
