@@ -394,6 +394,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Divider(height: 24),
                     const Row(
                       children: [
+                        Icon(Icons.quiz_outlined, size: 18, color: Colors.indigo),
+                        SizedBox(width: 8),
+                        Text(
+                          'AI Quiz & Mock Test Generator',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable AI Quiz Generator'),
+                      subtitle: const Text('Generate custom MCQs with timers and negative marking'),
+                      value: settings.isAiQuizEnabled,
+                      onChanged: (val) => settings.setAiQuizEnabled(val),
+                    ),
+                    const Divider(height: 24),
+                    const Row(
+                      children: [
+                        Icon(Icons.style_outlined, size: 18, color: Colors.deepPurple),
+                        SizedBox(width: 8),
+                        Text(
+                          'AI Flashcards Generator',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable AI Flashcards'),
+                      subtitle: const Text('Generate concept cards and term definitions with AI'),
+                      value: settings.isAiFlashcardsEnabled,
+                      onChanged: (val) => settings.setAiFlashcardsEnabled(val),
+                    ),
+                    const Divider(height: 24),
+                    const Row(
+                      children: [
                         Icon(Icons.question_answer_outlined, size: 18, color: Colors.blue),
                         SizedBox(width: 8),
                         Text(

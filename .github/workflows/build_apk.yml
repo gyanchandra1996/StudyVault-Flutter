@@ -89,29 +89,36 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.2.0
-          name: "Medhavi (मेधावी) Flutter v2.2.0 - Excel/CSV Question Importer, Dynamic Syllabus Categories & Handbook Custom Tabs"
+          tag_name: v2.2.1
+          name: "Medhavi (मेधावी) Flutter v2.2.1 - Granular AI Toggles on Dashboard/Pages, Excel Importer & Build Fix"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.2.0 Official Release APK
-            - **1. Excel / CSV Question Bank Importer (Category-Wise)**:
+            ### 📱 Medhavi (मेधावी) Flutter v2.2.1 Official Release APK
+            - **1. Granular AI Enable/Disable Controls on Dashboard & All Pages**:
+              - Instant 1-tap **AI: ON / AI: OFF** status pill on the top AppBar accessible from Dashboard, Study, Quizzes, Tools, and ID Vault.
+              - BottomSheet modal for quick toggling of Master AI switch and individual modules:
+                - AI Quiz & Mock Test Generator (`isAiQuizEnabled`)
+                - AI Flashcards Generator (`isAiFlashcardsEnabled`)
+                - AI Tutor & Concept Solver (`isAiTutorEnabled`)
+                - AI Notes to PDF Generator (`isAiPdfNotesEnabled`)
+              - Dedicated individual switches in Settings -> AI Engine Configuration.
+              - Quizzes tab, Category Details, and Dashboard dynamically show or hide AI buttons when features are toggled.
+            - **2. Excel / CSV Question Bank Importer (Category-Wise)**:
               - Bulk import MCQs directly from Excel (.csv / .tsv / .txt) files into your Question Bank.
               - Auto-detection mode: automatically reads and maps questions to categories from the Excel 'Category' column.
               - Targeted assignment mode: assign all imported questions to any existing or custom category.
               - In-app file parser with duplicate detection, skipped row reporting, and instant database ingestion.
-            - **2. Sample Excel Template (.csv) Downloader & Previewer**:
+            - **3. Sample Excel Template (.csv) Downloader & Previewer**:
               - 1-Click "Download Sample .csv" to open and edit directly in Microsoft Excel, Google Sheets, or WPS Office.
               - Built-in "Preview Table" modal showing column headers (`Question, Option A, Option B, Option C, Option D, Correct Option, Explanation, Category`).
               - "Copy CSV to Clipboard" button to quickly create questions on mobile or PC.
-            - **3. Dynamic Syllabus Tracker with Custom Categories & Exams**:
+            - **4. Dynamic Syllabus Tracker with Custom Categories & Exams**:
               - Add custom subjects / categories to any exam (e.g. "General Science & Tech", "Indian Economy", "Ethics") with persistent SharedPreferences storage.
               - Add custom topics to any subject card with 1 tap.
               - Create brand new Exam Tracks (e.g. "State PSC", "Railway RRB", "CTET / Teaching") with custom syllabus checklists.
-              - Delete and manage custom syllabus items anytime.
-            - **4. Dynamic Quick Revision Handbook with Custom Tabs**:
+            - **5. Dynamic Quick Revision Handbook with Custom Tabs**:
               - Add custom subjects / tabs to the handbook (e.g. "Economics & Budget", "Current Affairs", "Computer Aptitude").
               - Add revision notes, formulas, and key facts to any tab with persistent storage.
-              - Full real-time search across both default and custom revision tabs.
-            - **5. Unbreakable Quiz Engine with Auto-Failover & Model Sanitization**:
-              - All fixes from v2.1.0 including 8192-token capacity, 20-question padding, and seamless offline failover.
+            - **6. Build Fix**:
+              - Corrected `primaryColor` property reference in `import_questions_dialog.dart` to `activeAccentColor`.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

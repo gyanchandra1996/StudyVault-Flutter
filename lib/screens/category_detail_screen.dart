@@ -517,7 +517,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           ),
                         ],
                       ),
-                      settings.isAiEnabled
+                      (settings.isAiEnabled && settings.isAiQuizEnabled)
                           ? TextButton.icon(
                               icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
                               label: const Text('AI Quiz', style: TextStyle(fontSize: 12, color: Colors.purple)),
@@ -565,7 +565,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              settings.isAiEnabled
+                              (settings.isAiEnabled && settings.isAiQuizEnabled)
                                   ? 'No quizzes created for ${widget.category.title} yet. Tap "+ AI Quiz" to generate one!'
                                   : 'No quizzes created for ${widget.category.title} yet. Tap "+ Question" to add questions!',
                               style: const TextStyle(fontSize: 12, color: Colors.grey),

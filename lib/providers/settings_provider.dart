@@ -19,6 +19,7 @@ class SettingsProvider extends ChangeNotifier {
   String _claudeApiKey = '';
   String _deepseekApiKey = '';
   String _aiModel = 'gemini-3.5-flash-lite';
+  bool _isAiQuizEnabled = true;
   bool _isAiFlashcardsEnabled = true;
   bool _isAiTutorEnabled = true;
   bool _isAiPdfNotesEnabled = true;
@@ -46,6 +47,7 @@ class SettingsProvider extends ChangeNotifier {
   String get claudeApiKey => _claudeApiKey;
   String get deepseekApiKey => _deepseekApiKey;
   String get aiModel => _aiModel;
+  bool get isAiQuizEnabled => _isAiQuizEnabled;
   bool get isAiFlashcardsEnabled => _isAiFlashcardsEnabled;
   bool get isAiTutorEnabled => _isAiTutorEnabled;
   bool get isAiPdfNotesEnabled => _isAiPdfNotesEnabled;
@@ -182,6 +184,7 @@ class SettingsProvider extends ChangeNotifier {
       _aiModel = 'gemini-3.5-flash-lite';
     }
     _aiFlashcardCount = prefs.getInt('aiFlashcardCount') ?? 5;
+    _isAiQuizEnabled = prefs.getBool('isAiQuizEnabled') ?? true;
     _isAiFlashcardsEnabled = prefs.getBool('isAiFlashcardsEnabled') ?? true;
     _isAiTutorEnabled = prefs.getBool('isAiTutorEnabled') ?? true;
     _isAiPdfNotesEnabled = prefs.getBool('isAiPdfNotesEnabled') ?? true;
@@ -205,6 +208,13 @@ class SettingsProvider extends ChangeNotifier {
     _aiFlashcardCount = count;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('aiFlashcardCount', count);
+    notifyListeners();
+  }
+
+  Future<void> setAiQuizEnabled(bool value) async {
+    _isAiQuizEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAiQuizEnabled', value);
     notifyListeners();
   }
 

@@ -344,6 +344,160 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  void _showAiControlsModal(BuildContext context, SettingsProvider settings) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Consumer<SettingsProvider>(
+          builder: (context, s, _) {
+            final isAi = s.isAiEnabled;
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isAi ? Colors.indigo.shade50 : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          isAi ? Icons.auto_awesome : Icons.power_settings_new,
+                          color: isAi ? Colors.indigo : Colors.grey.shade700,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'AI Feature Controls',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Enable or disable AI features across all tabs & pages',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+
+                  // Master AI Switch
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isAi ? Colors.indigo.withOpacity(0.08) : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isAi ? Colors.indigo.shade300 : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Master AI Switch (${isAi ? "Active" : "Disabled"})',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isAi ? Colors.indigo.shade900 : Colors.black87,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Controls all AI features globally throughout the app',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                      value: isAi,
+                      activeColor: Colors.indigo,
+                      onChanged: (val) => s.setAiEnabled(val),
+                    ),
+                  ),
+
+                  if (isAi) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Individual AI Modules:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.quiz_outlined, color: Colors.indigo, size: 20),
+                      title: const Text('AI Quiz Generator', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('Quizzes Tab & Category mock tests', style: TextStyle(fontSize: 11)),
+                      value: s.isAiQuizEnabled,
+                      activeColor: Colors.indigo,
+                      onChanged: (val) => s.setAiQuizEnabled(val),
+                    ),
+                    SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.question_answer_outlined, color: Colors.blue, size: 20),
+                      title: const Text('AI Tutor & Doubt Solver', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('Interactive concept clarifying assistant', style: TextStyle(fontSize: 11)),
+                      value: s.isAiTutorEnabled,
+                      activeColor: Colors.blue,
+                      onChanged: (val) => s.setAiTutorEnabled(val),
+                    ),
+                    SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.auto_stories_outlined, color: Colors.teal, size: 20),
+                      title: const Text('AI Notes to PDF Generator', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('Synthesize revision notes directly into PDF', style: TextStyle(fontSize: 11)),
+                      value: s.isAiPdfNotesEnabled,
+                      activeColor: Colors.teal,
+                      onChanged: (val) => s.setAiPdfNotesEnabled(val),
+                    ),
+                    SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.style_outlined, color: Colors.purple, size: 20),
+                      title: const Text('AI Flashcards Generator', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('Flashcards Tab term cards', style: TextStyle(fontSize: 11)),
+                      value: s.isAiFlashcardsEnabled,
+                      activeColor: Colors.purple,
+                      onChanged: (val) => s.setAiFlashcardsEnabled(val),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Done'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showAddExamDialog() {
     final titleController = TextEditingController();
     final descController = TextEditingController();
@@ -478,6 +632,42 @@ class _HomeScreenState extends State<HomeScreen>
       appBar: AppBar(
         title: const AppLogo(size: 30, showText: true),
         actions: [
+          // Quick AI Status / Toggle Pill (Dashboard & all tabs)
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => _showAiControlsModal(context, settings),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: settings.isAiEnabled ? Colors.indigo.shade50 : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: settings.isAiEnabled ? Colors.indigo.shade300 : Colors.grey.shade400,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    settings.isAiEnabled ? Icons.auto_awesome : Icons.power_settings_new,
+                    size: 13,
+                    color: settings.isAiEnabled ? Colors.indigo : Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    settings.isAiEnabled ? 'AI: ON' : 'AI: OFF',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: settings.isAiEnabled ? Colors.indigo.shade900 : Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: 'About StudyVault',
@@ -633,7 +823,7 @@ class _HomeScreenState extends State<HomeScreen>
                           },
                         ),
                         const SizedBox(width: 8),
-                        if (settings.isAiEnabled) ...[
+                        if (settings.isAiEnabled && settings.isAiFlashcardsEnabled) ...[
                           _buildActionPill(
                             icon: Icons.style,
                             label: 'AI Flashcards',
@@ -646,6 +836,8 @@ class _HomeScreenState extends State<HomeScreen>
                             },
                           ),
                           const SizedBox(width: 8),
+                        ],
+                        if (settings.isAiEnabled && settings.isAiQuizEnabled) ...[
                           _buildActionPill(
                             icon: Icons.auto_awesome,
                             label: 'AI Quiz',
@@ -1164,7 +1356,7 @@ class _HomeScreenState extends State<HomeScreen>
                               onPressed: _allQuestions.isEmpty ? null : _showStartQuizDialog,
                             ),
                           ),
-                          if (settings.isAiEnabled) ...[
+                          if (settings.isAiEnabled && settings.isAiQuizEnabled) ...[
                             const SizedBox(width: 8),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
@@ -1352,7 +1544,7 @@ class _HomeScreenState extends State<HomeScreen>
                                       icon: const Icon(Icons.add, size: 16),
                                       label: Text('New Quiz in $_quizFilterSubject'),
                                       onPressed: () {
-                                        if (settings.isAiEnabled) {
+                                        if (settings.isAiEnabled && settings.isAiQuizEnabled) {
                                           showDialog(
                                             context: context,
                                             builder: (_) => AiQuizModal(
@@ -1389,21 +1581,21 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          settings.isAiEnabled
+                                          (settings.isAiEnabled && settings.isAiQuizEnabled)
                                               ? 'Generate your first quiz (e.g. $_quizFilterSubject 1) with AI!'
                                               : 'Start a practice test in "$_quizFilterSubject" or add questions!',
                                           style: const TextStyle(fontSize: 12, color: Colors.grey),
                                         ),
                                         const SizedBox(height: 12),
                                         ElevatedButton.icon(
-                                          icon: Icon(settings.isAiEnabled ? Icons.auto_awesome : Icons.play_arrow, size: 16),
-                                          label: Text(settings.isAiEnabled ? 'Generate $_quizFilterSubject 1 with AI' : 'Start Practice Test'),
+                                          icon: Icon((settings.isAiEnabled && settings.isAiQuizEnabled) ? Icons.auto_awesome : Icons.play_arrow, size: 16),
+                                          label: Text((settings.isAiEnabled && settings.isAiQuizEnabled) ? 'Generate $_quizFilterSubject 1 with AI' : 'Start Practice Test'),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.indigo,
                                             foregroundColor: Colors.white,
                                           ),
                                           onPressed: () {
-                                            if (settings.isAiEnabled) {
+                                            if (settings.isAiEnabled && settings.isAiQuizEnabled) {
                                               showDialog(
                                                 context: context,
                                                 builder: (_) => AiQuizModal(
@@ -1730,7 +1922,7 @@ class _HomeScreenState extends State<HomeScreen>
                               const Icon(Icons.quiz, size: 48, color: Colors.grey),
                               const SizedBox(height: 8),
                               Text(
-                                settings.isAiEnabled
+                                (settings.isAiEnabled && settings.isAiQuizEnabled)
                                     ? 'No questions in Question Bank.\nUse "AI Quiz" or "+" to create your first assessment!'
                                     : 'No questions in Question Bank.\nUse "+" to create your first question!',
                                 textAlign: TextAlign.center,

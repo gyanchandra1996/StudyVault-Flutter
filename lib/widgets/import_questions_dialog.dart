@@ -261,7 +261,7 @@ class _ImportQuestionsDialogState extends State<ImportQuestionsDialog> {
   Widget build(BuildContext context) {
     final study = Provider.of<StudyProvider>(context);
     final settings = Provider.of<SettingsProvider>(context);
-    final themeColor = settings.primaryColor;
+    final themeColor = settings.activeAccentColor;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
