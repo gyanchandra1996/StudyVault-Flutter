@@ -370,10 +370,11 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                           final docIcon = _getDocIcon(doc.docType);
 
                           return Card(
+                            elevation: 1.5,
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              side: BorderSide(color: docColor.withOpacity(0.25), width: 1.2),
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: docColor.withOpacity(0.3), width: 1.2),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(12),

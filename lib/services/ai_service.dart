@@ -36,8 +36,9 @@ class AiService {
       case providerGemini:
       default:
         return [
-          {'id': 'gemini-3.5-flash', 'name': 'Gemini 3.5 Flash (Recommended • 100% Free)'},
-          {'id': 'gemini-3.5-flash-lite', 'name': 'Gemini 3.5 Flash Lite (Fast • 100% Free)'},
+          {'id': 'gemini-1.5-flash', 'name': 'Gemini 1.5 Flash (Recommended • 100% Free)'},
+          {'id': 'gemini-2.0-flash', 'name': 'Gemini 2.0 Flash (Next-Gen • 100% Free)'},
+          {'id': 'gemini-1.5-pro', 'name': 'Gemini 1.5 Pro (Deep Reasoning • Free)'},
         ];
     }
   }
@@ -52,7 +53,7 @@ class AiService {
         return 'deepseek-chat';
       case providerGemini:
       default:
-        return 'gemini-3.5-flash';
+        return 'gemini-1.5-flash';
     }
   }
 
@@ -118,11 +119,12 @@ class AiService {
 
         case providerGemini:
         default:
-          final targetModel = model.isNotEmpty ? model : 'gemini-3.5-flash';
+          final targetModel = model.isNotEmpty && !model.contains('3.5') ? model : 'gemini-1.5-flash';
           final endpoints = [
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}',
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey.trim()}',
             'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey.trim()}',
           ];
           for (final ep in endpoints) {
             try {
@@ -273,11 +275,12 @@ Do not wrap with commentary. Return raw valid JSON.
 
       case providerGemini:
       default:
-        final targetModel = model.isNotEmpty ? model : 'gemini-3.5-flash';
+        final targetModel = model.isNotEmpty && !model.contains('3.5') ? model : 'gemini-1.5-flash';
         final endpoints = [
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}',
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey.trim()}',
           'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey.trim()}',
         ];
 
         http.Response? lastResponse;
@@ -499,11 +502,12 @@ Do not wrap with commentary. Return raw valid JSON.
 
       case providerGemini:
       default:
-        final targetModel = model.isNotEmpty ? model : 'gemini-3.5-flash';
+        final targetModel = model.isNotEmpty && !model.contains('3.5') ? model : 'gemini-1.5-flash';
         final endpoints = [
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}',
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey.trim()}',
           'https://generativelanguage.googleapis.com/v1beta/models/$targetModel:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.trim()}',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey.trim()}',
         ];
 
         final contents = <Map<String, dynamic>>[];

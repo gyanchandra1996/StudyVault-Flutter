@@ -76,23 +76,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.6.0
-          name: "StudyVault Flutter v1.6.0 (Negative Marking, Mistake Notebook, Question Search, PDF Compressor, 1-Click Backup & Restore, Exam Countdown)"
+          tag_name: v1.7.0
+          name: "StudyVault Flutter v1.7.0 (Dynamic AI Toggle, Gemini 1.5/2.0 API Fix, Smart Offline Quiz, Redesigned Quiz UI & Modern Card System)"
           body: |
-            ### 📱 StudyVault Flutter v1.6.0 Ultimate Release APK
-            - **1. Negative Marking & Realistic Exam Patterns**: Configurable penalty deduction (SSC/Banking -0.25, UPSC/BPSC -0.66, Railway -0.33) with full scorecard penalty breakdowns.
-            - **2. Weak Area / Mistake Notebook**: Automatically tracks incorrect quiz questions with 1-tap "Revise Mistakes Only" test runner directly from the Quizzes tab.
-            - **3. Instant Question Bank Search Bar**: Real-time keyword search across question stems, options, and explanations with instant highlighting.
-            - **4. PDF Compressor Tool**: Compress and optimize large textbook PDFs directly inside the app with best-stream compression.
-            - **5. 1-Click SQLite & Study Data Backup & Restore**: Export all questions, notes, flashcards, bookmarks, and quiz history into a portable JSON backup file, with 1-tap restore.
-            - **6. Target Exam Countdown Widget**: Live countdown banner on dashboard tracking remaining days until exam with motivational preparation phases.
-            - **7. General AI Study Q&A Assistant**: Full conversational AI study tutor with quick prompt chips, markdown explanations, copy button, and save to notes / flashcards.
-            - **8. Custom Number of Questions & Timers**: Choose presets or enter custom question count & duration countdown for mock exams.
-            - **9. Category-Wise Question Bank**: Filter question bank by category with horizontal chips and subject badges.
-            - **10. Eliminated Dashboard Duplicate**: Removed duplicate display of currently reading document from recent materials carousel.
-            - **11. Compact Recent Quiz Performance Cards**: 50% height reduction for recent quiz performance cards on dashboard tab.
-            - **12. AI Flashcards & PDF Notes Generator**: Generate spaced-repetition flashcards and draft structured PDF study notes.
-            - **13. Smooth Flicker-Free PDF Reader & Full PDF Tools Suite**: Continuous layout mode with Image to PDF, Merge, and Page Trimming tools.
-            - **14. Guided App Walkthrough**: Interactive intro tour for first-time users with replay option.
+            ### 📱 StudyVault Flutter v1.7.0 Official Release APK
+            - **1. Settings-Controlled Dynamic AI Visibility**: All AI features (AI Tutor Q&A, AI Notes to PDF, AI Flashcards, AI Quiz) are now strictly visible only when enabled in Settings. Disabling AI completely cleans the UI of AI triggers.
+            - **2. Fixed Google Gemini API & Multi-Model Engine**: Resolved 404 endpoint failures by migrating to official Gemini 1.5 Flash, 2.0 Flash, and 1.5 Pro with automatic fallback cascade.
+            - **3. Smart 1-Tap Offline Question Bank Generator**: Instant practice quiz generation covering Indian Polity, Modern History, Geography, General Science, Aptitude, Reasoning, and Hindi Vyakaran without requiring internet or API key.
+            - **4. Redesigned Modern Quiz & Question Creation UI**: Rebuilt `AiQuizModal` and `QuestionModal` with gradient accents, topic suggestion chips, marking pattern chips (+1/-0.25, +2/-0.66, etc.), custom question counts, and quick key configuration.
+            - **5. Enhanced Card Aesthetics Across All Pages**: Upgraded elevation, rounded corners, soft shadows, and border accents on Dashboard, Categories, Category Detail, Notes, and Document Vault.
+            - **6. 1-Click SQLite Backup & Exam Preparation Suite**: Includes negative marking, mistake notebook, PDF tools, target exam countdown, and spaced repetition flashcards.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

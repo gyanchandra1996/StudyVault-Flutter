@@ -222,7 +222,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                     decoration: BoxDecoration(
                                       color: accent.withOpacity(0.08),
                                       borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(color: accent.withOpacity(0.2)),
+                                      border: Border.all(color: accent.withOpacity(0.25), width: 1.2),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: accent.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,8 +309,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                 final cat = filteredCategories[idx];
                                 final pdfCount = study.categoryPdfCounts[cat.id] ?? 0;
                                 return Card(
+                                  elevation: 1,
                                   margin: const EdgeInsets.only(bottom: 10),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(color: accent.withOpacity(0.15)),
+                                  ),
                                   child: ListTile(
                                     leading: CircleAvatar(
                                       backgroundColor: accent.withOpacity(0.12),

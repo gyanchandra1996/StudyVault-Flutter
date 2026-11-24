@@ -127,8 +127,12 @@ class _NotesScreenState extends State<NotesScreen> {
                         itemBuilder: (ctx, index) {
                           final note = _notes[index];
                           return Card(
+                            elevation: 1.5,
                             margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Colors.indigo.withOpacity(0.15)),
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.all(14),
                               child: Column(

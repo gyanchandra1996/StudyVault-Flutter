@@ -11,6 +11,7 @@ import '../providers/settings_provider.dart';
 import '../services/pdf_storage_service.dart';
 import '../widgets/ai_quiz_modal.dart';
 import '../widgets/ai_notes_generator_modal.dart';
+import '../widgets/question_modal.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
@@ -186,39 +187,61 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               ),
               ListTile(
                 leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFF3E8FF),
-                  child: Icon(Icons.auto_awesome, color: Colors.purple),
-                ),
-                title: const Text('Generate AI PDF Notes', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('AI writes structured notes and saves directly as PDF'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  showDialog(
-                    context: context,
-                    builder: (_) => AiNotesGeneratorModal(onGenerated: _loadData),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const CircleAvatar(
                   backgroundColor: Color(0xFFEFF6FF),
-                  child: Icon(Icons.quiz, color: Colors.blue),
+                  child: Icon(Icons.add_task, color: Colors.indigo),
                 ),
-                title: const Text('Create AI Quiz', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Generate MCQs and test your knowledge'),
+                title: const Text('Add Question to Bank', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Create a manual question for this category'),
                 onTap: () {
                   Navigator.pop(ctx);
                   showDialog(
                     context: context,
-                    builder: (_) => AiQuizModal(
+                    builder: (_) => QuestionModal(
                       initialCategory: widget.category.title,
                       initialCategoryId: widget.category.id,
                       examId: widget.category.examId,
-                      onGenerated: _loadData,
+                      onSaved: _loadData,
                     ),
                   );
                 },
               ),
+              if (Provider.of<SettingsProvider>(context, listen: false).isAiEnabled) ...[
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFF3E8FF),
+                    child: Icon(Icons.auto_awesome, color: Colors.purple),
+                  ),
+                  title: const Text('Generate AI PDF Notes', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('AI writes structured notes and saves directly as PDF'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    showDialog(
+                      context: context,
+                      builder: (_) => AiNotesGeneratorModal(onGenerated: _loadData),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFF0FDF4),
+                    child: Icon(Icons.quiz, color: Colors.green),
+                  ),
+                  title: const Text('Create AI Quiz', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Generate MCQs and test your knowledge'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    showDialog(
+                      context: context,
+                      builder: (_) => AiQuizModal(
+                        initialCategory: widget.category.title,
+                        initialCategoryId: widget.category.id,
+                        examId: widget.category.examId,
+                        onGenerated: _loadData,
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -425,8 +448,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     ..._pdfs.map((pdf) {
                       final mbSize = (pdf.fileSize / (1024 * 1024)).toStringAsFixed(1);
                       return Card(
+                        elevation: 1,
                         margin: const EdgeInsets.only(bottom: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.red.withOpacity(0.1),
@@ -489,21 +516,37 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           ),
                         ],
                       ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
-                        label: const Text('AI Quiz', style: TextStyle(fontSize: 12, color: Colors.purple)),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => AiQuizModal(
-                              initialCategory: widget.category.title,
-                              initialCategoryId: widget.category.id,
-                              examId: widget.category.examId,
-                              onGenerated: _loadData,
+                      settings.isAiEnabled
+                          ? TextButton.icon(
+                              icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
+                              label: const Text('AI Quiz', style: TextStyle(fontSize: 12, color: Colors.purple)),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => AiQuizModal(
+                                    initialCategory: widget.category.title,
+                                    initialCategoryId: widget.category.id,
+                                    examId: widget.category.examId,
+                                    onGenerated: _loadData,
+                                  ),
+                                );
+                              },
+                            )
+                          : TextButton.icon(
+                              icon: const Icon(Icons.add, size: 16, color: Colors.indigo),
+                              label: const Text('+ Question', style: TextStyle(fontSize: 12, color: Colors.indigo)),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => QuestionModal(
+                                    initialCategory: widget.category.title,
+                                    initialCategoryId: widget.category.id,
+                                    examId: widget.category.examId,
+                                    onSaved: _loadData,
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -521,7 +564,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'No quizzes created for ${widget.category.title} yet. Tap "+ AI Quiz" to generate one!',
+                              settings.isAiEnabled
+                                  ? 'No quizzes created for ${widget.category.title} yet. Tap "+ AI Quiz" to generate one!'
+                                  : 'No quizzes created for ${widget.category.title} yet. Tap "+ Question" to add questions!',
                               style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ),
@@ -555,8 +600,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.indigo.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.indigo.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.indigo.withOpacity(0.22), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.indigo.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -593,8 +645,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
   Widget _buildFolderListTile(Category sub, int pdfCount, List<Category> breadcrumb) {
     return Card(
+      elevation: 1,
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.indigo.withOpacity(0.12)),
+      ),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.indigo.withOpacity(0.1),
@@ -623,10 +679,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     final statusColor = isPassed ? Colors.green : Colors.orange;
 
     return Card(
+      elevation: 1.5,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: statusColor.withOpacity(0.3), width: 1.2),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: statusColor.withOpacity(0.35), width: 1.2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),

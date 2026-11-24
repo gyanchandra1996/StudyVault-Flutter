@@ -126,13 +126,15 @@ class SettingsProvider extends ChangeNotifier {
 
     final savedGemini = prefs.getString('geminiApiKey');
     if (savedGemini != null && savedGemini.trim().isNotEmpty) {
-      _geminiApiKey = savedGemini.trim();
-    } else {
-      try {
-        _geminiApiKey = utf8.decode(base64.decode('QVEuQWI4Uk42SXZaNmpCajZGTVIyY3NMYWhFQnpwNWJPLUdyX3FsUHNPazhJMUJHaTFvbFE='));
-      } catch (_) {
+      final key = savedGemini.trim();
+      // Ignore old invalid mock tokens starting with AQ.
+      if (!key.startsWith('AQ.')) {
+        _geminiApiKey = key;
+      } else {
         _geminiApiKey = '';
       }
+    } else {
+      _geminiApiKey = '';
     }
 
     final savedOpenai = prefs.getString('openaiApiKey');
@@ -159,9 +161,9 @@ class SettingsProvider extends ChangeNotifier {
       }
     }
 
-    _aiModel = prefs.getString('aiModel') ?? 'gemini-3.5-flash';
-    if (_aiModel.contains('1.5') || _aiModel.contains('2.0') || _aiModel.contains('2.5') || _aiModel.isEmpty) {
-      _aiModel = 'gemini-3.5-flash';
+    _aiModel = prefs.getString('aiModel') ?? 'gemini-1.5-flash';
+    if (_aiModel.contains('3.5') || _aiModel.isEmpty) {
+      _aiModel = 'gemini-1.5-flash';
     }
     _aiFlashcardCount = prefs.getInt('aiFlashcardCount') ?? 5;
     _isAiFlashcardsEnabled = prefs.getBool('isAiFlashcardsEnabled') ?? true;

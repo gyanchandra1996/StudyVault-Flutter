@@ -594,30 +594,32 @@ class _HomeScreenState extends State<HomeScreen>
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildActionPill(
-                          icon: Icons.question_answer,
-                          label: 'AI Tutor / Q&A',
-                          color: Colors.blue.shade700,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => const AiAssistantModal(),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildActionPill(
-                          icon: Icons.auto_stories,
-                          label: 'AI Notes to PDF',
-                          color: Colors.teal,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => AiNotesGeneratorModal(onGenerated: _loadAssessmentData),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
+                        if (settings.isAiEnabled) ...[
+                          _buildActionPill(
+                            icon: Icons.question_answer,
+                            label: 'AI Tutor / Q&A',
+                            color: Colors.blue.shade700,
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => const AiAssistantModal(),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildActionPill(
+                            icon: Icons.auto_stories,
+                            label: 'AI Notes to PDF',
+                            color: Colors.teal,
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => AiNotesGeneratorModal(onGenerated: _loadAssessmentData),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         _buildActionPill(
                           icon: Icons.build,
                           label: 'PDF Tools',
@@ -630,33 +632,35 @@ class _HomeScreenState extends State<HomeScreen>
                           },
                         ),
                         const SizedBox(width: 8),
-                        _buildActionPill(
-                          icon: Icons.style,
-                          label: 'AI Flashcards',
-                          color: Colors.purple,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => AiFlashcardModal(onGenerated: _loadAssessmentData),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildActionPill(
-                          icon: Icons.auto_awesome,
-                          label: 'AI Quiz',
-                          color: Colors.purple.shade700,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => AiQuizModal(
-                                examId: study.selectedExam?.id,
-                                onGenerated: _loadAssessmentData,
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
+                        if (settings.isAiEnabled) ...[
+                          _buildActionPill(
+                            icon: Icons.style,
+                            label: 'AI Flashcards',
+                            color: Colors.purple,
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => AiFlashcardModal(onGenerated: _loadAssessmentData),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildActionPill(
+                            icon: Icons.auto_awesome,
+                            label: 'AI Quiz',
+                            color: Colors.purple.shade700,
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => AiQuizModal(
+                                  examId: study.selectedExam?.id,
+                                  onGenerated: _loadAssessmentData,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         _buildActionPill(
                           icon: Icons.play_arrow,
                           label: 'Practice Test',
@@ -1066,26 +1070,28 @@ class _HomeScreenState extends State<HomeScreen>
                               onPressed: _allQuestions.isEmpty ? null : _showStartQuizDialog,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purple,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          if (settings.isAiEnabled) ...[
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purple,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.auto_awesome, size: 18),
+                              label: const Text('AI Quiz'),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => AiQuizModal(
+                                    examId: study.selectedExam?.id,
+                                    onGenerated: _loadAssessmentData,
+                                  ),
+                                );
+                              },
                             ),
-                            icon: const Icon(Icons.auto_awesome, size: 18),
-                            label: const Text('AI Quiz'),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => AiQuizModal(
-                                  examId: study.selectedExam?.id,
-                                  onGenerated: _loadAssessmentData,
-                                ),
-                              );
-                            },
-                          ),
+                          ],
                           const SizedBox(width: 8),
                           OutlinedButton(
                             style: OutlinedButton.styleFrom(
@@ -1180,14 +1186,18 @@ class _HomeScreenState extends State<HomeScreen>
                                       icon: const Icon(Icons.add, size: 16),
                                       label: Text('New Quiz in $_quizFilterSubject'),
                                       onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) => AiQuizModal(
-                                            initialCategory: _quizFilterSubject,
-                                            examId: study.selectedExam?.id,
-                                            onGenerated: _loadAssessmentData,
-                                          ),
-                                        );
+                                        if (settings.isAiEnabled) {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) => AiQuizModal(
+                                              initialCategory: _quizFilterSubject,
+                                              examId: study.selectedExam?.id,
+                                              onGenerated: _loadAssessmentData,
+                                            ),
+                                          );
+                                        } else {
+                                          _showStartQuizDialog();
+                                        }
                                       },
                                     ),
                                   ],
@@ -1213,26 +1223,32 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Generate your first quiz (e.g. $_quizFilterSubject 1) with AI!',
+                                          settings.isAiEnabled
+                                              ? 'Generate your first quiz (e.g. $_quizFilterSubject 1) with AI!'
+                                              : 'Start a practice test in "$_quizFilterSubject" or add questions!',
                                           style: const TextStyle(fontSize: 12, color: Colors.grey),
                                         ),
                                         const SizedBox(height: 12),
                                         ElevatedButton.icon(
-                                          icon: const Icon(Icons.auto_awesome, size: 16),
-                                          label: Text('Generate $_quizFilterSubject 1 with AI'),
+                                          icon: Icon(settings.isAiEnabled ? Icons.auto_awesome : Icons.play_arrow, size: 16),
+                                          label: Text(settings.isAiEnabled ? 'Generate $_quizFilterSubject 1 with AI' : 'Start Practice Test'),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.indigo,
                                             foregroundColor: Colors.white,
                                           ),
                                           onPressed: () {
-                                            showDialog(
-                                              context: context,
-                                              builder: (_) => AiQuizModal(
-                                                initialCategory: _quizFilterSubject,
-                                                examId: study.selectedExam?.id,
-                                                onGenerated: _loadAssessmentData,
-                                              ),
-                                            );
+                                            if (settings.isAiEnabled) {
+                                              showDialog(
+                                                context: context,
+                                                builder: (_) => AiQuizModal(
+                                                  initialCategory: _quizFilterSubject,
+                                                  examId: study.selectedExam?.id,
+                                                  onGenerated: _loadAssessmentData,
+                                                ),
+                                              );
+                                            } else {
+                                              _showStartQuizDialog();
+                                            }
                                           },
                                         ),
                                       ],
@@ -1478,13 +1494,15 @@ class _HomeScreenState extends State<HomeScreen>
                           padding: const EdgeInsets.all(32),
                           alignment: Alignment.center,
                           child: Column(
-                            children: const [
-                              Icon(Icons.quiz, size: 48, color: Colors.grey),
-                              SizedBox(height: 8),
+                            children: [
+                              const Icon(Icons.quiz, size: 48, color: Colors.grey),
+                              const SizedBox(height: 8),
                               Text(
-                                'No questions in Question Bank.\nUse "AI Quiz" or "+" to create your first assessment!',
+                                settings.isAiEnabled
+                                    ? 'No questions in Question Bank.\nUse "AI Quiz" or "+" to create your first assessment!'
+                                    : 'No questions in Question Bank.\nUse "+" to create your first question!',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey),
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             ],
                           ),
@@ -1686,25 +1704,41 @@ class _HomeScreenState extends State<HomeScreen>
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
           decoration: BoxDecoration(
             color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withOpacity(0.22), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(height: 6),
               Text(
                 count,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: color),
               ),
+              const SizedBox(height: 1),
               Text(
                 label,
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1727,10 +1761,10 @@ class _HomeScreenState extends State<HomeScreen>
         foregroundColor: color,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: color.withOpacity(0.35), width: 1.2),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       ),
       icon: Icon(icon, size: 16),
       label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
@@ -1743,23 +1777,24 @@ class _HomeScreenState extends State<HomeScreen>
     final statusColor = isPassed ? Colors.green : Colors.orange;
 
     return Card(
+      elevation: 1,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: statusColor.withOpacity(0.3), width: 1.0),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: statusColor.withOpacity(0.35), width: 1.2),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
             CircleAvatar(
-              radius: 16,
+              radius: 18,
               backgroundColor: statusColor.withOpacity(0.12),
               child: Text(
                 '${r.scorePercentage}%',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 10,
+                  fontSize: 11,
                   color: isPassed ? Colors.green.shade800 : Colors.orange.shade900,
                 ),
               ),
@@ -1773,14 +1808,14 @@ class _HomeScreenState extends State<HomeScreen>
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.indigo.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          color: settings.activeAccentColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           r.displayCategory,
-                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.indigo),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: settings.activeAccentColor),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -1794,7 +1829,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     '${r.correctAnswers}/${r.totalQuestions} Correct • ⏱️ ${r.formattedDuration}',
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
@@ -1822,12 +1857,12 @@ class _HomeScreenState extends State<HomeScreen>
                 ).then((_) => _loadAssessmentData());
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(6),
+                  color: settings.activeAccentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                child: Text('Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: settings.activeAccentColor)),
               ),
             ),
             const SizedBox(width: 6),
@@ -1848,10 +1883,10 @@ class _HomeScreenState extends State<HomeScreen>
                 ).then((_) => _loadAssessmentData());
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.indigo,
-                  borderRadius: BorderRadius.circular(6),
+                  color: settings.activeAccentColor,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.replay, size: 14, color: Colors.white),
               ),
@@ -1867,13 +1902,14 @@ class _HomeScreenState extends State<HomeScreen>
     final statusColor = isPassed ? Colors.green : Colors.orange;
 
     return Card(
+      elevation: 1.5,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: statusColor.withOpacity(0.3), width: 1.2),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: statusColor.withOpacity(0.35), width: 1.2),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1881,18 +1917,18 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
-                  radius: 20,
+                  radius: 22,
                   backgroundColor: statusColor.withOpacity(0.12),
                   child: Text(
                     '${r.scorePercentage}%',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 13,
                       color: isPassed ? Colors.green.shade800 : Colors.orange.shade900,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1900,26 +1936,26 @@ class _HomeScreenState extends State<HomeScreen>
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: Colors.indigo.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
+                              color: settings.activeAccentColor.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.folder_outlined, size: 12, color: Colors.indigo),
-                                const SizedBox(width: 3),
+                                Icon(Icons.folder_outlined, size: 12, color: settings.activeAccentColor),
+                                const SizedBox(width: 4),
                                 Text(
                                   r.displayCategory,
-                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: settings.activeAccentColor),
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 4),
                       Text(
                         r.quizTitle,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -1944,15 +1980,15 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             const Divider(height: 1),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
-                  icon: const Icon(Icons.visibility_outlined, size: 16, color: Colors.indigo),
-                  label: const Text('Review', style: TextStyle(fontSize: 12, color: Colors.indigo)),
+                  icon: Icon(Icons.visibility_outlined, size: 16, color: settings.activeAccentColor),
+                  label: Text('Review', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: settings.activeAccentColor)),
                   onPressed: () {
                     final questionsToReview = r.parsedQuestions.isNotEmpty ? r.parsedQuestions : _allQuestions;
                     Navigator.push(
@@ -1974,7 +2010,7 @@ class _HomeScreenState extends State<HomeScreen>
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo,
+                    backgroundColor: settings.activeAccentColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

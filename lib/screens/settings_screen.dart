@@ -628,40 +628,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       );
                     },
                   ),
-                  const Divider(height: 8),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFCCFBF1),
-                      child: Icon(Icons.picture_as_pdf, color: Colors.teal, size: 20),
+                  if (settings.isAiEnabled) ...[
+                    const Divider(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFCCFBF1),
+                        child: Icon(Icons.picture_as_pdf, color: Colors.teal, size: 20),
+                      ),
+                      title: const Text('AI PDF Notes Generator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Draft and compile real PDF study notes', style: TextStyle(fontSize: 12)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AiNotesGeneratorModal(onGenerated: () {}),
+                        );
+                      },
                     ),
-                    title: const Text('AI PDF Notes Generator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text('Draft and compile real PDF study notes', style: TextStyle(fontSize: 12)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AiNotesGeneratorModal(onGenerated: () {}),
-                      );
-                    },
-                  ),
-                  const Divider(height: 8),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFDBEAFE),
-                      child: Icon(Icons.question_answer, color: Colors.blue, size: 20),
+                    const Divider(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFDBEAFE),
+                        child: Icon(Icons.question_answer, color: Colors.blue, size: 20),
+                      ),
+                      title: const Text('AI Study Q&A Assistant', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Ask doubts, problem solving, concept explanations', style: TextStyle(fontSize: 12)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => const AiAssistantModal(),
+                        );
+                      },
                     ),
-                    title: const Text('AI Study Q&A Assistant', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text('Ask doubts, problem solving, concept explanations', style: TextStyle(fontSize: 12)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const AiAssistantModal(),
-                      );
-                    },
-                  ),
+                  ],
                 ],
               ),
             ),

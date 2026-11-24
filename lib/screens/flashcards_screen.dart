@@ -323,8 +323,11 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     final card = _dueCards[_currentIndex];
     return Card(
       key: const ValueKey(false),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: const Color(0xFF6366F1).withOpacity(0.2), width: 1.2),
+      ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
@@ -358,8 +361,11 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     final card = _dueCards[_currentIndex];
     return Card(
       key: const ValueKey(true),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: Color(0xFF10B981), width: 1.2),
+      ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),

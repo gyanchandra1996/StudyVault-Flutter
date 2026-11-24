@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/question.dart';
 import '../database/quiz_repo.dart';
 import '../providers/study_provider.dart';
+import '../providers/settings_provider.dart';
 
 class QuestionModal extends StatefulWidget {
   final int? examId;
@@ -82,11 +83,101 @@ class _QuestionModalState extends State<QuestionModal> {
     await _quizRepo.insertQuestion(q);
     widget.onSaved();
     Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Question saved to Quiz Bank! ✅')),
+    );
+  }
+
+  Widget _buildOptionField({
+    required String label,
+    required String letter,
+    required TextEditingController controller,
+    required int index,
+    required Color accent,
+  }) {
+    final isCorrect = _correctOptionIndex == index;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isCorrect ? Colors.green.withOpacity(0.06) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isCorrect ? Colors.green : Colors.grey.shade300,
+          width: isCorrect ? 1.5 : 1.0,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Row(
+          children: [
+            InkWell(
+              onTap: () => setState(() => _correctOptionIndex = index),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCorrect ? Colors.green : Colors.grey.shade200,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  letter,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isCorrect ? Colors.white : Colors.grey.shade800,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'Enter $label',
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Option required' : null,
+              ),
+            ),
+            InkWell(
+              onTap: () => setState(() => _correctOptionIndex = index),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isCorrect) ...[
+                      const Text('Correct', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
+                      const SizedBox(width: 2),
+                    ],
+                    Radio<int>(
+                      value: index,
+                      groupValue: _correctOptionIndex,
+                      activeColor: Colors.green,
+                      visualDensity: VisualDensity.compact,
+                      onChanged: (v) => setState(() => _correctOptionIndex = v!),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final study = Provider.of<StudyProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
+    final accent = settings.activeAccentColor;
     final availableCategories = study.categories;
 
     if (_selectedCategory == null && !_isCustomCategory) {
@@ -103,10 +194,11 @@ class _QuestionModalState extends State<QuestionModal> {
     }
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
         padding: const EdgeInsets.all(20),
-        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 680),
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -114,12 +206,26 @@ class _QuestionModalState extends State<QuestionModal> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Add Question to Bank',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.add_task, color: accent, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Add Question to Bank',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -127,19 +233,19 @@ class _QuestionModalState extends State<QuestionModal> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // Category selector
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.grey.shade300),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.folder_outlined, size: 20, color: Colors.indigo),
+                      Icon(Icons.folder_outlined, size: 20, color: accent),
                       const SizedBox(width: 8),
                       const Text('Category:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       const SizedBox(width: 8),
@@ -152,13 +258,13 @@ class _QuestionModalState extends State<QuestionModal> {
                             items: [
                               ...availableCategories.map((c) => DropdownMenuItem(
                                 value: c.title,
-                                child: Text(c.title, overflow: TextOverflow.ellipsis),
+                                child: Text(c.title, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
                               )),
                               if (!availableCategories.any((c) => c.title == 'General'))
-                                const DropdownMenuItem(value: 'General', child: Text('General')),
-                              const DropdownMenuItem(
+                                const DropdownMenuItem(value: 'General', child: Text('General', style: TextStyle(fontSize: 13))),
+                              DropdownMenuItem(
                                 value: '__custom__',
-                                child: Text('➕ New Category...', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                                child: Text('➕ New Category...', style: TextStyle(color: accent, fontWeight: FontWeight.bold, fontSize: 13)),
                               ),
                             ],
                             onChanged: (val) {
@@ -186,103 +292,83 @@ class _QuestionModalState extends State<QuestionModal> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _customCategoryController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'New Category Name',
-                      hintText: 'e.g. Python, DBMS',
+                      hintText: 'e.g. Python, General Knowledge',
                       isDense: true,
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ],
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
+                // Question Text
                 TextFormField(
                   controller: _questionController,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Question Text',
-                    hintText: 'Type your question (Hindi / English)',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _optAController,
                   decoration: InputDecoration(
-                    labelText: 'Option A',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: Radio<int>(
-                      value: 0,
-                      groupValue: _correctOptionIndex,
-                      onChanged: (v) => setState(() => _correctOptionIndex = v!),
-                    ),
+                    labelText: 'Question Stem (English / Hindi)',
+                    hintText: 'Type your question clearly...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    alignLabelWithHint: true,
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Question text is required' : null,
+                ),
+                const SizedBox(height: 14),
+
+                // Options with radio selection
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Answer Options (select correct radio):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Ans: Option ${String.fromCharCode(65 + _correctOptionIndex)}',
+                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                TextFormField(
-                  controller: _optBController,
-                  decoration: InputDecoration(
-                    labelText: 'Option B',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: Radio<int>(
-                      value: 1,
-                      groupValue: _correctOptionIndex,
-                      onChanged: (v) => setState(() => _correctOptionIndex = v!),
-                    ),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _optCController,
-                  decoration: InputDecoration(
-                    labelText: 'Option C',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: Radio<int>(
-                      value: 2,
-                      groupValue: _correctOptionIndex,
-                      onChanged: (v) => setState(() => _correctOptionIndex = v!),
-                    ),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _optDController,
-                  decoration: InputDecoration(
-                    labelText: 'Option D',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: Radio<int>(
-                      value: 3,
-                      groupValue: _correctOptionIndex,
-                      onChanged: (v) => setState(() => _correctOptionIndex = v!),
-                    ),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
+                _buildOptionField(label: 'Option A', letter: 'A', controller: _optAController, index: 0, accent: accent),
+                _buildOptionField(label: 'Option B', letter: 'B', controller: _optBController, index: 1, accent: accent),
+                _buildOptionField(label: 'Option C', letter: 'C', controller: _optCController, index: 2, accent: accent),
+                _buildOptionField(label: 'Option D', letter: 'D', controller: _optDController, index: 3, accent: accent),
+                const SizedBox(height: 10),
+
+                // Explanation field
                 TextFormField(
                   controller: _explanationController,
                   maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'Explanation (Optional)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: 'Explanation / Solution Notes (Optional)',
+                    hintText: 'Why is this option correct? Concept details...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    prefixIcon: const Icon(Icons.lightbulb_outline, size: 20),
+                    isDense: true,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
+
+                // Save button
                 SizedBox(
                   width: double.infinity,
                   height: 48,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      backgroundColor: Colors.indigo,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      backgroundColor: accent,
                       foregroundColor: Colors.white,
+                      elevation: 2,
                     ),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Save Question to Bank', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     onPressed: _saveQuestion,
-                    child: const Text('Save Question', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
