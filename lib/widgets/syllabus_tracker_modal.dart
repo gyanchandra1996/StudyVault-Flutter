@@ -14,7 +14,8 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
   final Set<String> _checkedTopics = {};
   bool _isLoading = true;
 
-  final Map<String, Map<String, dynamic>> _examSyllabi = {
+  // Default hardcoded syllabi
+  final Map<String, Map<String, dynamic>> _defaultExamSyllabi = {
     'upsc': {
       'title': 'UPSC Prelims (GS-1)',
       'subjects': {
@@ -103,22 +104,88 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
     },
   };
 
+  // Live dynamic working syllabi (merged default + user custom)
+  Map<String, Map<String, dynamic>> _examSyllabi = {};
+  // Custom added categories/subjects tracker
+  Map<String, Map<String, List<String>>> _customSubjects = {};
+  // Custom added exams tracker (examId -> title)
+  Map<String, String> _customExams = {};
+
   @override
   void initState() {
     super.initState();
-    _loadCheckedTopics();
+    _loadAllSyllabusData();
   }
 
-  Future<void> _loadCheckedTopics() async {
+  Future<void> _loadAllSyllabusData() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('syllabus_checked_topics') ?? [];
+    final savedChecked = prefs.getStringList('syllabus_checked_topics') ?? [];
     final savedExam = prefs.getString('syllabus_selected_exam') ?? 'upsc';
 
+    // Clone defaults deeply
+    final Map<String, Map<String, dynamic>> merged = {};
+    _defaultExamSyllabi.forEach((k, v) {
+      final subMap = <String, List<String>>{};
+      (v['subjects'] as Map<String, dynamic>).forEach((subK, subV) {
+        subMap[subK] = List<String>.from(subV as List);
+      });
+      merged[k] = {
+        'title': v['title'] as String,
+        'subjects': subMap,
+      };
+    });
+
+    // Load custom exams
+    final customExamsJson = prefs.getString('syllabus_custom_exams_v2');
+    if (customExamsJson != null) {
+      try {
+        final decoded = jsonDecode(customExamsJson) as Map<String, dynamic>;
+        _customExams = decoded.map((k, v) => MapEntry(k, v.toString()));
+        _customExams.forEach((id, title) {
+          merged.putIfAbsent(id, () => {
+            'title': title,
+            'subjects': <String, List<String>>{},
+          });
+        });
+      } catch (_) {}
+    }
+
+    // Load custom subjects & topics
+    final customSubjectsJson = prefs.getString('syllabus_custom_subjects_v2');
+    if (customSubjectsJson != null) {
+      try {
+        final decoded = jsonDecode(customSubjectsJson) as Map<String, dynamic>;
+        decoded.forEach((examId, subObj) {
+          final examSubs = merged.putIfAbsent(examId, () => {
+            'title': _customExams[examId] ?? examId.toUpperCase(),
+            'subjects': <String, List<String>>{},
+          })['subjects'] as Map<String, List<String>>;
+
+          final subMap = subObj as Map<String, dynamic>;
+          subMap.forEach((subName, topicsList) {
+            final list = (topicsList as List<dynamic>).map((e) => e.toString()).toList();
+            examSubs[subName] = list;
+
+            _customSubjects.putIfAbsent(examId, () => {})[subName] = list;
+          });
+        });
+      } catch (_) {}
+    }
+
     setState(() {
-      _checkedTopics.addAll(saved);
-      _selectedExam = savedExam;
+      _examSyllabi = merged;
+      _checkedTopics.addAll(savedChecked);
+      _selectedExam = merged.containsKey(savedExam) ? savedExam : 'upsc';
       _isLoading = false;
     });
+  }
+
+  Future<void> _saveCustomData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('syllabus_custom_exams_v2', jsonEncode(_customExams));
+    await prefs.setString('syllabus_custom_subjects_v2', jsonEncode(_customSubjects));
+    await prefs.setStringList('syllabus_checked_topics', _checkedTopics.toList());
+    await prefs.setString('syllabus_selected_exam', _selectedExam);
   }
 
   Future<void> _toggleTopic(String topicKey) async {
@@ -129,7 +196,6 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
         _checkedTopics.add(topicKey);
       }
     });
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('syllabus_checked_topics', _checkedTopics.toList());
   }
@@ -140,33 +206,46 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
     await prefs.setString('syllabus_selected_exam', examId);
   }
 
-  void _showAddCustomTopicDialog() {
-    final subjectController = TextEditingController();
-    final topicController = TextEditingController();
+  /// Adds a New Subject / Category under current exam
+  void _showAddSubjectCategoryDialog() {
+    final nameController = TextEditingController();
+    final firstTopicController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Custom Syllabus Topic'),
+        title: const Row(
+          children: [
+            Icon(Icons.create_new_folder_outlined, color: Color(0xFF059669)),
+            SizedBox(width: 8),
+            Text('Add Subject / Category', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Add a new subject to ${_examSyllabi[_selectedExam]?['title'] ?? 'this exam'}:',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
             TextField(
-              controller: subjectController,
+              controller: nameController,
               decoration: const InputDecoration(
-                labelText: 'Subject Name',
-                hintText: 'e.g. Environmental Science',
+                labelText: 'Category / Subject Name *',
+                hintText: 'e.g. General Science, Indian Economy, Ethics',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: topicController,
+              controller: firstTopicController,
               decoration: const InputDecoration(
-                labelText: 'Topic Title',
-                hintText: 'e.g. National Parks & Biodiversity Act',
+                labelText: 'First Topic Title (Optional)',
+                hintText: 'e.g. Fundamental Concepts & Principles',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
@@ -176,15 +255,174 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
-              final sub = subjectController.text.trim();
-              final top = topicController.text.trim();
-              if (sub.isNotEmpty && top.isNotEmpty) {
+              final subName = nameController.text.trim();
+              final topic = firstTopicController.text.trim();
+              if (subName.isNotEmpty) {
                 final currentExam = _examSyllabi[_selectedExam]!;
                 final subjects = currentExam['subjects'] as Map<String, List<String>>;
+
                 setState(() {
-                  subjects.putIfAbsent(sub, () => []).add(top);
+                  final list = subjects.putIfAbsent(subName, () => []);
+                  if (topic.isNotEmpty && !list.contains(topic)) {
+                    list.add(topic);
+                  }
+                  // Persist in customSubjects
+                  final customList = _customSubjects.putIfAbsent(_selectedExam, () => {}).putIfAbsent(subName, () => []);
+                  if (topic.isNotEmpty && !customList.contains(topic)) {
+                    customList.add(topic);
+                  }
                 });
+
+                _saveCustomData();
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Subject "$subName" added to Syllabus! ✅'),
+                    backgroundColor: const Color(0xFF059669),
+                  ),
+                );
+              }
+            },
+            child: const Text('Save Category'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Adds a New Custom Exam / Syllabus Category (e.g. State PSC, Railway, etc.)
+  void _showAddCustomExamDialog() {
+    final examTitleController = TextEditingController();
+    final firstSubjectController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.school_outlined, color: Color(0xFF059669)),
+            SizedBox(width: 8),
+            Text('Add Target Exam / Syllabus', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Create a completely new exam track with its own syllabus subjects & topics:',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: examTitleController,
+              decoration: const InputDecoration(
+                labelText: 'Exam Name *',
+                hintText: 'e.g. State PSC, Railway RRB, CTET',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: firstSubjectController,
+              decoration: const InputDecoration(
+                labelText: 'First Subject (Optional)',
+                hintText: 'e.g. General Studies & Aptitude',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final title = examTitleController.text.trim();
+              final firstSub = firstSubjectController.text.trim();
+              if (title.isNotEmpty) {
+                final id = 'custom_${DateTime.now().millisecondsSinceEpoch}';
+                final subMap = <String, List<String>>{};
+                if (firstSub.isNotEmpty) {
+                  subMap[firstSub] = [];
+                  _customSubjects.putIfAbsent(id, () => {})[firstSub] = [];
+                }
+
+                setState(() {
+                  _customExams[id] = title;
+                  _examSyllabi[id] = {
+                    'title': title,
+                    'subjects': subMap,
+                  };
+                  _selectedExam = id;
+                });
+
+                _saveCustomData();
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('New Syllabus "$title" created! ✅'),
+                    backgroundColor: const Color(0xFF059669),
+                  ),
+                );
+              }
+            },
+            child: const Text('Create Exam'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Adds a Topic inside a specific subject
+  void _showAddTopicDialog(String subjectName) {
+    final topicController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Add Topic to $subjectName', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: topicController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Topic Title *',
+            hintText: 'e.g. Monetary Policy & RBI Functions',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final top = topicController.text.trim();
+              if (top.isNotEmpty) {
+                final currentExam = _examSyllabi[_selectedExam]!;
+                final subjects = currentExam['subjects'] as Map<String, List<String>>;
+
+                setState(() {
+                  subjects.putIfAbsent(subjectName, () => []).add(top);
+                  _customSubjects.putIfAbsent(_selectedExam, () => {}).putIfAbsent(subjectName, () => []).add(top);
+                });
+
+                _saveCustomData();
                 Navigator.pop(ctx);
               }
             },
@@ -193,6 +431,17 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
         ],
       ),
     );
+  }
+
+  void _deleteCustomTopic(String subjectName, String topic) {
+    setState(() {
+      final currentExam = _examSyllabi[_selectedExam]!;
+      final subjects = currentExam['subjects'] as Map<String, List<String>>;
+      subjects[subjectName]?.remove(topic);
+      _customSubjects[_selectedExam]?[subjectName]?.remove(topic);
+      _checkedTopics.remove('$_selectedExam::$subjectName::$topic');
+    });
+    _saveCustomData();
   }
 
   @override
@@ -221,7 +470,7 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 680),
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
         child: Column(
           children: [
             // Header
@@ -269,18 +518,34 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
               ),
             ),
 
-            // Exam Selector Chips
+            // Exam Selector Chips + "+ Exam" Button
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               color: Theme.of(context).cardColor,
-              child: Row(
-                children: [
-                  _buildExamChip('upsc', 'UPSC CSE'),
-                  const SizedBox(width: 6),
-                  _buildExamChip('ssc_cgl', 'SSC CGL'),
-                  const SizedBox(width: 6),
-                  _buildExamChip('banking', 'Banking (IBPS)'),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildExamChip('upsc', 'UPSC CSE'),
+                    const SizedBox(width: 6),
+                    _buildExamChip('ssc_cgl', 'SSC CGL'),
+                    const SizedBox(width: 6),
+                    _buildExamChip('banking', 'Banking (IBPS)'),
+                    ..._customExams.entries.map((e) => Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: _buildExamChip(e.key, e.value),
+                    )),
+                    const SizedBox(width: 6),
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 14, color: Color(0xFF059669)),
+                      label: const Text('+ New Exam', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                      backgroundColor: const Color(0xFF059669).withOpacity(0.08),
+                      side: const BorderSide(color: Color(0xFF10B981)),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: _showAddCustomExamDialog,
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -319,69 +584,124 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
 
             // Scrollable Subjects & Topics Checklist
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ...subjects.entries.map((entry) {
-                    final subName = entry.key;
-                    final topicList = entry.value;
-
-                    final subCompleted = topicList.where((t) {
-                      final key = '$_selectedExam::$subName::$t';
-                      return _checkedTopics.contains(key);
-                    }).length;
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 1,
-                      child: ExpansionTile(
-                        initiallyExpanded: true,
-                        title: Text(
-                          subName,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        subtitle: Text(
-                          '$subCompleted of ${topicList.length} completed',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: subCompleted == topicList.length ? Colors.green : Colors.grey.shade600,
-                            fontWeight: FontWeight.w600,
+              child: subjects.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.folder_open, size: 48, color: Colors.grey),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No subjects added to ${examData['title']} yet.\nTap "+ Add Subject / Category" below to start!',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey, fontSize: 13),
                           ),
-                        ),
-                        children: topicList.map((topic) {
-                          final key = '$_selectedExam::$subName::$topic';
-                          final isChecked = _checkedTopics.contains(key);
-
-                          return CheckboxListTile(
-                            dense: true,
-                            activeColor: const Color(0xFF10B981),
-                            title: Text(
-                              topic,
-                              style: TextStyle(
-                                fontSize: 13,
-                                decoration: isChecked ? TextDecoration.lineThrough : null,
-                                color: isChecked ? Colors.grey : null,
-                              ),
-                            ),
-                            value: isChecked,
-                            onChanged: (_) => _toggleTopic(key),
-                          );
-                        }).toList(),
+                        ],
                       ),
-                    );
-                  }),
-                ],
-              ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(14),
+                      children: [
+                        ...subjects.entries.map((entry) {
+                          final subName = entry.key;
+                          final topicList = entry.value;
+
+                          final subCompleted = topicList.where((t) {
+                            final key = '$_selectedExam::$subName::$t';
+                            return _checkedTopics.contains(key);
+                          }).length;
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 1,
+                            child: ExpansionTile(
+                              initiallyExpanded: true,
+                              title: Text(
+                                subName,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              subtitle: Text(
+                                topicList.isEmpty
+                                    ? 'No topics yet'
+                                    : '$subCompleted of ${topicList.length} completed',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: (topicList.isNotEmpty && subCompleted == topicList.length)
+                                      ? Colors.green
+                                      : Colors.grey.shade600,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              children: [
+                                ...topicList.map((topic) {
+                                  final key = '$_selectedExam::$subName::$topic';
+                                  final isChecked = _checkedTopics.contains(key);
+
+                                  return CheckboxListTile(
+                                    dense: true,
+                                    activeColor: const Color(0xFF10B981),
+                                    title: Text(
+                                      topic,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        decoration: isChecked ? TextDecoration.lineThrough : null,
+                                        color: isChecked ? Colors.grey : null,
+                                      ),
+                                    ),
+                                    secondary: _customSubjects[_selectedExam]?[subName]?.contains(topic) == true
+                                        ? IconButton(
+                                            icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                                            tooltip: 'Remove Topic',
+                                            onPressed: () => _deleteCustomTopic(subName, topic),
+                                          )
+                                        : null,
+                                    value: isChecked,
+                                    onChanged: (_) => _toggleTopic(key),
+                                  );
+                                }).toList(),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: TextButton.icon(
+                                      icon: const Icon(Icons.add, size: 14),
+                                      label: Text('Add topic to $subName', style: const TextStyle(fontSize: 12)),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: const Color(0xFF059669),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      onPressed: () => _showAddTopicDialog(subName),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
             ),
 
-            // Footer action
+            // Footer Action: "+ Add Category / Subject"
             Padding(
               padding: const EdgeInsets.all(12),
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Custom Topic to Syllabus', style: TextStyle(fontSize: 12)),
-                onPressed: _showAddCustomTopicDialog,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.add_circle_outline, size: 16),
+                      label: const Text('Add Subject / Category', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: _showAddSubjectCategoryDialog,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuickRevisionHandbookModal extends StatefulWidget {
   const QuickRevisionHandbookModal({Key? key}) : super(key: key);
@@ -7,24 +9,13 @@ class QuickRevisionHandbookModal extends StatefulWidget {
   State<QuickRevisionHandbookModal> createState() => _QuickRevisionHandbookModalState();
 }
 
-class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal> with SingleTickerProviderStateMixin {
+class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal> with TickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
+  // 4 Default Core Tabs
   final List<Map<String, String>> _polityArticles = [
     {'title': 'Article 14', 'desc': 'Equality before law and equal protection of laws.'},
     {'title': 'Article 17', 'desc': 'Abolition of Untouchability and prohibition of its practice.'},
@@ -80,13 +71,303 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
     {'title': 'SI Units & Instruments', 'desc': 'Electric Current: Ampere (A)\nFrequency: Hertz (Hz)\nAtmospheric Pressure: Barometer\nEarthquake Intensity: Richter Scale / Seismograph\nRelative Humidity: Hygrometer'},
   ];
 
+  // Dynamic user-added custom tabs: Tab Title -> List of items {title, desc}
+  final Map<String, List<Map<String, String>>> _customTabs = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomTabs();
+  }
+
+  Future<void> _loadCustomTabs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('revision_handbook_custom_tabs_v2');
+    if (jsonStr != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(jsonStr);
+        _customTabs.clear();
+        decoded.forEach((tabName, items) {
+          final list = (items as List<dynamic>).map((it) {
+            final m = it as Map<String, dynamic>;
+            return {
+              'title': m['title']?.toString() ?? '',
+              'desc': m['desc']?.toString() ?? '',
+            };
+          }).toList();
+          _customTabs[tabName] = list;
+        });
+      } catch (_) {}
+    }
+
+    final totalTabs = 4 + _customTabs.keys.length;
+    _tabController = TabController(length: totalTabs, vsync: this);
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveCustomTabs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = jsonEncode(_customTabs);
+    await prefs.setString('revision_handbook_custom_tabs_v2', jsonStr);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showAddNewTabDialog() {
+    final tabNameController = TextEditingController();
+    final firstCardTitleController = TextEditingController();
+    final firstCardDescController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.tab_outlined, color: Colors.deepOrange),
+            SizedBox(width: 8),
+            Text('Add New Handbook Tab', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Create a new revision subject/tab in your handbook:',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: tabNameController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Tab / Subject Name *',
+                  hintText: 'e.g. Economics, Hindi, Geography, Computer',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'First Revision Note (Optional):',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: firstCardTitleController,
+                decoration: const InputDecoration(
+                  labelText: 'Note Title / Term',
+                  hintText: 'e.g. Repo Rate vs Reverse Repo',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: firstCardDescController,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Key Summary / Explanation',
+                  hintText: 'e.g. Repo Rate is rate at which RBI lends to banks...',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade900,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final tabName = tabNameController.text.trim();
+              if (tabName.isNotEmpty) {
+                if (_customTabs.containsKey(tabName) ||
+                    ['Polity Articles', 'History Timeline', 'Math Formulas', 'General Science'].contains(tabName)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('A tab with this name already exists!')),
+                  );
+                  return;
+                }
+
+                final items = <Map<String, String>>[];
+                final cardTitle = firstCardTitleController.text.trim();
+                final cardDesc = firstCardDescController.text.trim();
+                if (cardTitle.isNotEmpty) {
+                  items.add({
+                    'title': cardTitle,
+                    'desc': cardDesc.isNotEmpty ? cardDesc : 'High-yield revision concept.',
+                  });
+                }
+
+                final oldIndex = _tabController.index;
+                _tabController.dispose();
+
+                setState(() {
+                  _customTabs[tabName] = items;
+                  final totalTabs = 4 + _customTabs.keys.length;
+                  _tabController = TabController(
+                    length: totalTabs,
+                    vsync: this,
+                    initialIndex: totalTabs - 1, // Switch directly to new tab
+                  );
+                });
+
+                _saveCustomTabs();
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🎉 Tab "$tabName" added to Quick Revision Handbook!'),
+                    backgroundColor: Colors.amber.shade900,
+                  ),
+                );
+              }
+            },
+            child: const Text('Create Tab'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddNoteDialog(String activeTabName) {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Add Note to $activeTabName', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Topic / Key Term *',
+                hintText: 'e.g. Ohm\'s Law, Article 370',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: descController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Revision Formula / Fact / Notes *',
+                hintText: 'e.g. V = IR | Resistance depends on length and area...',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade900,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final t = titleController.text.trim();
+              final d = descController.text.trim();
+              if (t.isNotEmpty && d.isNotEmpty) {
+                setState(() {
+                  _customTabs.putIfAbsent(activeTabName, () => []).add({
+                    'title': t,
+                    'desc': d,
+                  });
+                });
+                _saveCustomTabs();
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add Note'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteCustomTab(String tabName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete "$tabName" Tab?'),
+        content: const Text('This will delete all revision notes saved under this tab.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _tabController.dispose();
+              setState(() {
+                _customTabs.remove(tabName);
+                final totalTabs = 4 + _customTabs.keys.length;
+                _tabController = TabController(length: totalTabs, vsync: this, initialIndex: 0);
+              });
+              _saveCustomTabs();
+            },
+            child: const Text('Delete Tab'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteCustomNote(String tabName, int index) {
+    setState(() {
+      _customTabs[tabName]?.removeAt(index);
+    });
+    _saveCustomTabs();
+  }
+
+  String _getActiveTabName() {
+    final idx = _tabController.index;
+    if (idx == 0) return 'Polity Articles';
+    if (idx == 1) return 'History Timeline';
+    if (idx == 2) return 'Math Formulas';
+    if (idx == 3) return 'General Science';
+    final customIndex = idx - 4;
+    final keys = _customTabs.keys.toList();
+    if (customIndex >= 0 && customIndex < keys.length) {
+      return keys[customIndex];
+    }
+    return 'Handbook';
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Dialog(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
+    }
+
+    final customTabEntries = _customTabs.entries.toList();
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 680),
+        constraints: const BoxConstraints(maxWidth: 540, maxHeight: 720),
         child: Column(
           children: [
             // Header
@@ -109,7 +390,7 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         Text(
-                          'High-yield Constitution Articles, History timeline & Formulas',
+                          'High-yield articles, timelines, formulas & custom subjects',
                           style: TextStyle(color: Colors.white70, fontSize: 11),
                         ),
                       ],
@@ -123,37 +404,68 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
               ),
             ),
 
-            // Tab Bar
-            TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              labelColor: Colors.amber.shade900,
-              indicatorColor: Colors.amber.shade900,
-              tabs: const [
-                Tab(text: 'Polity Articles'),
-                Tab(text: 'History Timeline'),
-                Tab(text: 'Math Formulas'),
-                Tab(text: 'General Science'),
-              ],
+            // Tab Bar with Dynamic Tabs + "+ New Tab" Button
+            Container(
+              color: Theme.of(context).cardColor,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      labelColor: Colors.amber.shade900,
+                      indicatorColor: Colors.amber.shade900,
+                      tabs: [
+                        const Tab(text: 'Polity Articles'),
+                        const Tab(text: 'History Timeline'),
+                        const Tab(text: 'Math Formulas'),
+                        const Tab(text: 'General Science'),
+                        ...customTabEntries.map((e) => Tab(text: e.key)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle, color: Colors.deepOrange),
+                    tooltip: 'Add New Tab / Subject',
+                    onPressed: _showAddNewTabDialog,
+                  ),
+                ],
+              ),
             ),
 
-            // Search Bar
+            // Search Bar + Quick Add Button
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search formula, article, or fact...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: () => setState(() => _searchController.clear()))
-                      : null,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                ),
-                onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search formula, article, or fact...',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: () => setState(() => _searchController.clear()))
+                            : null,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.add, size: 15),
+                    label: const Text('Add Note', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.amber.shade900,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    onPressed: () => _showAddNoteDialog(_getActiveTabName()),
+                  ),
+                ],
               ),
             ),
 
@@ -162,10 +474,11 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildList(_polityArticles),
-                  _buildList(_historyTimeline),
-                  _buildList(_mathFormulas),
-                  _buildList(_scienceFacts),
+                  _buildList(_polityArticles, isCustom: false),
+                  _buildList(_historyTimeline, isCustom: false),
+                  _buildList(_mathFormulas, isCustom: false),
+                  _buildList(_scienceFacts, isCustom: false),
+                  ...customTabEntries.map((e) => _buildCustomTabList(e.key, e.value)),
                 ],
               ),
             ),
@@ -175,7 +488,7 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
     );
   }
 
-  Widget _buildList(List<Map<String, String>> items) {
+  Widget _buildList(List<Map<String, String>> items, {required bool isCustom}) {
     final filtered = items.where((it) {
       if (_searchQuery.isEmpty) return true;
       return it['title']!.toLowerCase().contains(_searchQuery) ||
@@ -213,6 +526,108 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCustomTabList(String tabName, List<Map<String, String>> items) {
+    final filtered = items.asMap().entries.where((entry) {
+      if (_searchQuery.isEmpty) return true;
+      final it = entry.value;
+      return it['title']!.toLowerCase().contains(_searchQuery) ||
+          it['desc']!.toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    return Column(
+      children: [
+        // Tab Action Header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          color: Colors.amber.shade50.withOpacity(0.5),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Custom Subject: $tabName (${items.length} notes)',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+              ),
+              Row(
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('Add Point', style: TextStyle(fontSize: 11)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.amber.shade900,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () => _showAddNoteDialog(tabName),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                    tooltip: 'Delete Tab',
+                    onPressed: () => _deleteCustomTab(tabName),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // List of Cards
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.notes, size: 40, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      Text('No notes in "$tabName" yet.\nTap "Add Point" above to create your first note!'),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: filtered.length,
+                  itemBuilder: (ctx, idx) {
+                    final originalIndex = filtered[idx].key;
+                    final it = filtered[idx].value;
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    it['title']!,
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.amber.shade900),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    it['desc']!,
+                                    style: const TextStyle(fontSize: 12, height: 1.3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                              tooltip: 'Delete Note',
+                              onPressed: () => _deleteCustomNote(tabName, originalIndex),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

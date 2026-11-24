@@ -13,6 +13,7 @@ import '../services/pdf_storage_service.dart';
 import '../widgets/pomodoro_widget.dart';
 import '../widgets/reading_tracker_card.dart';
 import '../widgets/question_modal.dart';
+import '../widgets/import_questions_dialog.dart';
 import '../widgets/ai_quiz_modal.dart';
 import '../widgets/ai_assistant_modal.dart';
 import '../widgets/ai_flashcard_modal.dart';
@@ -1186,6 +1187,24 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           ],
                           const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.file_upload_outlined, size: 18),
+                            label: const Text('Excel/CSV', style: TextStyle(fontSize: 12)),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => ImportQuestionsDialog(
+                                  examId: study.selectedExam?.id,
+                                  onImported: _loadAssessmentData,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 6),
                           OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
@@ -1603,6 +1622,44 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       ),
                       if (_isQuestionBankExpanded) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            ActionChip(
+                              avatar: const Icon(Icons.upload_file_outlined, size: 16, color: Colors.teal),
+                              label: const Text('Import Excel/CSV', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
+                              backgroundColor: Colors.teal.shade50,
+                              side: BorderSide(color: Colors.teal.shade200),
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => ImportQuestionsDialog(
+                                    examId: study.selectedExam?.id,
+                                    onImported: _loadAssessmentData,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ActionChip(
+                              avatar: const Icon(Icons.add_circle_outline, size: 16, color: Colors.indigo),
+                              label: const Text('+ Add Question', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                              backgroundColor: Colors.indigo.shade50,
+                              side: BorderSide(color: Colors.indigo.shade200),
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => QuestionModal(
+                                    examId: study.selectedExam?.id,
+                                    onSaved: _loadAssessmentData,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       // Question Bank Search Bar
                       if (_allQuestions.isNotEmpty) ...[
                         const SizedBox(height: 8),

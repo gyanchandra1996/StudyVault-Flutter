@@ -4,6 +4,7 @@ import '../models/question.dart';
 import '../database/quiz_repo.dart';
 import '../providers/study_provider.dart';
 import '../providers/settings_provider.dart';
+import 'import_questions_dialog.dart';
 
 class QuestionModal extends StatefulWidget {
   final int? examId;
@@ -234,6 +235,45 @@ class _QuestionModalState extends State<QuestionModal> {
                   ],
                 ),
                 const SizedBox(height: 14),
+
+                // Bulk Excel / CSV Import Tip Banner
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    showDialog(
+                      context: context,
+                      builder: (_) => ImportQuestionsDialog(
+                        onImported: widget.onSaved,
+                        examId: widget.examId,
+                        initialCategory: widget.initialCategory,
+                        initialCategoryId: widget.initialCategoryId,
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.teal.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.table_view_outlined, size: 18, color: Colors.teal),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Bulk add questions from Excel/CSV file with sample template.',
+                            style: TextStyle(fontSize: 12, color: Colors.teal, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.teal),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Category selector
                 Container(
