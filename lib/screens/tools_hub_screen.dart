@@ -10,6 +10,10 @@ import 'package:open_file/open_file.dart';
 import '../services/pdf_tools_service.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
+import '../widgets/signature_cleaner_dialog.dart';
+import '../widgets/syllabus_tracker_modal.dart';
+import '../widgets/exam_analytics_modal.dart';
+import '../widgets/quick_revision_handbook_modal.dart';
 
 class ToolsHubScreen extends StatefulWidget {
   final VoidCallback? onRefresh;
@@ -94,6 +98,46 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
       'description': 'AI synthesizes comprehensive study notes on any topic and compiles them directly into formatted PDF.',
       'badge': 'SMART AI',
     },
+    {
+      'id': 'signature_cleaner',
+      'title': 'Govt Signature Whitener & Compressor',
+      'hindi': 'हस्ताक्षर क्लीनर व 10-20 KB कंप्रेसर',
+      'category': 'image',
+      'icon': Icons.draw_outlined,
+      'color': Colors.deepPurple,
+      'description': 'Whitens paper background, removes mobile camera shadows, sharpens blue/black ink, and compresses strictly to 10–20 KB for SSC, UPSC & IBPS forms.',
+      'badge': 'GOVT FORMS',
+    },
+    {
+      'id': 'syllabus_tracker',
+      'title': 'Interactive Syllabus Tracker',
+      'hindi': 'पाठ्यक्रम ट्रैकर',
+      'category': 'study',
+      'icon': Icons.checklist_rtl_rounded,
+      'color': Colors.blueGrey,
+      'description': 'Track syllabus completion for UPSC CSE, SSC CGL, Banking/IBPS and custom topics with live percentage progress bar.',
+      'badge': 'TRACKER',
+    },
+    {
+      'id': 'exam_analytics',
+      'title': 'Mock Test Performance & Heatmap',
+      'hindi': 'प्रदर्शन विश्लेषण व हीटमैप',
+      'category': 'study',
+      'icon': Icons.insights_rounded,
+      'color': Colors.teal.shade800,
+      'description': 'Analyze question speed vs accuracy heatmap, subject-wise strengths (Polity, History, Math, Science), and revision priority alerts.',
+      'badge': 'ANALYTICS',
+    },
+    {
+      'id': 'gk_cheat_sheets',
+      'title': 'Exam Revision Handbook & Cheat Sheets',
+      'hindi': 'त्वरित पुनरीक्षण हैंडबुक',
+      'category': 'study',
+      'icon': Icons.menu_book_rounded,
+      'color': Colors.amber.shade800,
+      'description': 'Digital cheat sheets with high-yield revision points: Indian Constitution Articles, Modern History Timeline, Essential Math Formulas & General Science.',
+      'badge': 'CHEAT SHEETS',
+    },
   ];
 
   List<Map<String, dynamic>> get _filteredTools {
@@ -108,6 +152,30 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
         break;
       case 'custom_image_size':
         _showCustomImageSizeModal();
+        break;
+      case 'signature_cleaner':
+        showDialog(
+          context: context,
+          builder: (_) => const SignatureCleanerDialog(),
+        );
+        break;
+      case 'syllabus_tracker':
+        showDialog(
+          context: context,
+          builder: (_) => const SyllabusTrackerModal(),
+        );
+        break;
+      case 'exam_analytics':
+        showDialog(
+          context: context,
+          builder: (_) => ExamAnalyticsModal(onRefresh: widget.onRefresh),
+        );
+        break;
+      case 'gk_cheat_sheets':
+        showDialog(
+          context: context,
+          builder: (_) => const QuickRevisionHandbookModal(),
+        );
         break;
       case 'custom_pdf':
         _showCustomPdfModal();
@@ -358,6 +426,8 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
               _buildFilterPill('all', 'All Tools (${_allTools.length})', Icons.apps),
               const SizedBox(width: 8),
               _buildFilterPill('image', 'Image & Photo (${_allTools.where((t) => t['category'] == 'image').length})', Icons.photo),
+              const SizedBox(width: 8),
+              _buildFilterPill('study', 'Study & Exam (${_allTools.where((t) => t['category'] == 'study').length})', Icons.school),
               const SizedBox(width: 8),
               _buildFilterPill('pdf', 'PDF Tools (${_allTools.where((t) => t['category'] == 'pdf').length})', Icons.picture_as_pdf),
               const SizedBox(width: 8),

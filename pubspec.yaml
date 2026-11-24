@@ -1,7 +1,7 @@
 name: study_vault_flutter
 description: "Medhavi (मेधावी) - Offline Indic Exam & Study Companion with AI Quiz, PDF Tools & Safe Mode"
 publish_to: "none"
-version: 1.8.0+14
+version: 1.9.0+15
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

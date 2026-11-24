@@ -22,6 +22,9 @@ import '../widgets/app_intro_walkthrough.dart';
 import '../widgets/exam_countdown_widget.dart';
 import '../widgets/backup_restore_modal.dart';
 import '../widgets/app_logo.dart';
+import '../widgets/exam_analytics_modal.dart';
+import '../widgets/syllabus_tracker_modal.dart';
+import '../widgets/quick_revision_handbook_modal.dart';
 import 'category_detail_screen.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
@@ -617,6 +620,18 @@ class _HomeScreenState extends State<HomeScreen>
                           onTap: () => _tabController.animateTo(3),
                         ),
                         const SizedBox(width: 8),
+                        _buildActionPill(
+                          icon: Icons.checklist_rtl_rounded,
+                          label: 'Syllabus Tracker',
+                          color: Colors.blueGrey.shade700,
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => const SyllabusTrackerModal(),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
                         if (settings.isAiEnabled) ...[
                           _buildActionPill(
                             icon: Icons.style,
@@ -835,6 +850,70 @@ class _HomeScreenState extends State<HomeScreen>
                                         onPressed: _showAddExamDialog,
                                       ),
                                   ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Syllabus & Cheat Sheet Quick Access
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => const SyllabusTrackerModal(),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueGrey.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.blueGrey.withOpacity(0.2)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.checklist_rtl_rounded, size: 16, color: Colors.blueGrey),
+                                      SizedBox(width: 6),
+                                      Text('Syllabus Tracker', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => const QuickRevisionHandbookModal(),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.amber.withOpacity(0.2)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.menu_book_rounded, size: 16, color: Colors.amber.shade900),
+                                      const SizedBox(width: 6),
+                                      Text('Exam Handbook', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -1125,7 +1204,61 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
+
+                      // Performance Analytics & Heatmap Banner
+                      InkWell(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => ExamAnalyticsModal(
+                              pastResults: _pastResults,
+                              mistakeQuestions: _mistakeQuestions,
+                              onRefresh: _loadAssessmentData,
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF0D9488), Color(0xFF115E59)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.teal.withOpacity(0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.insights_rounded, color: Colors.white, size: 22),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Mock Test Performance Analytics & Heatmap',
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                    Text(
+                                      'Speed vs accuracy heatmap, subject strengths & revision alerts',
+                                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
 
                       // Subject Category Filter Chips
                       Builder(

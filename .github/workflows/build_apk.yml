@@ -89,27 +89,42 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.8.0
-          name: "Medhavi (मेधावी) Flutter v1.8.0 - Exam Tools Suite (Pi7 Style), In-App Key Generator, Focus Timer Alarm, Custom PDF & Photo Maker"
+          tag_name: v1.9.0
+          name: "Medhavi (मेधावी) Flutter v1.9.0 - Signature Cleaner, Exam Analytics Heatmap, Syllabus Tracker & Revision Handbook"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v1.8.0 Official Release APK
-            - **1. Quiz Creation Workflow & Offline Engine Fallback**: Fixed empty prompt blocking; added instant auto-fallback to offline question bank so quiz creation never fails even with missing key or network downtime.
-            - **2. In-App Multi-Provider AI Key Generator**: Interactive key wizard with 1-click browser links to Google AI Studio (100% Free), OpenAI, Claude & DeepSeek, plus in-place key tester.
-            - **3. Fixed Flashcard Generator Card Count Overflow**: Resolved layout design break by replacing unconstrained Row with responsive Wrap layout and quick preset chips.
-            - **4. Fixed Question Bank Hide/Open Toggles**: Added global `^` toggle on Question Bank header, plus fixed category card expansion overrides.
-            - **5. App Exit Confirmation Dialog**: Added Android back button PopScope confirmation preventing accidental app closure.
-            - **6. Full-Screen Loading Overlays**: Prominent animated spinners and clear status text during AI quiz, flashcard, and notes generation.
-            - **7. Pomodoro Focus Timer & Alarm**: Added audible alarm and haptic vibration feedback on break/focus mode transitions, plus progress bar.
-            - **8. Persistent Top Focus Timer Bar**: Live study focus countdown info pill sticky at the top across all screens with 1-tap pause/resume.
-            - **9. Dedicated Settings Toggles for AI Tutor & PDF Notes**: Independent switches for AI Tutor / Doubt Solver and AI PDF Notes Generator.
-            - **10. Top Tools Tab & Student Utility Suite (Pi7 Style)**:
-              - **Passport Size Photo Maker**: Standard 3.5×4.5 cm with Candidate Name & Date of Photo (DOP) stamp for SSC/UPSC, with printable multi-photo sheet generation.
-              - **Custom Image Resizer & Compressor**: Target KB limits (e.g. 20-50 KB) and custom width/height in px.
-              - **Custom PDF Generator**: Create custom formatted notes with watermarks, candidate info, and margins.
-              - **PDF to Image & Image to PDF**: High-speed document and page conversion tools.
-            - **11. Brand Identity & App Logo**: Renamed app to genuine Indic brand "Medhavi (मेधावी)" with custom vector book + AI spark logo.
-            - **12. Expanded Base Themes & Accents**: Added Nordic Frost, Forest Matcha, and Twilight Warmth themes, plus 8 rich accent colors (Indigo, Emerald, Amethyst, Amber, Crimson, Cyan, Coral, Cobalt).
-            - **13. Dashboard Cleanup**: Removed duplicate Backup pill from dashboard quick actions.
-            - **14. Study Tab Folder & Import Control**: Added setting to show/hide folder creation and file import buttons for distraction-free reading.
+            ### 📱 Medhavi (मेधावी) Flutter v1.9.0 Official Release APK
+            - **1. Govt Exam Signature Cleaner & Sharpener**:
+              - Whitens paper background to pure white (removes mobile camera shadows and yellow tint).
+              - Sharpens blue/black ink strokes with real-time threshold & darkness controls.
+              - Compresses strictly to 10–20 KB (SSC, UPSC, IBPS standard) with exact 320×140 px scaling and boundary box.
+            - **2. Mock Test Performance Analytics & Heatmap**:
+              - Interactive speed vs accuracy heatmap across all past quiz attempts.
+              - Subject-wise strength & readiness indicators (Polity, History, Math, Science).
+              - Automated weak area detection with 1-tap AI quiz generation for weakest subjects.
+            - **3. Interactive Exam Syllabus Tracker**:
+              - Built-in comprehensive GS-1 syllabi for UPSC Civil Services, SSC CGL Tier 1, and Banking (IBPS/SBI).
+              - Live overall completion percentage bar with local persistent checklist saving.
+              - Custom topic & subject addition support for state PCS and other exam aspirants.
+            - **4. Exam Revision Handbook & High-Yield Cheat Sheets**:
+              - Indian Constitution Articles cheat sheet (Fundamental Rights, DPSP, Writs, Emergency provisions).
+              - Modern Indian History Timeline (1857 Revolt to 1947 Independence).
+              - Essential Quantitative Aptitude & Mensuration formulas.
+              - General Science high-yield facts (vitamins, chemical formulas, SI units).
+              - Built-in instant keyword search filtering across all handbook cards.
+            - **5. Complete Pi7-Style Student Utility Hub**:
+              - Passport size photo maker with DOP stamp & printable 4×6 photo sheets.
+              - Custom image resizer & KB compressor (e.g. 20-50 KB).
+              - Custom PDF notes generator with candidate details & watermarks.
+              - High-speed Image to PDF & PDF to Image converters.
+            - **6. Enhanced Multi-Provider AI Engine & Key Generator**:
+              - 1-click API key acquisition for Google AI Studio (Free Gemini API), OpenAI, Claude, and DeepSeek.
+              - Instant offline quiz fallback so practice never halts during network drops.
+            - **7. Focus Timer & Study Habit Suite**:
+              - Sticky top study focus timer info pill across all screens.
+              - Audio alerts & vibration haptics for break and study intervals.
+            - **8. Customization & Distraction-Free Modes**:
+              - 7 Base themes & 8 Accent themes.
+              - Independent toggles for AI Tutor, AI PDF Notes, and Folder/Import controls.
+              - Android back-button exit confirmation dialog.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true
