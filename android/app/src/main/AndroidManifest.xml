@@ -7,7 +7,7 @@
         android:maxSdkVersion="28"/>
 
     <application
-        android:label="StudyVault"
+        android:label="Medhavi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

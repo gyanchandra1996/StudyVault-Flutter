@@ -11,6 +11,8 @@ import '../services/pdf_tools_service.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/signature_cleaner_dialog.dart';
+import '../widgets/background_remover_dialog.dart';
+import '../widgets/digital_signature_pad_dialog.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/exam_analytics_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
@@ -46,7 +48,27 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
       'icon': Icons.photo_size_select_large,
       'color': Colors.teal,
       'description': 'Compress photos and signatures to exact KB limits (e.g. 20-50 KB) and custom width/height.',
-      'badge': 'PI7 STYLE',
+      'badge': 'EXAM RESIZER',
+    },
+    {
+      'id': 'image_bg_remover',
+      'title': 'Image Background Remover & Color Replacer',
+      'hindi': 'इमेज बैकग्राउंड रिमूवर व कलर चेंज',
+      'category': 'image',
+      'icon': Icons.auto_fix_high_rounded,
+      'color': Colors.purple.shade700,
+      'description': 'Isolate candidate photo from background. 1-tap replace with Pure White (SSC/UPSC), Light Blue (State/Railway), or Transparent PNG.',
+      'badge': 'AI ESSENTIAL',
+    },
+    {
+      'id': 'signature_pad',
+      'title': 'Digital Signature Pad & Generator',
+      'hindi': 'डिजिटल हस्ताक्षर पैड',
+      'category': 'image',
+      'icon': Icons.gesture_rounded,
+      'color': Colors.indigo.shade700,
+      'description': 'Sign directly on screen with finger or stylus. Smooth ink strokes, blue/black ink selector, and 1-tap export in 10–20 KB format.',
+      'badge': 'SIGNATURE',
     },
     {
       'id': 'custom_pdf',
@@ -152,6 +174,18 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
         break;
       case 'custom_image_size':
         _showCustomImageSizeModal();
+        break;
+      case 'image_bg_remover':
+        showDialog(
+          context: context,
+          builder: (_) => const BackgroundRemoverDialog(),
+        );
+        break;
+      case 'signature_pad':
+        showDialog(
+          context: context,
+          builder: (_) => const DigitalSignaturePadDialog(),
+        );
         break;
       case 'signature_cleaner':
         showDialog(
@@ -407,7 +441,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Passport photo, image resizing, and custom PDF generator — inspired by Pi7 tools.',
+                      'Passport photo with crop & zoom, signature pad, background remover, and custom PDF generator for exams.',
                       style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
                     ),
                   ],
@@ -545,7 +579,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
 }
 
 // ============================================================================
-// 1. PASSPORT SIZE PHOTO MAKER DIALOG (WITH NAME & DATE OF PHOTO STAMP)
+// 1. PASSPORT SIZE PHOTO MAKER DIALOG (WITH CROP, ZOOM, PAN, DOP & SHARE)
 // ============================================================================
 class _PassportPhotoDialog extends StatefulWidget {
   const _PassportPhotoDialog({Key? key}) : super(key: key);
@@ -565,14 +599,33 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
   String? _generatedPhotoPath;
   int _copies = 6;
 
+  // Framing, Crop, Zoom and Position offsets
+  double _zoom = 1.3; // 1.0 to 3.5
+  double _offsetX = 0.0; // -120 to 120
+  double _offsetY = 0.0; // -120 to 120
+  int _rotationQuarterTurns = 0;
+
   Future<void> _pickPhoto() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
       setState(() {
         _pickedImagePath = result.files.first.path;
         _generatedPhotoPath = null;
+        _zoom = 1.3;
+        _offsetX = 0.0;
+        _offsetY = 0.0;
+        _rotationQuarterTurns = 0;
       });
     }
+  }
+
+  void _resetCrop() {
+    setState(() {
+      _zoom = 1.0;
+      _offsetX = 0.0;
+      _offsetY = 0.0;
+      _rotationQuarterTurns = 0;
+    });
   }
 
   Future<void> _generatePassportPhoto() async {
@@ -600,20 +653,34 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
         Paint()..color = Colors.white,
       );
 
-      // Scale and center the source photo
       final photoHeight = _addStamp ? height - 60.0 : height;
-      final scale = (width / original.width).clamp(0.01, photoHeight / original.height);
-      final drawWidth = original.width * scale;
-      final drawHeight = original.height * scale;
-      final dx = (width - drawWidth) / 2;
-      final dy = (photoHeight - drawHeight) / 2;
+
+      // Clip canvas strictly to photo display box
+      canvas.save();
+      canvas.clipRect(Rect.fromLTWH(0, 0, width, photoHeight));
+
+      // Handle optional rotation
+      if (_rotationQuarterTurns > 0) {
+        canvas.translate(width / 2, photoHeight / 2);
+        canvas.rotate(_rotationQuarterTurns * 3.141592653589793 / 2);
+        canvas.translate(-width / 2, -photoHeight / 2);
+      }
+
+      // Calculate drawing dimensions with Zoom & Pan offsets
+      final baseScale = (width / original.width).clamp(0.01, photoHeight / original.height);
+      final finalScale = baseScale * _zoom;
+      final drawWidth = original.width * finalScale;
+      final drawHeight = original.height * finalScale;
+      final dx = (width - drawWidth) / 2 + _offsetX;
+      final dy = (photoHeight - drawHeight) / 2 + _offsetY;
 
       canvas.drawImageRect(
         original,
         Rect.fromLTWH(0, 0, original.width.toDouble(), original.height.toDouble()),
         Rect.fromLTWH(dx, dy, drawWidth, drawHeight),
-        Paint(),
+        Paint()..filterQuality = ui.FilterQuality.high,
       );
+      canvas.restore();
 
       // Name & Date of Photo (DOP) banner for SSC/UPSC
       if (_addStamp) {
@@ -713,11 +780,23 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
 
       final tempDir = await getTemporaryDirectory();
       final outPdf = p.join(tempDir.path, 'passport_sheet_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      await File(outPdf).writeAsBytes(pdfBytes);
+      final file = File(outPdf);
+      await file.writeAsBytes(pdfBytes);
 
       if (mounted) {
         setState(() => _isProcessing = false);
-        OpenFile.open(outPdf);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Printable sheet ready: ${p.basename(outPdf)}'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Open',
+              textColor: Colors.white,
+              onPressed: () => OpenFile.open(file.path),
+            ),
+          ),
+        );
+        OpenFile.open(file.path);
       }
     } catch (e) {
       if (mounted) {
@@ -735,7 +814,7 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 650),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
         child: Column(
           children: [
             // Header
@@ -753,8 +832,8 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Passport Photo Maker (SSC/UPSC)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('Standard 3.5×4.5 cm with DOP & Candidate Name', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('Passport Photo Studio (SSC/UPSC)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('Crop, zoom face to 70–80% area, add DOP & Share', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -768,42 +847,210 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Photo preview / selector
+                    // Photo preview / selector with guide frame
                     Center(
                       child: GestureDetector(
-                        onTap: _pickPhoto,
+                        onTap: _pickedImagePath == null ? _pickPhoto : null,
                         child: Container(
-                          width: 140,
-                          height: 180,
+                          width: 154,
+                          height: 198,
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.blue, width: 1.5),
+                            border: Border.all(color: Colors.blue, width: 2),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6, offset: const Offset(0, 3)),
+                            ],
                           ),
                           child: _generatedPhotoPath != null
-                              ? Image.file(File(_generatedPhotoPath!), fit: BoxFit.cover)
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(File(_generatedPhotoPath!), fit: BoxFit.contain),
+                                )
                               : _pickedImagePath != null
-                                  ? Image.file(File(_pickedImagePath!), fit: BoxFit.cover)
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: ClipRect(
+                                              child: Transform.translate(
+                                                offset: Offset(_offsetX * (154.0 / 350.0), _offsetY * (198.0 / 450.0)),
+                                                child: RotatedBox(
+                                                  quarterTurns: _rotationQuarterTurns,
+                                                  child: Transform.scale(
+                                                    scale: _zoom,
+                                                    child: Image.file(File(_pickedImagePath!), fit: BoxFit.contain),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          // Overlay guideline
+                                          Positioned.fill(
+                                            child: CustomPaint(
+                                              painter: _PassportGuideOverlayPainter(),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            bottom: 4,
+                                            left: 0,
+                                            right: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(vertical: 2),
+                                              color: Colors.black.withOpacity(0.55),
+                                              child: const Text(
+                                                'Head inside oval',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
                                   : Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: const [
-                                        Icon(Icons.add_a_photo, size: 36, color: Colors.blue),
+                                        Icon(Icons.add_a_photo, size: 40, color: Colors.blue),
                                         SizedBox(height: 8),
-                                        Text('Select Photo', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                        Text('Select Photo', style: TextStyle(fontSize: 13, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                        SizedBox(height: 4),
+                                        Text('Gallery or Camera', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                       ],
                                     ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Center(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.upload, size: 16),
-                        label: Text(_pickedImagePath == null ? 'Upload Photo' : 'Change Photo'),
-                        onPressed: _pickPhoto,
-                      ),
+                    const SizedBox(height: 10),
+
+                    // Controls row: Change Photo, Rotate, Reset Crop
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.upload, size: 16),
+                          label: Text(_pickedImagePath == null ? 'Upload Photo' : 'Change'),
+                          onPressed: _pickPhoto,
+                        ),
+                        if (_pickedImagePath != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.rotate_right_rounded, color: Colors.blue),
+                            tooltip: 'Rotate 90°',
+                            onPressed: () {
+                              setState(() {
+                                _rotationQuarterTurns = (_rotationQuarterTurns + 1) % 4;
+                                _generatedPhotoPath = null;
+                              });
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.restart_alt, color: Colors.grey),
+                            tooltip: 'Reset Framing',
+                            onPressed: () {
+                              _resetCrop();
+                              setState(() => _generatedPhotoPath = null);
+                            },
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 14),
+
+                    // Zoom & Pan Sliders (When photo is selected)
+                    if (_pickedImagePath != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.crop_free, size: 16, color: Colors.blue),
+                                SizedBox(width: 6),
+                                Text('Face Framing & Zoom Sliders:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue)),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+
+                            // Zoom Slider
+                            Row(
+                              children: [
+                                const Icon(Icons.zoom_out, size: 18, color: Colors.grey),
+                                Expanded(
+                                  child: Slider(
+                                    value: _zoom,
+                                    min: 1.0,
+                                    max: 3.5,
+                                    divisions: 25,
+                                    label: '${_zoom.toStringAsFixed(1)}x Zoom',
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _zoom = val;
+                                        _generatedPhotoPath = null;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const Icon(Icons.zoom_in, size: 18, color: Colors.blue),
+                              ],
+                            ),
+
+                            // Vertical Pan (Move Up/Down)
+                            Row(
+                              children: [
+                                const Text('Position Y:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                Expanded(
+                                  child: Slider(
+                                    value: _offsetY,
+                                    min: -120.0,
+                                    max: 120.0,
+                                    divisions: 48,
+                                    label: 'Y: ${_offsetY.round()}',
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _offsetY = val;
+                                        _generatedPhotoPath = null;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Horizontal Pan (Move Left/Right)
+                            Row(
+                              children: [
+                                const Text('Position X:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                Expanded(
+                                  child: Slider(
+                                    value: _offsetX,
+                                    min: -100.0,
+                                    max: 100.0,
+                                    divisions: 40,
+                                    label: 'X: ${_offsetX.round()}',
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _offsetX = val;
+                                        _generatedPhotoPath = null;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 12),
 
                     // Name and Date stamp toggle
                     SwitchListTile(
@@ -811,12 +1058,16 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
                       title: const Text('Add Name & Date of Photo (DOP)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       subtitle: const Text('Mandatory for SSC CGL, CHSL, GD & UPSC forms', style: TextStyle(fontSize: 11)),
                       value: _addStamp,
-                      onChanged: (val) => setState(() => _addStamp = val),
+                      onChanged: (val) => setState(() {
+                        _addStamp = val;
+                        _generatedPhotoPath = null;
+                      }),
                     ),
 
                     if (_addStamp) ...[
                       TextField(
                         controller: _nameController,
+                        onChanged: (_) => setState(() => _generatedPhotoPath = null),
                         decoration: const InputDecoration(
                           labelText: 'Candidate Name',
                           hintText: 'e.g. RAHUL SHARMA',
@@ -827,6 +1078,7 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: _dateController,
+                        onChanged: (_) => setState(() => _generatedPhotoPath = null),
                         decoration: const InputDecoration(
                           labelText: 'Date of Photo (DD/MM/YYYY)',
                           hintText: 'e.g. 24/11/2026',
@@ -845,7 +1097,7 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
                         icon: _isProcessing
                             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                             : const Icon(Icons.check),
-                        label: const Text('Generate Passport Photo'),
+                        label: const Text('Generate Passport Photo (3.5×4.5 cm)'),
                         onPressed: (_pickedImagePath == null || _isProcessing) ? null : _generatePassportPhoto,
                       ),
                     ),
@@ -854,6 +1106,45 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
                       const SizedBox(height: 14),
                       const Divider(),
                       const SizedBox(height: 6),
+
+                      // Direct Share / Print actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              icon: const Icon(Icons.open_in_new, size: 16),
+                              label: const Text('View Photo'),
+                              onPressed: () => OpenFile.open(_generatedPhotoPath!),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal.shade700,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              icon: const Icon(Icons.share, size: 16),
+                              label: const Text('Share / Print'),
+                              onPressed: () {
+                                OpenFile.open(_generatedPhotoPath!);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Photo opened! Tap share icon in your viewer to send via WhatsApp or Print.'),
+                                    backgroundColor: Colors.teal,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -891,8 +1182,40 @@ class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
   }
 }
 
+class _PassportGuideOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.blue.withOpacity(0.6)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    // Draw oval for head guidance
+    final ovalRect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height * 0.42),
+      width: size.width * 0.58,
+      height: size.height * 0.52,
+    );
+    canvas.drawOval(ovalRect, paint);
+
+    // Eye level horizontal guide
+    final eyePaint = Paint()
+      ..color = Colors.amber.withOpacity(0.7)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.38),
+      Offset(size.width * 0.8, size.height * 0.38),
+      eyePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 // ============================================================================
-// 2. CUSTOM IMAGE RESIZER & COMPRESSOR (PI7 STYLE)
+// 2. CUSTOM IMAGE RESIZER & COMPRESSOR (GOVT EXAM STANDARDS)
 // ============================================================================
 class _CustomImageResizerDialog extends StatefulWidget {
   const _CustomImageResizerDialog({Key? key}) : super(key: key);

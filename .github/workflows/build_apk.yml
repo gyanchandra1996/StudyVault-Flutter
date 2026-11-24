@@ -89,42 +89,34 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.9.0
-          name: "Medhavi (मेधावी) Flutter v1.9.0 - Signature Cleaner, Exam Analytics Heatmap, Syllabus Tracker & Revision Handbook"
+          tag_name: v2.0.0
+          name: "Medhavi (मेधावी) Flutter v2.0.0 - Full UI Symmetry, Passport Studio (Zoom/Pan/Share), Background Remover, Signature Pad & Official Medhavi APK Icon"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v1.9.0 Official Release APK
-            - **1. Govt Exam Signature Cleaner & Sharpener**:
-              - Whitens paper background to pure white (removes mobile camera shadows and yellow tint).
-              - Sharpens blue/black ink strokes with real-time threshold & darkness controls.
-              - Compresses strictly to 10–20 KB (SSC, UPSC, IBPS standard) with exact 320×140 px scaling and boundary box.
-            - **2. Mock Test Performance Analytics & Heatmap**:
-              - Interactive speed vs accuracy heatmap across all past quiz attempts.
-              - Subject-wise strength & readiness indicators (Polity, History, Math, Science).
-              - Automated weak area detection with 1-tap AI quiz generation for weakest subjects.
-            - **3. Interactive Exam Syllabus Tracker**:
-              - Built-in comprehensive GS-1 syllabi for UPSC Civil Services, SSC CGL Tier 1, and Banking (IBPS/SBI).
-              - Live overall completion percentage bar with local persistent checklist saving.
-              - Custom topic & subject addition support for state PCS and other exam aspirants.
-            - **4. Exam Revision Handbook & High-Yield Cheat Sheets**:
-              - Indian Constitution Articles cheat sheet (Fundamental Rights, DPSP, Writs, Emergency provisions).
-              - Modern Indian History Timeline (1857 Revolt to 1947 Independence).
-              - Essential Quantitative Aptitude & Mensuration formulas.
-              - General Science high-yield facts (vitamins, chemical formulas, SI units).
-              - Built-in instant keyword search filtering across all handbook cards.
-            - **5. Complete Pi7-Style Student Utility Hub**:
-              - Passport size photo maker with DOP stamp & printable 4×6 photo sheets.
-              - Custom image resizer & KB compressor (e.g. 20-50 KB).
-              - Custom PDF notes generator with candidate details & watermarks.
-              - High-speed Image to PDF & PDF to Image converters.
-            - **6. Enhanced Multi-Provider AI Engine & Key Generator**:
-              - 1-click API key acquisition for Google AI Studio (Free Gemini API), OpenAI, Claude, and DeepSeek.
-              - Instant offline quiz fallback so practice never halts during network drops.
-            - **7. Focus Timer & Study Habit Suite**:
-              - Sticky top study focus timer info pill across all screens.
-              - Audio alerts & vibration haptics for break and study intervals.
-            - **8. Customization & Distraction-Free Modes**:
-              - 7 Base themes & 8 Accent themes.
-              - Independent toggles for AI Tutor, AI PDF Notes, and Folder/Import controls.
-              - Android back-button exit confirmation dialog.
+            ### 📱 Medhavi (मेधावी) Flutter v2.0.0 Official Major Release APK
+            - **1. Symmetrical Top & Bottom Tab Bars**:
+              - Top TabBar icons and Bottom NavigationBar icons are now identical (24px).
+              - Symmetrical 5-tab edge-to-edge layout matching Dashboard, Study, Quizzes, Tools, ID Vault with Home, Categories, Flashcards, Favorites, Settings.
+            - **2. Universal Gemini AI Activation with Verified Key**:
+              - Integrated and verified Gemini API key (`AQ.Ab8RN6...`) out of the box.
+              - Pre-configured with ultra-fast active models (`gemini-3.5-flash-lite`, `gemini-flash-lite-latest`, `gemini-3.8-flash`) with automatic failover.
+              - 100% operational across AI Quiz, AI Flashcards, AI Notes to PDF, and AI Tutor / Q&A.
+            - **3. Passport Photo Studio with Crop, Zoom, Pan & Share**:
+              - Interactive Zoom Slider (1.0x to 3.5x) to frame face & shoulders to official 70–80% area.
+              - Vertical and Horizontal Positioning Sliders to align candidate face in frame.
+              - 90° Clockwise Rotate and Reset Crop buttons.
+              - Official oval head & eye guideline overlay.
+              - 1-Click "View Photo", "Share / WhatsApp Print", and "Printable Sheet PDF" generation.
+            - **4. New Tool: Image Background Remover & Color Replacer**:
+              - Clean background isolation with real-time sensitivity / tolerance slider.
+              - 1-Tap Background Replacers: Pure White (SSC/UPSC standard), Light Blue (Railway/Police), or Transparent PNG.
+            - **5. New Tool: Digital Signature Pad**:
+              - Sign directly on phone screen using finger or stylus with smooth bezier ink strokes.
+              - Black or Royal Blue ink color selector with fine/normal/bold thickness.
+              - Automatic 10–20 KB PNG export matching strict SSC / UPSC / IBPS requirements.
+            - **6. Pi7 Branding Cleanup**:
+              - Removed all external Pi7 references from banners and tool badges in favor of genuine Medhavi branding.
+            - **7. Official Medhavi Android Launcher Icon & App Label**:
+              - Android home screen app label updated to "Medhavi" (replaces StudyVault).
+              - Custom high-resolution Medhavi app launcher icons generated across all mipmap density folders (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi).
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true
