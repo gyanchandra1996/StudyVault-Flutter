@@ -89,10 +89,23 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.2.1
-          name: "Medhavi (मेधावी) Flutter v2.2.1 - Granular AI Toggles on Dashboard/Pages, Excel Importer & Build Fix"
+          tag_name: v2.3.0
+          name: "Medhavi (मेधावी) Flutter v2.3.0 - Modern Segmented Capsule Top Tabs, Strict Quiz Category Purity & DSA Bank"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.2.1 Official Release APK
+            ### 📱 Medhavi (मेधावी) Flutter v2.3.0 Official Major Release APK
+            - **1. Modern Segmented Capsule Top TabBar Design**:
+              - Replaced flat underline with an ultra-modern floating segmented capsule container (`PreferredSize` 60px).
+              - Active tab rendered with a sleek glowing rounded pill indicator in theme accent color with subtle border.
+              - Custom slate dark card (`#1E293B`) in Dark Mode and soft card (`#F1F5F9`) in Light Mode.
+              - Symmetrical 20px icons with 11px bold typography and transparent divider line.
+            - **2. Strict Quiz Category & Subject Purity (Zero Cross-Contamination)**:
+              - Fixed cross-category question leakage where Hindi grammar questions appeared in Data Structures/Computer quizzes.
+              - Passed explicit `category` parameters to `AiService` and enforced strict domain boundaries:
+                - Technical English enforced for Computer Science, Data Structures, IT, Programming, and Mathematics.
+                - Hindi language questions strictly restricted to Hindi grammar/literature quizzes.
+              - Guaranteed subject purity in `OfflineQuizGenerator`: cycles only within the selected subject's question pool.
+            - **3. Expanded Data Structures & Algorithms (DSA) Core Bank**:
+              - Added 20+ curated exam-level Data Structures questions (Stacks, Queues, Binary Search Trees, Graphs, Hash Tables, Sorting, Heaps, Dynamic Programming, Time Complexities).
             - **1. Granular AI Enable/Disable Controls on Dashboard & All Pages**:
               - Instant 1-tap **AI: ON / AI: OFF** status pill on the top AppBar accessible from Dashboard, Study, Quizzes, Tools, and ID Vault.
               - BottomSheet modal for quick toggling of Master AI switch and individual modules:

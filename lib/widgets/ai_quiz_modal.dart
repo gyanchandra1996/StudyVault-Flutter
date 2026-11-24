@@ -144,8 +144,10 @@ class _AiQuizModalState extends State<AiQuizModal> {
         apiKey: settings.activeApiKey,
         model: settings.aiModel,
         prompt: promptText,
+        category: categoryName,
         count: count,
         examId: widget.examId,
+        categoryId: _selectedCategoryId,
       );
 
       final taggedQuestions = questions.map((q) => QuizQuestion(

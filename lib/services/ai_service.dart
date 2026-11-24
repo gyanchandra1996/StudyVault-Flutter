@@ -175,6 +175,7 @@ class AiService {
     required String apiKey,
     required String model,
     required String prompt,
+    String? category,
     int count = 5,
     int? examId,
     int? categoryId,
@@ -183,22 +184,33 @@ class AiService {
       throw Exception('API Key is not configured for $provider. Please add it in Settings.');
     }
 
+    final cleanCat = (category != null && category.trim().isNotEmpty && category != 'General')
+        ? category.trim()
+        : (prompt.trim().isNotEmpty ? prompt.trim().split('\n').first : 'General');
+
     final systemInstruction = '''
 You are an expert exam preparation quiz master.
-Create exactly $count multiple choice questions based on the topic or text below.
-If the prompt/topic is in Hindi (हिंदी) or requests Hindi grammar/literature/GK, generate questions, options, and explanations in proper Devanagari Hindi.
-Keep explanations concise (under 30 words each) to ensure smooth generation of all $count questions.
+Create exactly $count multiple choice questions based strictly on the topic and category below.
+
+STRICT CATEGORY & SUBJECT PURITY CONSTRAINTS:
+1. Target Category / Subject: "$cleanCat"
+2. Topic: "$prompt"
+3. EVERY SINGLE ONE of the $count questions MUST strictly belong to the subject "$cleanCat".
+4. UNDER NO CIRCUMSTANCES should you include questions from unrelated subjects (e.g. NEVER mix Hindi grammar, Hindi language questions, Indian history, or general geography into a Computer Science, Data Structures, IT, Programming, Mathematics, or Technical Engineering quiz).
+5. Language: If the subject is a computing, technical, mathematical, or scientific subject (e.g. Data Structures, Computer Science, IT, DBMS, Python, Math), ALL questions, options, and explanations MUST be in standard technical English. Only generate questions in Hindi if the subject itself is specifically Hindi (हिंदी व्याकरण/साहित्य).
+6. Keep explanations concise (under 30 words each) to ensure smooth generation of all $count questions.
+
 Format your response ONLY as a JSON array of objects with these exact keys:
 [
   {
-    "question": "Question text here (in English or Hindi)",
+    "question": "Question text here",
     "optionA": "Option A text",
     "optionB": "Option B text",
     "optionC": "Option C text",
     "optionD": "Option D text",
     "correctIndex": 0,
     "explanation": "Concise explanation of why this answer is correct",
-    "subject": "Topic name"
+    "subject": "$cleanCat"
   }
 ]
 Do not wrap with commentary. Return raw valid JSON.
@@ -327,6 +339,7 @@ Do not wrap with commentary. Return raw valid JSON.
         if (lastResponse == null || lastResponse.statusCode != 200) {
           return OfflineQuizGenerator.generateOfflineQuestions(
             topic: prompt,
+            category: cleanCat,
             count: count,
             examId: examId,
             categoryId: categoryId,
@@ -412,6 +425,7 @@ Do not wrap with commentary. Return raw valid JSON.
       final needed = count - result.length;
       final padQuestions = OfflineQuizGenerator.generateOfflineQuestions(
         topic: prompt,
+        category: cleanCat,
         count: needed,
         examId: examId,
         categoryId: categoryId,

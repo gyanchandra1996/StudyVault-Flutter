@@ -683,26 +683,49 @@ class _HomeScreenState extends State<HomeScreen>
             },
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: false,
-          indicatorColor: accent,
-          indicatorWeight: 3.5,
-          indicatorSize: TabBarIndicatorSize.tab,
-          labelColor: accent,
-          unselectedLabelColor: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white70
-              : Colors.black87,
-          labelPadding: EdgeInsets.zero,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11.5),
-          tabs: const [
-            Tab(text: 'Dashboard', icon: Icon(Icons.dashboard_outlined, size: 24)),
-            Tab(text: 'Study', icon: Icon(Icons.menu_book_outlined, size: 24)),
-            Tab(text: 'Quizzes', icon: Icon(Icons.quiz_outlined, size: 24)),
-            Tab(text: 'Tools', icon: Icon(Icons.handyman_outlined, size: 24)),
-            Tab(text: 'ID Vault', icon: Icon(Icons.shield_outlined, size: 24)),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E293B)
+                  : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white12
+                    : const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: false,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: accent.withOpacity(0.18),
+                border: Border.all(color: accent.withOpacity(0.45), width: 1.2),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: accent,
+              unselectedLabelColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white60
+                  : const Color(0xFF64748B),
+              labelPadding: EdgeInsets.zero,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+              tabs: const [
+                Tab(height: 44, text: 'Dashboard', icon: Icon(Icons.dashboard_outlined, size: 20)),
+                Tab(height: 44, text: 'Study', icon: Icon(Icons.menu_book_outlined, size: 20)),
+                Tab(height: 44, text: 'Quizzes', icon: Icon(Icons.quiz_outlined, size: 20)),
+                Tab(height: 44, text: 'Tools', icon: Icon(Icons.handyman_outlined, size: 20)),
+                Tab(height: 44, text: 'ID Vault', icon: Icon(Icons.shield_outlined, size: 20)),
+              ],
+            ),
+          ),
         ),
       ),
       body: TabBarView(

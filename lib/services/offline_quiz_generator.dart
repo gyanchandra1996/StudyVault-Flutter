@@ -475,6 +475,196 @@ class OfflineQuizGenerator {
       explanation: 'In binary computer storage, 1 GB = 1024 MB (2^10 MB).',
       subject: 'Computer',
     ),
+    QuizQuestion(
+      questionText: 'Which data structure works strictly on the FIFO (First In First Out) principle?',
+      optionA: 'Stack',
+      optionB: 'Queue',
+      optionC: 'Tree',
+      optionD: 'Graph',
+      correctOptionIndex: 1,
+      explanation: 'A Queue works on the First In First Out (FIFO) principle, where the first element inserted is the first one removed.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the average time complexity of searching an element using Binary Search on a sorted array?',
+      optionA: 'O(1)',
+      optionB: 'O(n)',
+      optionC: 'O(log n)',
+      optionD: 'O(n log n)',
+      correctOptionIndex: 2,
+      explanation: 'Binary Search halves the search space in each step, giving an average and worst-case time complexity of O(log n).',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'In a Singly Linked List, what does each node store besides its data value?',
+      optionA: 'Previous node address',
+      optionB: 'Pointer/reference to the next node',
+      optionC: 'Array index',
+      optionD: 'Memory hash value',
+      correctOptionIndex: 1,
+      explanation: 'Each node in a singly linked list contains data and a pointer (or reference) to the next node in the sequence.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'Which tree traversal visits the nodes of a Binary Search Tree (BST) in strictly ascending sorted order?',
+      optionA: 'Preorder (Root, Left, Right)',
+      optionB: 'Inorder (Left, Root, Right)',
+      optionC: 'Postorder (Left, Right, Root)',
+      optionD: 'Level Order',
+      correctOptionIndex: 1,
+      explanation: 'Inorder traversal visits Left Subtree -> Root -> Right Subtree, which yields keys in ascending sorted order for any valid BST.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'Which data structure is primarily utilized by the system to implement function calls and recursion?',
+      optionA: 'Call Stack',
+      optionB: 'Circular Queue',
+      optionC: 'Binary Heap',
+      optionD: 'Hash Map',
+      correctOptionIndex: 0,
+      explanation: 'The system Call Stack stores activation records (return addresses, local variables, parameters) during recursive and nested function calls.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the worst-case time complexity of the standard QuickSort algorithm (e.g. when the pivot is always the smallest or largest element)?',
+      optionA: 'O(n)',
+      optionB: 'O(n log n)',
+      optionC: 'O(n^2)',
+      optionD: 'O(log n)',
+      correctOptionIndex: 2,
+      explanation: 'QuickSort degrades to O(n^2) in the worst case when the chosen pivot consistently partitions the array into heavily unbalanced subarrays.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the average and worst-case time complexity of MergeSort for an array of n elements?',
+      optionA: 'O(n)',
+      optionB: 'O(n log n)',
+      optionC: 'O(n^2)',
+      optionD: 'O(2^n)',
+      correctOptionIndex: 1,
+      explanation: 'MergeSort employs divide-and-conquer to guarantee O(n log n) time complexity in all cases (best, average, and worst).',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'Which data structure is fundamentally used to implement Breadth-First Search (BFS) on a graph or tree?',
+      optionA: 'Stack',
+      optionB: 'Queue',
+      optionC: 'Priority Queue',
+      optionD: 'Binary Search Tree',
+      correctOptionIndex: 1,
+      explanation: 'Breadth-First Search (BFS) processes nodes level-by-level using a FIFO Queue.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the average time complexity for searching, insertion, and deletion in a well-designed Hash Table?',
+      optionA: 'O(1)',
+      optionB: 'O(log n)',
+      optionC: 'O(n)',
+      optionD: 'O(n log n)',
+      correctOptionIndex: 0,
+      explanation: 'Hash Tables offer average O(1) constant time complexity for lookup, insert, and delete using an effective hash function with minimal collisions.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the primary difference between a Doubly Linked List and a Singly Linked List?',
+      optionA: 'Doubly Linked List consumes less memory',
+      optionB: 'Doubly Linked List allows bidirectional traversal via next and previous pointers',
+      optionC: 'Doubly Linked List does not support dynamic sizing',
+      optionD: 'Doubly Linked List cannot store integer values',
+      correctOptionIndex: 1,
+      explanation: 'Each node in a doubly linked list contains two pointers (next and previous), allowing traversal in both forward and backward directions.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'In a Min-Heap binary tree, what invariant holds true for every non-root node?',
+      optionA: 'Parent node value is less than or equal to its children',
+      optionB: 'Parent node value is greater than its children',
+      optionC: 'Left child is always greater than right child',
+      optionD: 'All leaf nodes must equal zero',
+      correctOptionIndex: 0,
+      explanation: 'In a Min-Heap, the root contains the smallest element, and the key of every parent node is less than or equal to the keys of its children.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the time complexity to access an element by its index in a contiguous Array (e.g. arr[i])?',
+      optionA: 'O(1)',
+      optionB: 'O(n)',
+      optionC: 'O(log n)',
+      optionD: 'O(n^2)',
+      correctOptionIndex: 0,
+      explanation: 'Because array elements are stored in contiguous memory addresses, address calculation `base + i * size` executes in O(1) constant time.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'Which graph algorithm computes the shortest path from a single source vertex in a graph with non-negative edge weights?',
+      optionA: 'Prim\'s Algorithm',
+      optionB: 'Kruskal\'s Algorithm',
+      optionC: 'Dijkstra\'s Algorithm',
+      optionD: 'Floyd-Warshall Algorithm',
+      correctOptionIndex: 2,
+      explanation: 'Dijkstra\'s algorithm uses a greedy approach (often backed by a min-heap) to find the shortest path from a single source with non-negative weights.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'Which algorithmic paradigm solves complex problems by breaking them into overlapping subproblems and storing subproblem results (Memoization / Tabulation)?',
+      optionA: 'Greedy Algorithm',
+      optionB: 'Divide and Conquer',
+      optionC: 'Dynamic Programming',
+      optionD: 'Backtracking',
+      correctOptionIndex: 2,
+      explanation: 'Dynamic Programming solves problems with overlapping subproblems and optimal substructure by caching results to avoid redundant calculations.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the maximum number of children a node can have in a Binary Tree?',
+      optionA: '1',
+      optionB: '2',
+      optionC: '3',
+      optionD: 'Any arbitrary number',
+      correctOptionIndex: 1,
+      explanation: 'By definition, each node in a Binary Tree can have at most two children, typically referred to as the left child and right child.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'Which data structure is optimal for evaluating postfix (Reverse Polish) mathematical expressions?',
+      optionA: 'Stack',
+      optionB: 'Queue',
+      optionC: 'Graph',
+      optionD: 'Hash Table',
+      correctOptionIndex: 0,
+      explanation: 'Postfix evaluation pushes operands onto a Stack and pops the top two operands whenever an operator is encountered.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What is the worst-case time complexity of Linear Search in an unsorted array of size n?',
+      optionA: 'O(1)',
+      optionB: 'O(log n)',
+      optionC: 'O(n)',
+      optionD: 'O(n log n)',
+      correctOptionIndex: 2,
+      explanation: 'In the worst case (element at the very end or not present), Linear Search inspects all n elements, requiring O(n) time.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'Why is an AVL Tree or Red-Black Tree preferred over an ordinary Binary Search Tree (BST) for high-performance lookups?',
+      optionA: 'They use less memory than standard BSTs',
+      optionB: 'They self-balance to maintain O(log n) worst-case height and prevent degradation to a linear linked list',
+      optionC: 'They only store positive integers',
+      optionD: 'They do not require pointers',
+      correctOptionIndex: 1,
+      explanation: 'Self-balancing BSTs (AVL, Red-Black) perform tree rotations to keep tree height bounded to O(log n), preventing O(n) degenerate skew.',
+      subject: 'Data Structures',
+    ),
+    QuizQuestion(
+      questionText: 'What major problem of a simple linear array-based Queue does a Circular Queue solve?',
+      optionA: 'False Overflow (memory waste when deleted slots in front cannot be reused)',
+      optionB: 'Null pointer exceptions',
+      optionC: 'Slow enqueue operations',
+      optionD: 'Stack overflow errors',
+      correctOptionIndex: 0,
+      explanation: 'A Circular Queue wraps rear and front indices using modulo arithmetic, allowing newly freed slots at the beginning of the array to be reused.',
+      subject: 'Data Structures',
+    ),
   ];
 
   /// Generates questions offline based on topic keywords and category
@@ -512,21 +702,50 @@ class OfflineQuizGenerator {
     if (lowerTopic.contains('hindi') || lowerTopic.contains('हिंदी') || lowerTopic.contains('व्याकरण') || lowerCat.contains('hindi')) {
       matched.addAll(_allCuratedQuestions.where((q) => q.subject == 'Hindi'));
     }
-    if (lowerTopic.contains('computer') || lowerTopic.contains('it') || lowerTopic.contains('python') || lowerTopic.contains('dbms') || lowerCat.contains('computer')) {
-      matched.addAll(_allCuratedQuestions.where((q) => q.subject == 'Computer'));
+    final isComputerOrDsa = lowerTopic.contains('computer') ||
+        lowerTopic.contains('data structure') ||
+        lowerTopic.contains('algorithm') ||
+        lowerTopic.contains('dsa') ||
+        lowerTopic.contains('stack') ||
+        lowerTopic.contains('queue') ||
+        lowerTopic.contains('tree') ||
+        lowerTopic.contains('graph') ||
+        lowerTopic.contains('array') ||
+        lowerTopic.contains('linked list') ||
+        lowerTopic.contains('sorting') ||
+        lowerTopic.contains('programming') ||
+        lowerTopic.contains('coding') ||
+        lowerTopic.contains('software') ||
+        lowerTopic.contains('it') ||
+        lowerTopic.contains('python') ||
+        lowerTopic.contains('java') ||
+        lowerTopic.contains('c++') ||
+        lowerTopic.contains('dbms') ||
+        lowerTopic.contains('database') ||
+        lowerCat.contains('computer') ||
+        lowerCat.contains('data structure') ||
+        lowerCat.contains('dsa') ||
+        lowerCat.contains('it');
+
+    if (isComputerOrDsa) {
+      matched.addAll(_allCuratedQuestions.where((q) => q.subject == 'Computer' || q.subject == 'Data Structures'));
     }
 
-    // If no specific match or not enough, use all curated questions
-    if (matched.length < count) {
-      final remaining = _allCuratedQuestions.where((q) => !matched.contains(q)).toList()..shuffle();
-      matched.addAll(remaining);
-    } else {
+    // Strict Subject Purity: If a subject was matched, ONLY cycle within that subject!
+    // Under NO circumstance should questions from other categories (like Hindi, History) bleed in!
+    if (matched.isNotEmpty) {
       matched.shuffle();
-    }
-
-    // Guarantee that matched always has at least count questions
-    while (matched.length < count) {
-      matched.addAll(_allCuratedQuestions);
+      final pool = List<QuizQuestion>.from(matched);
+      while (matched.length < count) {
+        matched.addAll(pool);
+      }
+    } else {
+      // Only for generic queries where no category matched, and NEVER include language-specific Hindi grammar in an English query!
+      final nonHindi = _allCuratedQuestions.where((q) => q.subject != 'Hindi').toList()..shuffle();
+      matched.addAll(nonHindi);
+      while (matched.length < count) {
+        matched.addAll(nonHindi);
+      }
     }
 
     final selected = matched.take(count.clamp(1, 30)).toList();
