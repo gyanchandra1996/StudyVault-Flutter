@@ -48,7 +48,20 @@ jobs:
       - name: Build Standalone Release APK
         run: |
           set -o pipefail
-          if ! flutter build apk --release --no-tree-shake-icons 2>&1 | tee build_output.log; then
+          build_success=false
+          for attempt in 1 2 3; do
+            echo "::group::Attempt $attempt: flutter build apk --release"
+            if flutter build apk --release --no-tree-shake-icons 2>&1 | tee build_output.log; then
+              build_success=true
+              echo "::endgroup::"
+              echo "✅ Build succeeded on attempt $attempt"
+              break
+            fi
+            echo "::endgroup::"
+            echo "⚠️ Attempt $attempt failed. Waiting 20 seconds before retry..."
+            sleep 20
+          done
+          if [ "$build_success" != "true" ]; then
             echo "## ❌ Build Failure Log" >> $GITHUB_STEP_SUMMARY
             echo '```text' >> $GITHUB_STEP_SUMMARY
             tail -n 120 build_output.log >> $GITHUB_STEP_SUMMARY
