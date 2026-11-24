@@ -77,59 +77,88 @@ class PomodoroWidget extends StatelessWidget {
           color: pomodoro.isWorkMode ? Colors.indigo.withOpacity(0.2) : Colors.green.withOpacity(0.2),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                pomodoro.isWorkMode ? Icons.timer : Icons.coffee,
-                color: pomodoro.isWorkMode ? Colors.indigo : Colors.green,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Text(
-                    pomodoro.isWorkMode ? 'Study Focus' : 'Short Break',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: pomodoro.isWorkMode ? Colors.indigo : Colors.green,
-                    ),
+                  Icon(
+                    pomodoro.isWorkMode ? Icons.timer : Icons.coffee,
+                    color: pomodoro.isWorkMode ? Colors.indigo : Colors.green,
+                    size: 28,
                   ),
-                  Text(
-                    pomodoro.formattedTime,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        onTap: () => pomodoro.switchMode(!pomodoro.isWorkMode),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              pomodoro.isWorkMode ? 'Study Focus' : 'Short Break',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: pomodoro.isWorkMode ? Colors.indigo : Colors.green,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.swap_horiz, size: 14, color: pomodoro.isWorkMode ? Colors.indigo : Colors.green),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        pomodoro.formattedTime,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(pomodoro.isRunning ? Icons.pause_circle_filled : Icons.play_circle_fill),
+                    color: pomodoro.isWorkMode ? Colors.indigo : Colors.green,
+                    iconSize: 38,
+                    onPressed: () {
+                      if (pomodoro.isRunning) {
+                        pomodoro.pause();
+                      } else {
+                        pomodoro.start();
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Reset Timer',
+                    onPressed: pomodoro.reset,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.tune),
+                    tooltip: 'Timer Settings',
+                    onPressed: () => _showSettingsDialog(context, pomodoro),
                   ),
                 ],
               ),
             ],
           ),
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(pomodoro.isRunning ? Icons.pause_circle : Icons.play_circle),
-                color: pomodoro.isWorkMode ? Colors.indigo : Colors.green,
-                iconSize: 36,
-                onPressed: () {
-                  if (pomodoro.isRunning) {
-                    pomodoro.pause();
-                  } else {
-                    pomodoro.start();
-                  }
-                },
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: pomodoro.progress.clamp(0.0, 1.0),
+              minHeight: 4,
+              backgroundColor: (pomodoro.isWorkMode ? Colors.indigo : Colors.green).withOpacity(0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                pomodoro.isWorkMode ? Colors.indigo : Colors.green,
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: pomodoro.reset,
-              ),
-              IconButton(
-                icon: const Icon(Icons.tune),
-                onPressed: () => _showSettingsDialog(context, pomodoro),
-              ),
-            ],
+            ),
           ),
         ],
       ),

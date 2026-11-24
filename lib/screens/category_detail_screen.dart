@@ -205,7 +205,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   );
                 },
               ),
-              if (Provider.of<SettingsProvider>(context, listen: false).isAiEnabled) ...[
+              if (Provider.of<SettingsProvider>(context, listen: false).isAiEnabled &&
+                  Provider.of<SettingsProvider>(context, listen: false).isAiPdfNotesEnabled) ...[
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFFF3E8FF),

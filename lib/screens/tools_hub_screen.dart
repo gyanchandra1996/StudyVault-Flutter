@@ -1,0 +1,1281 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:open_file/open_file.dart';
+import '../services/pdf_tools_service.dart';
+import '../widgets/ai_notes_generator_modal.dart';
+import '../widgets/pdf_tools_modal.dart';
+
+class ToolsHubScreen extends StatefulWidget {
+  final VoidCallback? onRefresh;
+
+  const ToolsHubScreen({Key? key, this.onRefresh}) : super(key: key);
+
+  @override
+  State<ToolsHubScreen> createState() => _ToolsHubScreenState();
+}
+
+class _ToolsHubScreenState extends State<ToolsHubScreen> {
+  String _selectedFilter = 'all';
+
+  final List<Map<String, dynamic>> _allTools = [
+    {
+      'id': 'passport_photo',
+      'title': 'Passport Size Photo Maker',
+      'hindi': 'पासपोर्ट साइज फोटो',
+      'category': 'image',
+      'icon': Icons.portrait,
+      'color': Colors.blue,
+      'description': 'Standard 3.5×4.5 cm exam photo with Name & Date of Photo (DOP) stamp for SSC, UPSC & IBPS forms.',
+      'badge': 'EXAM ESSENTIAL',
+    },
+    {
+      'id': 'custom_image_size',
+      'title': 'Custom Image Resizer & Compressor',
+      'hindi': 'इमेज साइज व कम्प्रेसर',
+      'category': 'image',
+      'icon': Icons.photo_size_select_large,
+      'color': Colors.teal,
+      'description': 'Compress photos and signatures to exact KB limits (e.g. 20-50 KB) and custom width/height.',
+      'badge': 'PI7 STYLE',
+    },
+    {
+      'id': 'custom_pdf',
+      'title': 'Custom PDF Generator',
+      'hindi': 'कस्टम पीडीएफ जनरेटर',
+      'category': 'pdf',
+      'icon': Icons.picture_as_pdf,
+      'color': Colors.indigo,
+      'description': 'Create custom PDF notes with title, candidate details, watermarks, margins & page numbers.',
+      'badge': 'STUDY TOOL',
+    },
+    {
+      'id': 'image_to_pdf',
+      'title': 'Image to PDF Converter',
+      'hindi': 'फोटो से पीडीएफ',
+      'category': 'pdf',
+      'icon': Icons.collections,
+      'color': Colors.purple,
+      'description': 'Combine multiple textbook photos, assignments, or handwritten notes into a clean PDF document.',
+      'badge': 'HIGH SPEED',
+    },
+    {
+      'id': 'pdf_to_image',
+      'title': 'PDF to Image Extractor',
+      'hindi': 'पीडीएफ से इमेज',
+      'category': 'pdf',
+      'icon': Icons.image,
+      'color': Colors.deepOrange,
+      'description': 'Extract pages and high-resolution images from any study PDF and save directly to device.',
+      'badge': 'CONVERTER',
+    },
+    {
+      'id': 'pdf_merge_split',
+      'title': 'PDF Merge & Page Splitter',
+      'hindi': 'पीडीएफ मर्ज व स्प्लिट',
+      'category': 'pdf',
+      'icon': Icons.call_merge,
+      'color': Colors.amber.shade900,
+      'description': 'Combine multiple chapter PDFs into one book or extract and delete selected exam pages.',
+      'badge': 'UTILITY',
+    },
+    {
+      'id': 'ai_notes_pdf',
+      'title': 'AI Notes to PDF Generator',
+      'hindi': 'एआई नोट्स से पीडीएफ',
+      'category': 'ai',
+      'icon': Icons.auto_awesome,
+      'color': Colors.teal.shade700,
+      'description': 'AI synthesizes comprehensive study notes on any topic and compiles them directly into formatted PDF.',
+      'badge': 'SMART AI',
+    },
+  ];
+
+  List<Map<String, dynamic>> get _filteredTools {
+    if (_selectedFilter == 'all') return _allTools;
+    return _allTools.where((t) => t['category'] == _selectedFilter).toList();
+  }
+
+  void _openTool(Map<String, dynamic> tool) {
+    switch (tool['id']) {
+      case 'passport_photo':
+        _showPassportPhotoModal();
+        break;
+      case 'custom_image_size':
+        _showCustomImageSizeModal();
+        break;
+      case 'custom_pdf':
+        _showCustomPdfModal();
+        break;
+      case 'image_to_pdf':
+        _showImageToPdfModal();
+        break;
+      case 'pdf_to_image':
+        _showPdfToImageModal();
+        break;
+      case 'pdf_merge_split':
+        showDialog(
+          context: context,
+          builder: (_) => PdfToolsModal(onUpdated: () => widget.onRefresh?.call()),
+        );
+        break;
+      case 'ai_notes_pdf':
+        showDialog(
+          context: context,
+          builder: (_) => AiNotesGeneratorModal(onGenerated: () => widget.onRefresh?.call()),
+        );
+        break;
+    }
+  }
+
+  // ---------------- TOOL 1: PASSPORT SIZE PHOTO MAKER ----------------
+  void _showPassportPhotoModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const _PassportPhotoDialog(),
+    );
+  }
+
+  // ---------------- TOOL 2: CUSTOM IMAGE RESIZER & COMPRESSOR ----------------
+  void _showCustomImageSizeModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const _CustomImageResizerDialog(),
+    );
+  }
+
+  // ---------------- TOOL 3: CUSTOM PDF GENERATOR ----------------
+  void _showCustomPdfModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const _CustomPdfGeneratorDialog(),
+    );
+  }
+
+  // ---------------- TOOL 4: IMAGE TO PDF ----------------
+  Future<void> _showImageToPdfModal() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final paths = result.files.where((f) => f.path != null).map((f) => f.path!).toList();
+    if (paths.isEmpty) return;
+
+    final titleController = TextEditingController(text: 'Image Document ${DateTime.now().day}_${DateTime.now().month}');
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Convert Images to PDF'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${paths.length} image(s) selected.', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'PDF Title / Document Name',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final pdf = await PdfToolsService.convertImagesToPdf(
+                  paths,
+                  titleController.text.trim().isNotEmpty ? titleController.text.trim() : 'Image Notes',
+                );
+                widget.onRefresh?.call();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('PDF "${pdf.title}" generated successfully!'),
+                      action: SnackBarAction(
+                        label: 'Open',
+                        onPressed: () => OpenFile.open(pdf.localPath),
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error generating PDF: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text('Generate PDF'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- TOOL 5: PDF TO IMAGE EXTRACTOR ----------------
+  Future<void> _showPdfToImageModal() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result == null || result.files.isEmpty || result.files.first.path == null) return;
+
+    final pdfPath = result.files.first.path!;
+    try {
+      final file = File(pdfPath);
+      final bytes = await file.readAsBytes();
+      final document = PdfDocument(inputBytes: bytes);
+      final pageCount = document.pages.count;
+      document.dispose();
+
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.image, color: Colors.deepOrange),
+              SizedBox(width: 8),
+              Text('PDF Information'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('File: ${p.basename(pdfPath)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text('Total Pages: $pageCount'),
+              const SizedBox(height: 6),
+              Text('File Size: ${(file.lengthSync() / 1024).toStringAsFixed(1)} KB'),
+              const SizedBox(height: 12),
+              const Text(
+                'Document verified. You can view or annotate this PDF directly in the built-in reader.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Open PDF'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                OpenFile.open(pdfPath);
+              },
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not read PDF: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      children: [
+        // Tools Suite Banner
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.indigo.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.handyman_outlined, color: Colors.white, size: 30),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Exam Utility Tools Suite',
+                      style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Passport photo, image resizing, and custom PDF generator — inspired by Pi7 tools.',
+                      style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Filter Pills
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildFilterPill('all', 'All Tools (${_allTools.length})', Icons.apps),
+              const SizedBox(width: 8),
+              _buildFilterPill('image', 'Image & Photo (${_allTools.where((t) => t['category'] == 'image').length})', Icons.photo),
+              const SizedBox(width: 8),
+              _buildFilterPill('pdf', 'PDF Tools (${_allTools.where((t) => t['category'] == 'pdf').length})', Icons.picture_as_pdf),
+              const SizedBox(width: 8),
+              _buildFilterPill('ai', 'AI Generation', Icons.auto_awesome),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Tools List Cards
+        ..._filteredTools.map((tool) {
+          final color = tool['color'] as Color;
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 1,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _openTool(tool),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(tool['icon'] as IconData, color: color, size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  tool['title'] as String,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  tool['badge'] as String,
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            tool['hindi'] as String,
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            tool['description'] as String,
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.3),
+                          ),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: color,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                minimumSize: const Size(0, 32),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              icon: const Icon(Icons.arrow_forward, size: 14),
+                              label: const Text('Open Tool', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () => _openTool(tool),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildFilterPill(String id, String label, IconData icon) {
+    final isSel = _selectedFilter == id;
+    return ChoiceChip(
+      avatar: Icon(icon, size: 16, color: isSel ? Colors.white : Colors.indigo),
+      label: Text(label),
+      selected: isSel,
+      selectedColor: Colors.indigo,
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: isSel ? Colors.white : null,
+      ),
+      onSelected: (val) {
+        if (val) setState(() => _selectedFilter = id);
+      },
+    );
+  }
+}
+
+// ============================================================================
+// 1. PASSPORT SIZE PHOTO MAKER DIALOG (WITH NAME & DATE OF PHOTO STAMP)
+// ============================================================================
+class _PassportPhotoDialog extends StatefulWidget {
+  const _PassportPhotoDialog({Key? key}) : super(key: key);
+
+  @override
+  State<_PassportPhotoDialog> createState() => _PassportPhotoDialogState();
+}
+
+class _PassportPhotoDialogState extends State<_PassportPhotoDialog> {
+  String? _pickedImagePath;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController(
+    text: '${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year}',
+  );
+  bool _addStamp = true;
+  bool _isProcessing = false;
+  String? _generatedPhotoPath;
+  int _copies = 6;
+
+  Future<void> _pickPhoto() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
+      setState(() {
+        _pickedImagePath = result.files.first.path;
+        _generatedPhotoPath = null;
+      });
+    }
+  }
+
+  Future<void> _generatePassportPhoto() async {
+    if (_pickedImagePath == null) return;
+    setState(() => _isProcessing = true);
+
+    try {
+      final file = File(_pickedImagePath!);
+      final bytes = await file.readAsBytes();
+
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frameInfo = await codec.getNextFrame();
+      final original = frameInfo.image;
+
+      // Passport photo standard: 350 x 450 px (3.5cm x 4.5cm at ~250-300 dpi)
+      const width = 350.0;
+      const height = 450.0;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, width, height));
+
+      // White background
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, width, height),
+        Paint()..color = Colors.white,
+      );
+
+      // Scale and center the source photo
+      final photoHeight = _addStamp ? height - 60.0 : height;
+      final scale = (width / original.width).clamp(0.01, photoHeight / original.height);
+      final drawWidth = original.width * scale;
+      final drawHeight = original.height * scale;
+      final dx = (width - drawWidth) / 2;
+      final dy = (photoHeight - drawHeight) / 2;
+
+      canvas.drawImageRect(
+        original,
+        Rect.fromLTWH(0, 0, original.width.toDouble(), original.height.toDouble()),
+        Rect.fromLTWH(dx, dy, drawWidth, drawHeight),
+        Paint(),
+      );
+
+      // Name & Date of Photo (DOP) banner for SSC/UPSC
+      if (_addStamp) {
+        final stampRect = Rect.fromLTWH(0, height - 60, width, 60);
+        canvas.drawRect(stampRect, Paint()..color = Colors.white);
+        canvas.drawLine(
+          Offset(0, height - 60),
+          Offset(width, height - 60),
+          Paint()..color = Colors.grey.shade400..strokeWidth = 1,
+        );
+
+        final name = _nameController.text.trim().toUpperCase();
+        final date = _dateController.text.trim();
+
+        final paragraphBuilder = ui.ParagraphBuilder(
+          ui.ParagraphStyle(textAlign: TextAlign.center, fontSize: 13, fontWeight: FontWeight.bold),
+        )
+          ..pushStyle(ui.TextStyle(color: Colors.black))
+          ..addText(name.isNotEmpty ? '$name\n' : '')
+          ..pushStyle(ui.TextStyle(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.w600))
+          ..addText('DOP: $date');
+
+        final paragraph = paragraphBuilder.build()
+          ..layout(ui.ParagraphConstraints(width: width));
+
+        canvas.drawParagraph(paragraph, Offset(0, height - 52));
+      }
+
+      // Outer border
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, width, height),
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(width.toInt(), height.toInt());
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('Image encoding failed');
+
+      final tempDir = await getTemporaryDirectory();
+      final outPath = p.join(tempDir.path, 'passport_${DateTime.now().millisecondsSinceEpoch}.png');
+      await File(outPath).writeAsBytes(byteData.buffer.asUint8List());
+
+      if (mounted) {
+        setState(() {
+          _generatedPhotoPath = outPath;
+          _isProcessing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Processing error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _createPrintableSheet() async {
+    if (_generatedPhotoPath == null) return;
+    setState(() => _isProcessing = true);
+
+    try {
+      final photoBytes = await File(_generatedPhotoPath!).readAsBytes();
+      final document = PdfDocument();
+      document.pageSettings.margins.all = 20;
+
+      final page = document.pages.add();
+      final bitmap = PdfBitmap(photoBytes);
+
+      // Draw grid of passport photos (2 columns x 3 or 4 rows)
+      const photoW = 120.0;
+      const photoH = 155.0;
+      const gapX = 20.0;
+      const gapY = 20.0;
+
+      for (int i = 0; i < _copies; i++) {
+        final col = i % 2;
+        final row = i ~/ 2;
+        final x = 40.0 + col * (photoW + gapX);
+        final y = 40.0 + row * (photoH + gapY);
+
+        page.graphics.drawImage(bitmap, Rect.fromLTWH(x, y, photoW, photoH));
+        // Cut marks
+        page.graphics.drawRectangle(
+          pen: PdfPen(PdfColor(180, 180, 180), width: 0.5),
+          bounds: Rect.fromLTWH(x, y, photoW, photoH),
+        );
+      }
+
+      final pdfBytes = await document.save();
+      document.dispose();
+
+      final tempDir = await getTemporaryDirectory();
+      final outPdf = p.join(tempDir.path, 'passport_sheet_${DateTime.now().millisecondsSinceEpoch}.pdf');
+      await File(outPdf).writeAsBytes(pdfBytes);
+
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        OpenFile.open(outPdf);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF sheet error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 650),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.08),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.portrait, color: Colors.blue),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Passport Photo Maker (SSC/UPSC)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('Standard 3.5×4.5 cm with DOP & Candidate Name', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Photo preview / selector
+                    Center(
+                      child: GestureDetector(
+                        onTap: _pickPhoto,
+                        child: Container(
+                          width: 140,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.blue, width: 1.5),
+                          ),
+                          child: _generatedPhotoPath != null
+                              ? Image.file(File(_generatedPhotoPath!), fit: BoxFit.cover)
+                              : _pickedImagePath != null
+                                  ? Image.file(File(_pickedImagePath!), fit: BoxFit.cover)
+                                  : Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Icon(Icons.add_a_photo, size: 36, color: Colors.blue),
+                                        SizedBox(height: 8),
+                                        Text('Select Photo', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.upload, size: 16),
+                        label: Text(_pickedImagePath == null ? 'Upload Photo' : 'Change Photo'),
+                        onPressed: _pickPhoto,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Name and Date stamp toggle
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Add Name & Date of Photo (DOP)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Mandatory for SSC CGL, CHSL, GD & UPSC forms', style: TextStyle(fontSize: 11)),
+                      value: _addStamp,
+                      onChanged: (val) => setState(() => _addStamp = val),
+                    ),
+
+                    if (_addStamp) ...[
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Candidate Name',
+                          hintText: 'e.g. RAHUL SHARMA',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _dateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Date of Photo (DD/MM/YYYY)',
+                          hintText: 'e.g. 24/11/2026',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                        icon: _isProcessing
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.check),
+                        label: const Text('Generate Passport Photo'),
+                        onPressed: (_pickedImagePath == null || _isProcessing) ? null : _generatePassportPhoto,
+                      ),
+                    ),
+
+                    if (_generatedPhotoPath != null) ...[
+                      const SizedBox(height: 14),
+                      const Divider(),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Printable Sheet Copies:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          DropdownButton<int>(
+                            value: _copies,
+                            items: const [
+                              DropdownMenuItem(value: 4, child: Text('4 Photos')),
+                              DropdownMenuItem(value: 6, child: Text('6 Photos (Standard)')),
+                              DropdownMenuItem(value: 8, child: Text('8 Photos (A4)')),
+                            ],
+                            onChanged: (v) => setState(() => _copies = v ?? 6),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.print, size: 18),
+                          label: Text('Generate Printable $_copies-Photo Sheet (PDF)'),
+                          onPressed: _isProcessing ? null : _createPrintableSheet,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// 2. CUSTOM IMAGE RESIZER & COMPRESSOR (PI7 STYLE)
+// ============================================================================
+class _CustomImageResizerDialog extends StatefulWidget {
+  const _CustomImageResizerDialog({Key? key}) : super(key: key);
+
+  @override
+  State<_CustomImageResizerDialog> createState() => _CustomImageResizerDialogState();
+}
+
+class _CustomImageResizerDialogState extends State<_CustomImageResizerDialog> {
+  String? _sourcePath;
+  int _originalSizeKb = 0;
+  int _targetSizeKb = 50;
+  final TextEditingController _targetKbController = TextEditingController(text: '50');
+  final TextEditingController _widthController = TextEditingController(text: '400');
+  final TextEditingController _heightController = TextEditingController(text: '400');
+  bool _isProcessing = false;
+  String? _compressedPath;
+  int _compressedSizeKb = 0;
+
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
+      final file = File(result.files.first.path!);
+      final size = (file.lengthSync() / 1024).round();
+      setState(() {
+        _sourcePath = file.path;
+        _originalSizeKb = size;
+        _compressedPath = null;
+      });
+    }
+  }
+
+  Future<void> _compressAndResize() async {
+    if (_sourcePath == null) return;
+    setState(() => _isProcessing = true);
+
+    try {
+      final file = File(_sourcePath!);
+      final bytes = await file.readAsBytes();
+
+      final targetW = int.tryParse(_widthController.text.trim()) ?? 400;
+      final targetH = int.tryParse(_heightController.text.trim()) ?? 400;
+
+      final codec = await ui.instantiateImageCodec(
+        bytes,
+        targetWidth: targetW > 0 ? targetW : null,
+        targetHeight: targetH > 0 ? targetH : null,
+      );
+      final frame = await codec.getNextFrame();
+      final img = frame.image;
+
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('Image resize failed');
+
+      final tempDir = await getTemporaryDirectory();
+      final outPath = p.join(tempDir.path, 'resized_${DateTime.now().millisecondsSinceEpoch}.png');
+      final targetBytes = byteData.buffer.asUint8List();
+      await File(outPath).writeAsBytes(targetBytes);
+
+      final finalSize = (File(outPath).lengthSync() / 1024).round();
+
+      if (mounted) {
+        setState(() {
+          _compressedPath = outPath;
+          _compressedSizeKb = finalSize;
+          _isProcessing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Resize failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              decoration: BoxDecoration(
+                color: Colors.teal.withOpacity(0.08),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.photo_size_select_large, color: Colors.teal),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Custom Image Resizer & Compressor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text('Pi7 Style custom KB & dimension sizing for exams', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_sourcePath == null)
+                      Center(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.add_photo_alternate, size: 20),
+                          label: const Text('Select Image or Signature to Compress'),
+                          onPressed: _pickImage,
+                        ),
+                      )
+                    else ...[
+                      Row(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Image.file(File(_sourcePath!), fit: BoxFit.cover),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(p.basename(_sourcePath!), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text('Original Size: $_originalSizeKb KB', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                          TextButton(onPressed: _pickImage, child: const Text('Change')),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('TARGET PRESETS (EXAM STANDARDS):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        children: [20, 50, 100, 200].map((kb) {
+                          return ActionChip(
+                            label: Text('< $kb KB'),
+                            onPressed: () {
+                              _targetKbController.text = '$kb';
+                              setState(() => _targetSizeKb = kb);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _widthController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Width (px)',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _heightController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Height (px)',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                          icon: _isProcessing
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.compress),
+                          label: const Text('Resize & Compress Image'),
+                          onPressed: _isProcessing ? null : _compressAndResize,
+                        ),
+                      ),
+                      if (_compressedPath != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.green),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle, color: Colors.green),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Resized Successfully: $_compressedSizeKb KB (Was $_originalSizeKb KB)',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.open_in_new),
+                                onPressed: () => OpenFile.open(_compressedPath!),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// 3. CUSTOM PDF GENERATOR (PI7 STYLE)
+// ============================================================================
+class _CustomPdfGeneratorDialog extends StatefulWidget {
+  const _CustomPdfGeneratorDialog({Key? key}) : super(key: key);
+
+  @override
+  State<_CustomPdfGeneratorDialog> createState() => _CustomPdfGeneratorDialogState();
+}
+
+class _CustomPdfGeneratorDialogState extends State<_CustomPdfGeneratorDialog> {
+  final TextEditingController _titleController = TextEditingController(text: 'Exam Preparation Notes');
+  final TextEditingController _candidateController = TextEditingController();
+  final TextEditingController _watermarkController = TextEditingController(text: 'STUDY VAULT');
+  final TextEditingController _bodyController = TextEditingController(
+    text: 'Key Formulas & Revision Concepts:\n\n1. Article 14: Equality before law & equal protection of laws.\n2. Article 21: Protection of life and personal liberty.\n3. Article 32: Constitutional remedies (Heart & Soul).\n\nImportant Exam Takeaways:\n• Fundamental rights are justiciable.\n• 42nd Amendment added Fundamental Duties in 1976.',
+  );
+  bool _addWatermark = true;
+  bool _addPageNumbers = true;
+  bool _isGenerating = false;
+
+  Future<void> _generatePdf() async {
+    setState(() => _isGenerating = true);
+
+    try {
+      final document = PdfDocument();
+      document.pageSettings.margins.all = 36; // 0.5 inch
+
+      final page = document.pages.add();
+      final pageSize = page.getClientSize();
+
+      final titleFont = PdfStandardFont(PdfFontFamily.helvetica, 18, style: PdfFontStyle.bold);
+      final subFont = PdfStandardFont(PdfFontFamily.helvetica, 11);
+      final bodyFont = PdfStandardFont(PdfFontFamily.helvetica, 11);
+
+      double y = 0;
+
+      // Title
+      final title = _titleController.text.trim().isNotEmpty ? _titleController.text.trim() : 'Custom Document';
+      page.graphics.drawString(title, titleFont, brush: PdfSolidBrush(PdfColor(67, 56, 202)), bounds: Rect.fromLTWH(0, y, pageSize.width, 24));
+      y += 28;
+
+      // Candidate / Date Subtitle
+      final candidate = _candidateController.text.trim();
+      final subInfo = '${candidate.isNotEmpty ? "Prepared by: $candidate • " : ""}Generated: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}';
+      page.graphics.drawString(subInfo, subFont, brush: PdfSolidBrush(PdfColor(100, 116, 139)), bounds: Rect.fromLTWH(0, y, pageSize.width, 16));
+      y += 20;
+
+      // Divider
+      page.graphics.drawLine(PdfPen(PdfColor(203, 213, 225), width: 1.5), Offset(0, y), Offset(pageSize.width, y));
+      y += 14;
+
+      // Watermark
+      if (_addWatermark && _watermarkController.text.trim().isNotEmpty) {
+        final wmFont = PdfStandardFont(PdfFontFamily.helvetica, 40, style: PdfFontStyle.bold);
+        page.graphics.save();
+        page.graphics.translateTransform(pageSize.width / 2, pageSize.height / 2);
+        page.graphics.rotateTransform(-40);
+        page.graphics.drawString(
+          _watermarkController.text.trim().toUpperCase(),
+          wmFont,
+          brush: PdfSolidBrush(PdfColor(220, 225, 235)),
+          bounds: const Rect.fromLTWH(-150, -25, 300, 50),
+        );
+        page.graphics.restore();
+      }
+
+      // Body text with line wrapping
+      final textElement = PdfTextElement(text: _bodyController.text.trim(), font: bodyFont, brush: PdfSolidBrush(PdfColor(30, 41, 59)));
+      final layoutFormat = PdfLayoutFormat(layoutType: PdfLayoutType.paginate);
+      final result = textElement.draw(page: page, bounds: Rect.fromLTWH(0, y, pageSize.width, pageSize.height - y - 30), format: layoutFormat);
+
+      // Page numbers footer
+      if (_addPageNumbers) {
+        final lastPage = result?.page ?? page;
+        final footerFont = PdfStandardFont(PdfFontFamily.helvetica, 9);
+        lastPage.graphics.drawString('Page 1 of 1 • Medhavi Study Companion', footerFont, brush: PdfSolidBrush(PdfColor(148, 163, 184)), bounds: Rect.fromLTWH(0, pageSize.height - 15, pageSize.width, 15));
+      }
+
+      final bytes = await document.save();
+      document.dispose();
+
+      final tempDir = await getTemporaryDirectory();
+      final filename = 'custom_doc_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File(p.join(tempDir.path, filename));
+      await file.writeAsBytes(bytes);
+
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        OpenFile.open(file.path);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Custom PDF "$title" generated!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF creation failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 660),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              decoration: BoxDecoration(
+                color: Colors.indigo.withOpacity(0.08),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.picture_as_pdf, color: Colors.indigo),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Custom PDF Generator (Pi7 Style)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('Create clean notes PDF with watermark & margins', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Document Title *',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _candidateController,
+                      decoration: const InputDecoration(
+                        labelText: 'Author / Candidate Name (Optional)',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _watermarkController,
+                            decoration: const InputDecoration(
+                              labelText: 'Background Watermark',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Checkbox(
+                          value: _addWatermark,
+                          onChanged: (val) => setState(() => _addWatermark = val ?? false),
+                        ),
+                        const Text('Watermark', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _bodyController,
+                      maxLines: 8,
+                      decoration: const InputDecoration(
+                        labelText: 'Document Notes / Text Content',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                        icon: _isGenerating
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.picture_as_pdf),
+                        label: const Text('Generate & Open PDF Document'),
+                        onPressed: _isGenerating ? null : _generatePdf,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

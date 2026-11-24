@@ -12,6 +12,9 @@ class SettingsProvider extends ChangeNotifier {
   String _deepseekApiKey = '';
   String _aiModel = 'gemini-1.5-flash';
   bool _isAiFlashcardsEnabled = true;
+  bool _isAiTutorEnabled = true;
+  bool _isAiPdfNotesEnabled = true;
+  bool _isStudyFolderAndImportEnabled = true;
   int _aiFlashcardCount = 5;
   bool _hasCompletedAppTour = false;
   String _targetExamName = '';
@@ -36,6 +39,9 @@ class SettingsProvider extends ChangeNotifier {
   String get deepseekApiKey => _deepseekApiKey;
   String get aiModel => _aiModel;
   bool get isAiFlashcardsEnabled => _isAiFlashcardsEnabled;
+  bool get isAiTutorEnabled => _isAiTutorEnabled;
+  bool get isAiPdfNotesEnabled => _isAiPdfNotesEnabled;
+  bool get isStudyFolderAndImportEnabled => _isStudyFolderAndImportEnabled;
   int get aiFlashcardCount => _aiFlashcardCount;
   bool get hasCompletedAppTour => _hasCompletedAppTour;
   String get targetExamName => _targetExamName;
@@ -109,6 +115,14 @@ class SettingsProvider extends ChangeNotifier {
         return const Color(0xFF8B5CF6);
       case 'amber':
         return const Color(0xFFF59E0B);
+      case 'crimson':
+        return const Color(0xFFEF4444);
+      case 'cyan':
+        return const Color(0xFF06B6D4);
+      case 'coral':
+        return const Color(0xFFF43F5E);
+      case 'cobalt':
+        return const Color(0xFF2563EB);
       case 'indigo':
       default:
         return const Color(0xFF6366F1);
@@ -167,6 +181,9 @@ class SettingsProvider extends ChangeNotifier {
     }
     _aiFlashcardCount = prefs.getInt('aiFlashcardCount') ?? 5;
     _isAiFlashcardsEnabled = prefs.getBool('isAiFlashcardsEnabled') ?? true;
+    _isAiTutorEnabled = prefs.getBool('isAiTutorEnabled') ?? true;
+    _isAiPdfNotesEnabled = prefs.getBool('isAiPdfNotesEnabled') ?? true;
+    _isStudyFolderAndImportEnabled = prefs.getBool('isStudyFolderAndImportEnabled') ?? true;
     _hasCompletedAppTour = prefs.getBool('hasCompletedAppTour') ?? false;
     _targetExamName = prefs.getString('targetExamName') ?? '';
     _targetExamDate = prefs.getString('targetExamDate') ?? '';
@@ -193,6 +210,27 @@ class SettingsProvider extends ChangeNotifier {
     _isAiFlashcardsEnabled = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isAiFlashcardsEnabled', value);
+    notifyListeners();
+  }
+
+  Future<void> setAiTutorEnabled(bool value) async {
+    _isAiTutorEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAiTutorEnabled', value);
+    notifyListeners();
+  }
+
+  Future<void> setAiPdfNotesEnabled(bool value) async {
+    _isAiPdfNotesEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAiPdfNotesEnabled', value);
+    notifyListeners();
+  }
+
+  Future<void> setStudyFolderAndImportEnabled(bool value) async {
+    _isStudyFolderAndImportEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isStudyFolderAndImportEnabled', value);
     notifyListeners();
   }
 

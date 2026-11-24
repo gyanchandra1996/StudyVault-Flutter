@@ -134,15 +134,18 @@ class _AiFlashcardModalState extends State<AiFlashcardModal> {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: double.infinity,
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Theme.of(context).scaffoldBackgroundColor,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Container(
@@ -259,20 +262,31 @@ class _AiFlashcardModalState extends State<AiFlashcardModal> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Number of Cards Selector (Configured from Settings)
-                      Row(
+                      // Number of Cards Selector (Responsive, No Overflow)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Card Count:',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Card Count:',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '$_count Cards to Generate',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.purple.shade700),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(height: 8),
                           Wrap(
-                            spacing: 6,
-                            children: [3, 5, 10, 15, 20].map((c) {
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [3, 5, 8, 10, 15, 20].map((c) {
                               final isSelected = _count == c;
                               return ChoiceChip(
-                                label: Text('$c', style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : null)),
+                                label: Text('$c Cards', style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : null)),
                                 selected: isSelected,
                                 selectedColor: Colors.purple,
                                 onSelected: (_) => setState(() => _count = c),
@@ -402,6 +416,43 @@ class _AiFlashcardModalState extends State<AiFlashcardModal> {
           ],
         ),
       ),
-    );
-  }
+      if (_isLoading)
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withOpacity(0.85) : Colors.white.withOpacity(0.92),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 46,
+                      height: 46,
+                      child: CircularProgressIndicator(color: Colors.purple, strokeWidth: 3.5),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Generating $_count AI Flashcards...',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Crafting bite-sized high-yield question & answer cards for active recall. Please wait...',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }

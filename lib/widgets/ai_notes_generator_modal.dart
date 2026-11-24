@@ -175,16 +175,19 @@ class _AiNotesGeneratorModalState extends State<AiNotesGeneratorModal> {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: double.infinity,
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Theme.of(context).scaffoldBackgroundColor,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             // Header
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
@@ -423,6 +426,45 @@ class _AiNotesGeneratorModalState extends State<AiNotesGeneratorModal> {
           ],
         ),
       ),
-    );
-  }
+      if (_isLoading || _isSavingPdf)
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withOpacity(0.85) : Colors.white.withOpacity(0.92),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 46,
+                      height: 46,
+                      child: CircularProgressIndicator(color: accent, strokeWidth: 3.5),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      _isSavingPdf ? 'Compiling PDF Document...' : 'Generating Study Notes with AI...',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _isSavingPdf
+                          ? 'Formatting pages, typography, and exam tables...'
+                          : 'Structuring key concepts, exam takeaways & revision points. Please wait...',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }

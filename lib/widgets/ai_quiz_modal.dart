@@ -117,22 +117,21 @@ class _AiQuizModalState extends State<AiQuizModal> {
 
   void _generateWithAi() async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
-    if (!settings.isAiEnabled) {
-      setState(() => _errorMessage = 'AI Features are disabled in Settings. Enable AI or use "Instant Offline Quiz" below.');
-      return;
-    }
-    if (settings.activeApiKey.trim().isEmpty) {
-      setState(() => _errorMessage = 'API Key not configured. Please enter your free Google Gemini API key or tap "Instant Offline Quiz".');
-      return;
-    }
-    if (_promptController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Please enter a topic, tap a suggestion chip, or paste study notes.');
-      return;
-    }
-
     final categoryName = _getActiveCategory();
     final quizTitle = _getQuizTitle(categoryName);
     final count = _getFinalCount();
+    final promptText = _promptController.text.trim().isNotEmpty
+        ? _promptController.text.trim()
+        : '$categoryName exam preparation multiple choice questions';
+
+    if (!settings.isAiEnabled) {
+      _generateOffline();
+      return;
+    }
+    if (settings.activeApiKey.trim().isEmpty) {
+      _generateOffline();
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -144,7 +143,7 @@ class _AiQuizModalState extends State<AiQuizModal> {
         provider: settings.aiProvider,
         apiKey: settings.activeApiKey,
         model: settings.aiModel,
-        prompt: _promptController.text.trim(),
+        prompt: promptText,
         count: count,
         examId: widget.examId,
       );
@@ -185,7 +184,7 @@ class _AiQuizModalState extends State<AiQuizModal> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = '${e.toString().replaceAll('Exception: ', '')}\n\nTip: You can tap "⚡ Instant Offline Quiz" below to start practice immediately without AI!';
       });
     }
   }
@@ -328,14 +327,17 @@ class _AiQuizModalState extends State<AiQuizModal> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // 1. Header with Gradient Accent Pill
               Row(
                 children: [
@@ -775,6 +777,45 @@ class _AiQuizModalState extends State<AiQuizModal> {
           ),
         ),
       ),
-    );
-  }
+      if (_isLoading)
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withOpacity(0.85)
+                  : Colors.white.withOpacity(0.92),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 46,
+                      height: 46,
+                      child: CircularProgressIndicator(color: accent, strokeWidth: 3.5),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Generating Quiz Questions...',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Synthesizing MCQs with accurate options and detailed explanations. Please wait a moment...',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }

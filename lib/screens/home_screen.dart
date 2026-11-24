@@ -21,11 +21,13 @@ import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
 import '../widgets/exam_countdown_widget.dart';
 import '../widgets/backup_restore_modal.dart';
+import '../widgets/app_logo.dart';
 import 'category_detail_screen.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
 import 'document_vault_screen.dart';
+import 'tools_hub_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,7 +51,8 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isLoadingAssessment = true;
   String _quizFilterSubject = 'all';
   String _questionSearchQuery = '';
-  final Set<String> _expandedQuestionCategories = {};
+  bool _isQuestionBankExpanded = true;
+  final Set<String> _collapsedQuestionCategories = {};
 
   @override
   bool get wantKeepAlive => true;
@@ -57,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<StudyProvider>(context, listen: false).loadInitialData();
       _loadAssessmentData();
@@ -291,30 +294,14 @@ class _HomeScreenState extends State<HomeScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: settings.activeAccentColor.withOpacity(0.18),
-              child: Icon(Icons.school, color: settings.activeAccentColor),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Text('StudyVault', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('v1.6.0', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          ],
-        ),
+        title: const AppLogo(size: 34, showText: true),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Offline Indic Exam & Study Companion with ID Vault, Hierarchical Folders, AI Quiz & Safe Study Mode.',
-              style: TextStyle(fontSize: 13),
+              'Medhavi (मेधावी) is an all-in-one offline Indic Exam & Study Companion with AI Quiz, PDF Notes Generator, Passport Photo & Image Utility Tools, and ID Vault.',
+              style: TextStyle(fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 16),
             Container(
@@ -485,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('StudyVault', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const AppLogo(size: 30, showText: true),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -504,21 +491,22 @@ class _HomeScreenState extends State<HomeScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: false,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           indicatorColor: accent,
           indicatorWeight: 3,
-          indicatorSize: TabBarIndicatorSize.tab,
           labelColor: accent,
           unselectedLabelColor: Theme.of(context).brightness == Brightness.dark
               ? Colors.white70
               : Colors.black87,
-          labelPadding: EdgeInsets.zero,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
           tabs: const [
             Tab(text: 'Dashboard', icon: Icon(Icons.dashboard_outlined, size: 20)),
             Tab(text: 'Study Material', icon: Icon(Icons.menu_book, size: 20)),
             Tab(text: 'Quizzes', icon: Icon(Icons.quiz_outlined, size: 20)),
+            Tab(text: 'Tools', icon: Icon(Icons.handyman_outlined, size: 20)),
             Tab(text: 'ID Vault', icon: Icon(Icons.shield_outlined, size: 20)),
           ],
         ),
@@ -594,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen>
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        if (settings.isAiEnabled) ...[
+                        if (settings.isAiEnabled && settings.isAiTutorEnabled) ...[
                           _buildActionPill(
                             icon: Icons.question_answer,
                             label: 'AI Tutor / Q&A',
@@ -607,6 +595,8 @@ class _HomeScreenState extends State<HomeScreen>
                             },
                           ),
                           const SizedBox(width: 8),
+                        ],
+                        if (settings.isAiEnabled && settings.isAiPdfNotesEnabled) ...[
                           _buildActionPill(
                             icon: Icons.auto_stories,
                             label: 'AI Notes to PDF',
@@ -621,15 +611,10 @@ class _HomeScreenState extends State<HomeScreen>
                           const SizedBox(width: 8),
                         ],
                         _buildActionPill(
-                          icon: Icons.build,
-                          label: 'PDF Tools',
+                          icon: Icons.handyman_outlined,
+                          label: 'Tools Suite',
                           color: Colors.deepOrange,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => PdfToolsModal(onUpdated: _loadAssessmentData),
-                            );
-                          },
+                          onTap: () => _tabController.animateTo(3),
                         ),
                         const SizedBox(width: 8),
                         if (settings.isAiEnabled) ...[
@@ -679,21 +664,7 @@ class _HomeScreenState extends State<HomeScreen>
                           icon: Icons.add_a_photo,
                           label: 'Scan ID / Doc',
                           color: Colors.deepOrange,
-                          onTap: () => _tabController.animateTo(3),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildActionPill(
-                          icon: Icons.cloud_sync,
-                          label: 'Backup Data',
-                          color: Colors.blueGrey,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => BackupRestoreModal(
-                                onRestored: _loadAssessmentData,
-                              ),
-                            );
-                          },
+                          onTap: () => _tabController.animateTo(4),
                         ),
                       ],
                     ),
@@ -857,11 +828,12 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       );
                                     }),
-                                    ActionChip(
-                                      avatar: const Icon(Icons.add, size: 16),
-                                      label: const Text('New Exam'),
-                                      onPressed: _showAddExamDialog,
-                                    ),
+                                    if (settings.isStudyFolderAndImportEnabled)
+                                      ActionChip(
+                                        avatar: const Icon(Icons.add, size: 16),
+                                        label: const Text('New Exam'),
+                                        onPressed: _showAddExamDialog,
+                                      ),
                                   ],
                                 ),
                               ),
@@ -890,16 +862,55 @@ class _HomeScreenState extends State<HomeScreen>
                                   tooltip: settings.isCategoryGridView ? 'Switch to List' : 'Switch to Grid',
                                   onPressed: settings.toggleCategoryViewMode,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.create_new_folder, color: Colors.indigo),
-                                  tooltip: 'Add Subject / Folder',
-                                  onPressed: _showAddCategoryDialog,
-                                ),
+                                if (settings.isStudyFolderAndImportEnabled) ...[
+                                  IconButton(
+                                    icon: const Icon(Icons.create_new_folder, color: Colors.indigo),
+                                    tooltip: 'Add Subject / Folder',
+                                    onPressed: _showAddCategoryDialog,
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.note_add_outlined, color: Colors.indigo),
+                                    tooltip: 'Import PDF / Document',
+                                    onPressed: _pickAndAddGlobalPdf,
+                                  ),
+                                ],
                               ],
                             ),
                           ],
                         ),
                       ),
+
+                      if (settings.isStudyFolderAndImportEnabled)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  icon: const Icon(Icons.create_new_folder_outlined, size: 16),
+                                  label: const Text('Add Folder', style: TextStyle(fontSize: 12)),
+                                  onPressed: _showAddCategoryDialog,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  icon: const Icon(Icons.file_upload_outlined, size: 16),
+                                  label: const Text('Import Files', style: TextStyle(fontSize: 12)),
+                                  onPressed: _pickAndAddGlobalPdf,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                       if (study.categories.isEmpty)
                         Container(
@@ -915,11 +926,14 @@ class _HomeScreenState extends State<HomeScreen>
                               const Icon(Icons.folder_open, size: 40, color: Colors.grey),
                               const SizedBox(height: 8),
                               const Text('No categories created yet for this exam.'),
-                              TextButton.icon(
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add First Category'),
-                                onPressed: _showAddCategoryDialog,
-                              ),
+                              if (settings.isStudyFolderAndImportEnabled) ...[
+                                const SizedBox(height: 8),
+                                TextButton.icon(
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Add First Category'),
+                                  onPressed: _showAddCategoryDialog,
+                                ),
+                              ],
                             ],
                           ),
                         )
@@ -1412,22 +1426,50 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       ],
 
-                      // Question Bank
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
+                      // Question Bank Section with Hide / Open Toggle
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => setState(() => _isQuestionBankExpanded = !_isQuestionBankExpanded),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Icon(Icons.storage_outlined, color: Colors.indigo, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Question Bank (${_getFilteredQuestions().length})',
-                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                              Row(
+                                children: [
+                                  const Icon(Icons.storage_outlined, color: Colors.indigo, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Question Bank (${_getFilteredQuestions().length})',
+                                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    _isQuestionBankExpanded ? 'Hide' : 'Open',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.indigo.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  IconButton(
+                                    icon: Icon(
+                                      _isQuestionBankExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                      color: Colors.indigo,
+                                    ),
+                                    onPressed: () => setState(() => _isQuestionBankExpanded = !_isQuestionBankExpanded),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
+                      if (_isQuestionBankExpanded) ...[
                       // Question Bank Search Bar
                       if (_allQuestions.isNotEmpty) ...[
                         const SizedBox(height: 8),
@@ -1521,7 +1563,7 @@ class _HomeScreenState extends State<HomeScreen>
                               children: grouped.entries.map((entry) {
                                 final categoryName = entry.key;
                                 final categoryQuestions = entry.value;
-                                final isExpanded = _expandedQuestionCategories.contains(categoryName) || _quizFilterSubject != 'all' || grouped.length == 1;
+                                final isExpanded = !_collapsedQuestionCategories.contains(categoryName);
 
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 12),
@@ -1535,10 +1577,10 @@ class _HomeScreenState extends State<HomeScreen>
                                         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                                         onTap: () {
                                           setState(() {
-                                            if (_expandedQuestionCategories.contains(categoryName)) {
-                                              _expandedQuestionCategories.remove(categoryName);
+                                            if (_collapsedQuestionCategories.contains(categoryName)) {
+                                              _collapsedQuestionCategories.remove(categoryName);
                                             } else {
-                                              _expandedQuestionCategories.add(categoryName);
+                                              _collapsedQuestionCategories.add(categoryName);
                                             }
                                           });
                                         },
@@ -1667,12 +1709,16 @@ class _HomeScreenState extends State<HomeScreen>
                             );
                           },
                         ),
+                      ],
                       const SizedBox(height: 80),
                     ],
                   ),
                 ),
 
-          // ---------------- TAB 4: 🔒 PERSONAL DOCUMENT & ID VAULT ----------------
+          // ---------------- TAB 4: 🛠️ TOOLS SUITE (PI7 STYLE) ----------------
+          ToolsHubScreen(onRefresh: _loadAssessmentData),
+
+          // ---------------- TAB 5: 🔒 PERSONAL DOCUMENT & ID VAULT ----------------
           const DocumentVaultScreen(),
         ],
       ),

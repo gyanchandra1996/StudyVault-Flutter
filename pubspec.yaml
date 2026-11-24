@@ -1,7 +1,7 @@
 name: study_vault_flutter
-description: "StudyVault - Offline Indic Exam & Study Companion with Native PDF, AI Quiz & Safe Mode"
+description: "Medhavi (मेधावी) - Offline Indic Exam & Study Companion with AI Quiz, PDF Tools & Safe Mode"
 publish_to: "none"
-version: 1.7.0+13
+version: 1.8.0+14
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -23,6 +23,7 @@ dependencies:
   shared_preferences: ^2.2.3
   intl: ^0.19.0
   open_file: ^3.3.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

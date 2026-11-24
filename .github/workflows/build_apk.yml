@@ -89,15 +89,27 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.7.0
-          name: "StudyVault Flutter v1.7.0 (Dynamic AI Toggle, Gemini 1.5/2.0 API Fix, Smart Offline Quiz, Redesigned Quiz UI & Modern Card System)"
+          tag_name: v1.8.0
+          name: "Medhavi (मेधावी) Flutter v1.8.0 - Exam Tools Suite (Pi7 Style), In-App Key Generator, Focus Timer Alarm, Custom PDF & Photo Maker"
           body: |
-            ### 📱 StudyVault Flutter v1.7.0 Official Release APK
-            - **1. Settings-Controlled Dynamic AI Visibility**: All AI features (AI Tutor Q&A, AI Notes to PDF, AI Flashcards, AI Quiz) are now strictly visible only when enabled in Settings. Disabling AI completely cleans the UI of AI triggers.
-            - **2. Fixed Google Gemini API & Multi-Model Engine**: Resolved 404 endpoint failures by migrating to official Gemini 1.5 Flash, 2.0 Flash, and 1.5 Pro with automatic fallback cascade.
-            - **3. Smart 1-Tap Offline Question Bank Generator**: Instant practice quiz generation covering Indian Polity, Modern History, Geography, General Science, Aptitude, Reasoning, and Hindi Vyakaran without requiring internet or API key.
-            - **4. Redesigned Modern Quiz & Question Creation UI**: Rebuilt `AiQuizModal` and `QuestionModal` with gradient accents, topic suggestion chips, marking pattern chips (+1/-0.25, +2/-0.66, etc.), custom question counts, and quick key configuration.
-            - **5. Enhanced Card Aesthetics Across All Pages**: Upgraded elevation, rounded corners, soft shadows, and border accents on Dashboard, Categories, Category Detail, Notes, and Document Vault.
-            - **6. 1-Click SQLite Backup & Exam Preparation Suite**: Includes negative marking, mistake notebook, PDF tools, target exam countdown, and spaced repetition flashcards.
+            ### 📱 Medhavi (मेधावी) Flutter v1.8.0 Official Release APK
+            - **1. Quiz Creation Workflow & Offline Engine Fallback**: Fixed empty prompt blocking; added instant auto-fallback to offline question bank so quiz creation never fails even with missing key or network downtime.
+            - **2. In-App Multi-Provider AI Key Generator**: Interactive key wizard with 1-click browser links to Google AI Studio (100% Free), OpenAI, Claude & DeepSeek, plus in-place key tester.
+            - **3. Fixed Flashcard Generator Card Count Overflow**: Resolved layout design break by replacing unconstrained Row with responsive Wrap layout and quick preset chips.
+            - **4. Fixed Question Bank Hide/Open Toggles**: Added global `^` toggle on Question Bank header, plus fixed category card expansion overrides.
+            - **5. App Exit Confirmation Dialog**: Added Android back button PopScope confirmation preventing accidental app closure.
+            - **6. Full-Screen Loading Overlays**: Prominent animated spinners and clear status text during AI quiz, flashcard, and notes generation.
+            - **7. Pomodoro Focus Timer & Alarm**: Added audible alarm and haptic vibration feedback on break/focus mode transitions, plus progress bar.
+            - **8. Persistent Top Focus Timer Bar**: Live study focus countdown info pill sticky at the top across all screens with 1-tap pause/resume.
+            - **9. Dedicated Settings Toggles for AI Tutor & PDF Notes**: Independent switches for AI Tutor / Doubt Solver and AI PDF Notes Generator.
+            - **10. Top Tools Tab & Student Utility Suite (Pi7 Style)**:
+              - **Passport Size Photo Maker**: Standard 3.5×4.5 cm with Candidate Name & Date of Photo (DOP) stamp for SSC/UPSC, with printable multi-photo sheet generation.
+              - **Custom Image Resizer & Compressor**: Target KB limits (e.g. 20-50 KB) and custom width/height in px.
+              - **Custom PDF Generator**: Create custom formatted notes with watermarks, candidate info, and margins.
+              - **PDF to Image & Image to PDF**: High-speed document and page conversion tools.
+            - **11. Brand Identity & App Logo**: Renamed app to genuine Indic brand "Medhavi (मेधावी)" with custom vector book + AI spark logo.
+            - **12. Expanded Base Themes & Accents**: Added Nordic Frost, Forest Matcha, and Twilight Warmth themes, plus 8 rich accent colors (Indigo, Emerald, Amethyst, Amber, Crimson, Cyan, Coral, Cobalt).
+            - **13. Dashboard Cleanup**: Removed duplicate Backup pill from dashboard quick actions.
+            - **14. Study Tab Folder & Import Control**: Added setting to show/hide folder creation and file import buttons for distraction-free reading.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

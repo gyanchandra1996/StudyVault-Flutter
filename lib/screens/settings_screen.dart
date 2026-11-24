@@ -12,6 +12,7 @@ import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
 import '../widgets/backup_restore_modal.dart';
+import '../widgets/api_key_generator_modal.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -84,6 +85,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     value: settings.showDeleteActions,
                     onChanged: (val) => settings.setShowDeleteActions(val),
+                  ),
+                  const Divider(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Study Tab Folder & Import Controls'),
+                    subtitle: Text(
+                      settings.isStudyFolderAndImportEnabled
+                          ? 'Folder creation and file import buttons are visible in Study Material tab'
+                          : 'Folder and file import buttons are hidden for clean study view',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    value: settings.isStudyFolderAndImportEnabled,
+                    onChanged: (val) => settings.setStudyFolderAndImportEnabled(val),
                   ),
                 ],
               ),
@@ -243,6 +257,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${settings.activeProviderDisplayName} API Key:',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.key, size: 16),
+                          label: const Text('Generate / Get Key', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => ApiKeyGeneratorModal(initialProvider: settings.aiProvider),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     TextField(
                       controller: _apiKeyController,
                       obscureText: true,
@@ -357,6 +391,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                     ],
+                    const Divider(height: 24),
+                    const Row(
+                      children: [
+                        Icon(Icons.question_answer_outlined, size: 18, color: Colors.blue),
+                        SizedBox(width: 8),
+                        Text(
+                          'AI Tutor / Doubt Solver',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable AI Tutor / Doubt Solver'),
+                      subtitle: const Text('Interactive AI chat assistant to ask questions and clarify concepts'),
+                      value: settings.isAiTutorEnabled,
+                      onChanged: (val) => settings.setAiTutorEnabled(val),
+                    ),
+                    const Divider(height: 24),
+                    const Row(
+                      children: [
+                        Icon(Icons.auto_stories_outlined, size: 18, color: Colors.teal),
+                        SizedBox(width: 8),
+                        Text(
+                          'AI PDF Notes Generator',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable AI Notes to PDF'),
+                      subtitle: const Text('Synthesize comprehensive study notes and compile directly into PDF'),
+                      value: settings.isAiPdfNotesEnabled,
+                      onChanged: (val) => settings.setAiPdfNotesEnabled(val),
+                    ),
                   ],
                 ],
               ),
@@ -387,6 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
+                    runSpacing: 8,
                     children: [
                       ChoiceChip(
                         label: const Text('Light Paper'),
@@ -403,7 +476,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                       ChoiceChip(
-                        label: const Text('AMOLED Pure Black'),
+                        label: const Text('AMOLED Black'),
                         selected: settings.themeStyle == 'amoled',
                         onSelected: (val) {
                           if (val) settings.setThemeStyle('amoled');
@@ -416,18 +489,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           if (val) settings.setThemeStyle('sepia');
                         },
                       ),
+                      ChoiceChip(
+                        label: const Text('Nordic Frost'),
+                        selected: settings.themeStyle == 'nordic',
+                        onSelected: (val) {
+                          if (val) settings.setThemeStyle('nordic');
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Forest Matcha'),
+                        selected: settings.themeStyle == 'forest',
+                        onSelected: (val) {
+                          if (val) settings.setThemeStyle('forest');
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Twilight Warmth'),
+                        selected: settings.themeStyle == 'twilight',
+                        onSelected: (val) {
+                          if (val) settings.setThemeStyle('twilight');
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   const Text('Accent Theme Color:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 10,
                     children: [
-                      _buildAccentCircle(context, settings, 'indigo', const Color(0xFF6366F1), 'Classic Indigo'),
-                      _buildAccentCircle(context, settings, 'emerald', const Color(0xFF10B981), 'Emerald Green'),
-                      _buildAccentCircle(context, settings, 'amethyst', const Color(0xFF8B5CF6), 'Amethyst Purple'),
-                      _buildAccentCircle(context, settings, 'amber', const Color(0xFFF59E0B), 'Amber Gold'),
+                      _buildAccentCircle(context, settings, 'indigo', const Color(0xFF6366F1), 'Indigo'),
+                      _buildAccentCircle(context, settings, 'emerald', const Color(0xFF10B981), 'Emerald'),
+                      _buildAccentCircle(context, settings, 'amethyst', const Color(0xFF8B5CF6), 'Amethyst'),
+                      _buildAccentCircle(context, settings, 'amber', const Color(0xFFF59E0B), 'Amber'),
+                      _buildAccentCircle(context, settings, 'crimson', const Color(0xFFEF4444), 'Crimson'),
+                      _buildAccentCircle(context, settings, 'cyan', const Color(0xFF06B6D4), 'Cyan'),
+                      _buildAccentCircle(context, settings, 'coral', const Color(0xFFF43F5E), 'Coral'),
+                      _buildAccentCircle(context, settings, 'cobalt', const Color(0xFF2563EB), 'Cobalt'),
                     ],
                   ),
                 ],
@@ -727,12 +826,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'StudyVault Mobile',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    'Medhavi (मेधावी)',
+                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Version 1.6.0 • Offline Indic Exam & Study Companion',
+                    'Version 1.8.0 • AI Exam & Study Vault',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 14),

@@ -124,6 +124,114 @@ class StudyVaultApp extends StatelessWidget {
           ),
         );
 
+      case 'nordic':
+        const nordicBg = Color(0xFFF0F4F9);
+        const nordicCard = Color(0xFFFFFFFF);
+        const nordicText = Color(0xFF1E293B);
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.light,
+          colorSchemeSeed: accent,
+          scaffoldBackgroundColor: nordicBg,
+          textTheme: textTheme.apply(
+            bodyColor: nordicText,
+            displayColor: nordicText,
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: nordicCard,
+            foregroundColor: nordicText,
+            elevation: 0.5,
+            titleTextStyle: GoogleFonts.notoSansDevanagari(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: nordicText,
+            ),
+          ),
+          cardTheme: const CardTheme(
+            color: nordicCard,
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              side: BorderSide(color: Color(0xFFD0DBE5), width: 0.8),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: nordicCard,
+            indicatorColor: accent.withOpacity(0.2),
+          ),
+        );
+
+      case 'forest':
+        const forestBg = Color(0xFFF1F6F2);
+        const forestCard = Color(0xFFFFFFFF);
+        const forestText = Color(0xFF1B3828);
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.light,
+          colorSchemeSeed: accent,
+          scaffoldBackgroundColor: forestBg,
+          textTheme: textTheme.apply(
+            bodyColor: forestText,
+            displayColor: forestText,
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: forestCard,
+            foregroundColor: forestText,
+            elevation: 0.5,
+            titleTextStyle: GoogleFonts.notoSansDevanagari(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: forestText,
+            ),
+          ),
+          cardTheme: const CardTheme(
+            color: forestCard,
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              side: BorderSide(color: Color(0xFFCCE0D2), width: 0.8),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: forestCard,
+            indicatorColor: accent.withOpacity(0.2),
+          ),
+        );
+
+      case 'twilight':
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          colorSchemeSeed: accent,
+          scaffoldBackgroundColor: const Color(0xFF181515),
+          textTheme: textTheme.apply(
+            bodyColor: const Color(0xFFF5EFE6),
+            displayColor: const Color(0xFFF5EFE6),
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: const Color(0xFF262121),
+            foregroundColor: Colors.white,
+            elevation: 0.5,
+            titleTextStyle: GoogleFonts.notoSansDevanagari(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          cardTheme: const CardTheme(
+            color: Color(0xFF262121),
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+              side: BorderSide(color: Color(0xFF383131), width: 0.8),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: const Color(0xFF262121),
+            indicatorColor: accent.withOpacity(0.25),
+          ),
+        );
+
       case 'light':
       default:
         return ThemeData(
@@ -169,7 +277,7 @@ class StudyVaultApp extends StatelessWidget {
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
           return MaterialApp(
-            title: 'StudyVault',
+            title: 'Medhavi',
             debugShowCheckedModeBanner: false,
             theme: _buildTheme(settings),
             home: const MainScreen(),

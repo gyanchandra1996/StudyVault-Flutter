@@ -118,11 +118,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
             tooltip: settings.isCategoryGridView ? 'Switch to List View' : 'Switch to Grid View',
             onPressed: () => settings.toggleCategoryViewMode(),
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Add Category',
-            onPressed: () => _showAddCategoryDialog(context, study),
-          ),
+          if (settings.isStudyFolderAndImportEnabled)
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Add Category',
+              onPressed: () => _showAddCategoryDialog(context, study),
+            ),
         ],
       ),
       body: study.isLoading
