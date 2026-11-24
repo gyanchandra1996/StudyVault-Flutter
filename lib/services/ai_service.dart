@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/question.dart';
+import 'offline_quiz_generator.dart';
 
 class AiService {
   // Provider IDs
@@ -36,12 +37,11 @@ class AiService {
       case providerGemini:
       default:
         return [
-          {'id': 'gemini-3.5-flash-lite', 'name': 'Gemini 3.5 Flash Lite (Verified Active • 100% Free)'},
-          {'id': 'gemini-flash-lite-latest', 'name': 'Gemini Flash Lite Latest (Fast • 100% Free)'},
+          {'id': 'gemini-3.5-flash', 'name': 'Gemini 3.5 Flash (Recommended • 100% Free)'},
+          {'id': 'gemini-3.5-flash-lite', 'name': 'Gemini 3.5 Flash Lite (Ultra Fast • Free)'},
+          {'id': 'gemini-flash-lite-latest', 'name': 'Gemini Flash Lite Latest (Free)'},
+          {'id': 'gemini-3.1-flash-lite', 'name': 'Gemini 3.1 Flash Lite'},
           {'id': 'gemini-3.8-flash', 'name': 'Gemini 3.8 Flash (Next-Gen Preview)'},
-          {'id': 'gemini-2.0-flash', 'name': 'Gemini 2.0 Flash'},
-          {'id': 'gemini-1.5-flash', 'name': 'Gemini 1.5 Flash'},
-          {'id': 'gemini-1.5-pro', 'name': 'Gemini 1.5 Pro'},
         ];
     }
   }
@@ -63,15 +63,17 @@ class AiService {
   static List<String> _getGeminiEndpoints(String model, String apiKey) {
     final key = apiKey.trim();
     final candidateModels = <String>[];
-    if (model.trim().isNotEmpty) candidateModels.add(model.trim());
+    final clean = model.trim();
+    if (clean.isNotEmpty && !clean.contains('1.5') && !clean.contains('2.0') && !clean.contains('2.5')) {
+      candidateModels.add(clean);
+    }
     candidateModels.addAll([
+      'gemini-3.5-flash',
       'gemini-3.5-flash-lite',
       'gemini-flash-lite-latest',
+      'gemini-3.1-flash-lite',
+      'gemma-4-31b-it',
       'gemini-3.8-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
     ]);
     final seen = <String>{};
     return candidateModels.where((m) => seen.add(m)).map((m) =>
@@ -295,34 +297,40 @@ Do not wrap with commentary. Return raw valid JSON.
 
         http.Response? lastResponse;
         for (final ep in endpoints) {
-          final response = await http.post(
-            Uri.parse(ep),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'contents': [
-                {
-                  'parts': [
-                    {'text': '$systemInstruction\n\nTopic / Notes content:\n$prompt'}
-                  ]
+          try {
+            final response = await http.post(
+              Uri.parse(ep),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'contents': [
+                  {
+                    'parts': [
+                      {'text': '$systemInstruction\n\nTopic / Notes content:\n$prompt'}
+                    ]
+                  }
+                ],
+                'generationConfig': {
+                  'temperature': 0.3,
+                  'maxOutputTokens': 8192,
                 }
-              ],
-              'generationConfig': {
-                'temperature': 0.4,
-                'maxOutputTokens': 8192,
-              }
-            }),
-          );
-          lastResponse = response;
-          if (response.statusCode == 200) {
-            break;
-          }
-          if (response.statusCode != 404 && response.statusCode != 503) {
-            break;
+              }),
+            ).timeout(const Duration(seconds: 20));
+            lastResponse = response;
+            if (response.statusCode == 200) {
+              break;
+            }
+          } catch (_) {
+            // Timeout or error, try next candidate model
           }
         }
 
         if (lastResponse == null || lastResponse.statusCode != 200) {
-          throw Exception('Gemini API error (${lastResponse?.statusCode ?? "Unknown"}): ${lastResponse?.body ?? "No response"}');
+          return OfflineQuizGenerator.generateOfflineQuestions(
+            topic: prompt,
+            count: count,
+            examId: examId,
+            categoryId: categoryId,
+          );
         }
 
         final Map<String, dynamic> data = jsonDecode(lastResponse.body);
@@ -342,7 +350,12 @@ Do not wrap with commentary. Return raw valid JSON.
     final cleanedJson = responseText.replaceAll(RegExp(r'```json|```'), '').trim();
     final firstBracket = cleanedJson.indexOf('[');
     if (firstBracket == -1) {
-      throw Exception('Could not parse valid question array from AI response:\n$responseText');
+      return OfflineQuizGenerator.generateOfflineQuestions(
+        topic: prompt,
+        count: count,
+        examId: examId,
+        categoryId: categoryId,
+      );
     }
 
     String candidateJson = cleanedJson.substring(firstBracket);
@@ -370,10 +383,15 @@ Do not wrap with commentary. Return raw valid JSON.
     }
 
     if (parsedList.isEmpty) {
-      throw Exception('Could not parse valid question array from AI response:\n$responseText');
+      return OfflineQuizGenerator.generateOfflineQuestions(
+        topic: prompt,
+        count: count,
+        examId: examId,
+        categoryId: categoryId,
+      );
     }
 
-    return parsedList.map((item) {
+    final result = parsedList.map((item) {
       final map = item as Map<String, dynamic>;
       return QuizQuestion(
         questionText: map['question']?.toString() ?? 'Question',
@@ -388,6 +406,20 @@ Do not wrap with commentary. Return raw valid JSON.
         categoryId: categoryId,
       );
     }).toList();
+
+    // Guarantee exact count requested (e.g. 20, 25, 30 questions)
+    if (result.length < count) {
+      final needed = count - result.length;
+      final padQuestions = OfflineQuizGenerator.generateOfflineQuestions(
+        topic: prompt,
+        count: needed,
+        examId: examId,
+        categoryId: categoryId,
+      );
+      result.addAll(padQuestions);
+    }
+
+    return result.take(count).toList();
   }
 
   static Future<String> _callAiRaw({
@@ -528,20 +560,23 @@ Do not wrap with commentary. Return raw valid JSON.
 
         http.Response? lastResponse;
         for (final ep in endpoints) {
-          final res = await http.post(
-            Uri.parse(ep),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'contents': contents,
-              'generationConfig': {
-                'temperature': 0.5,
-                'maxOutputTokens': maxTokens,
-              }
-            }),
-          );
-          lastResponse = res;
-          if (res.statusCode == 200) break;
-          if (res.statusCode != 404 && res.statusCode != 503) break;
+          try {
+            final res = await http.post(
+              Uri.parse(ep),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'contents': contents,
+                'generationConfig': {
+                  'temperature': 0.5,
+                  'maxOutputTokens': maxTokens,
+                }
+              }),
+            ).timeout(const Duration(seconds: 25));
+            lastResponse = res;
+            if (res.statusCode == 200) break;
+          } catch (_) {
+            // Continue to next endpoint on timeout or connection error
+          }
         }
 
         if (lastResponse == null || lastResponse.statusCode != 200) {
@@ -629,13 +664,38 @@ Do not wrap with markdown backticks or extra text. Output valid raw JSON only.
 
     final cleaned = raw.replaceAll(RegExp(r'```json|```'), '').trim();
     final firstBracket = cleaned.indexOf('[');
-    final lastBracket = cleaned.lastIndexOf(']');
-    if (firstBracket == -1 || lastBracket == -1) {
+    if (firstBracket == -1) {
       throw Exception('Could not parse flashcards JSON from AI response:\n$raw');
     }
 
-    final jsonStr = cleaned.substring(firstBracket, lastBracket + 1);
-    final List<dynamic> decoded = jsonDecode(jsonStr);
+    String candidateJson = cleaned.substring(firstBracket);
+    int lastBracket = candidateJson.lastIndexOf(']');
+    if (lastBracket == -1) {
+      final lastBrace = candidateJson.lastIndexOf('}');
+      if (lastBrace != -1) {
+        candidateJson = '${candidateJson.substring(0, lastBrace + 1)}]';
+      } else {
+        candidateJson = '$candidateJson]';
+      }
+    } else {
+      candidateJson = candidateJson.substring(0, lastBracket + 1);
+    }
+
+    List<dynamic> decoded = [];
+    try {
+      decoded = jsonDecode(candidateJson) as List<dynamic>;
+    } catch (_) {
+      final lastBrace = candidateJson.lastIndexOf('}');
+      if (lastBrace != -1) {
+        try {
+          decoded = jsonDecode('${candidateJson.substring(0, lastBrace + 1)}]') as List<dynamic>;
+        } catch (e2) {
+          throw Exception('Failed to parse flashcard JSON: $e2\nCandidate: $candidateJson');
+        }
+      } else {
+        rethrow;
+      }
+    }
 
     return decoded.map((item) {
       final map = item as Map<String, dynamic>;

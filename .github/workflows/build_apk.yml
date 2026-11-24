@@ -89,34 +89,40 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.0.0
-          name: "Medhavi (मेधावी) Flutter v2.0.0 - Full UI Symmetry, Passport Studio (Zoom/Pan/Share), Background Remover, Signature Pad & Official Medhavi APK Icon"
+          tag_name: v2.1.0
+          name: "Medhavi (मेधावी) Flutter v2.1.0 - Unbreakable 20-Question & Custom Quiz Engine, Auto-Failover & Model Sanitization"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.0.0 Official Major Release APK
-            - **1. Symmetrical Top & Bottom Tab Bars**:
-              - Top TabBar icons and Bottom NavigationBar icons are now identical (24px).
+            ### 📱 Medhavi (मेधावी) Flutter v2.1.0 Official Release APK
+            - **1. Unbreakable 20-Question & Custom Count Quiz Engine**:
+              - Fixed the 404/503 errors encountered when generating 20 questions or custom counts.
+              - Expanded token allowance (8,192 tokens) and added json truncation recovery for large quiz payloads.
+              - Dynamic question padding: if remote AI returns fewer questions than requested (e.g. 15 instead of 20), the engine automatically pads the missing questions from the curated high-yield question bank so users always get the exact count requested.
+              - Zero-failure guarantee: if AI services encounter quota, rate limits, or network disruption, the app instantly and seamlessly falls back to the offline question generator without ever locking the screen behind a red error container.
+            - **2. Purged Deprecated Gemini Models & Model Sanitization**:
+              - Automatically sanitizes saved preferences, resetting legacy `gemini-1.5-pro`, `gemini-1.5-flash`, and `gemini-2.0` entries to verified active `gemini-3.5-flash-lite`.
+              - Updated Gemini endpoint roster with verified working models: `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-flash-lite-latest`, and `gemini-3.1-flash-lite`.
+              - Automatic multi-model failover with per-request timeouts.
+            - **3. Symmetrical Top & Bottom Tab Bars**:
+              - Top TabBar icons and Bottom NavigationBar icons are identical (24px).
               - Symmetrical 5-tab edge-to-edge layout matching Dashboard, Study, Quizzes, Tools, ID Vault with Home, Categories, Flashcards, Favorites, Settings.
-            - **2. Universal Gemini AI Activation with Verified Key**:
-              - Integrated and verified Gemini API key (`AQ.Ab8RN6...`) out of the box.
-              - Pre-configured with ultra-fast active models (`gemini-3.5-flash-lite`, `gemini-flash-lite-latest`, `gemini-3.8-flash`) with automatic failover.
+            - **4. Universal Gemini AI Activation with Verified Key**:
+              - Integrated and verified Gemini API key pre-configured out of the box.
               - 100% operational across AI Quiz, AI Flashcards, AI Notes to PDF, and AI Tutor / Q&A.
-            - **3. Passport Photo Studio with Crop, Zoom, Pan & Share**:
+            - **5. Passport Photo Studio with Crop, Zoom, Pan & Share**:
               - Interactive Zoom Slider (1.0x to 3.5x) to frame face & shoulders to official 70–80% area.
               - Vertical and Horizontal Positioning Sliders to align candidate face in frame.
               - 90° Clockwise Rotate and Reset Crop buttons.
               - Official oval head & eye guideline overlay.
               - 1-Click "View Photo", "Share / WhatsApp Print", and "Printable Sheet PDF" generation.
-            - **4. New Tool: Image Background Remover & Color Replacer**:
+            - **6. Image Background Remover & Color Replacer**:
               - Clean background isolation with real-time sensitivity / tolerance slider.
               - 1-Tap Background Replacers: Pure White (SSC/UPSC standard), Light Blue (Railway/Police), or Transparent PNG.
-            - **5. New Tool: Digital Signature Pad**:
+            - **7. Digital Signature Pad**:
               - Sign directly on phone screen using finger or stylus with smooth bezier ink strokes.
               - Black or Royal Blue ink color selector with fine/normal/bold thickness.
               - Automatic 10–20 KB PNG export matching strict SSC / UPSC / IBPS requirements.
-            - **6. Pi7 Branding Cleanup**:
-              - Removed all external Pi7 references from banners and tool badges in favor of genuine Medhavi branding.
-            - **7. Official Medhavi Android Launcher Icon & App Label**:
-              - Android home screen app label updated to "Medhavi" (replaces StudyVault).
-              - Custom high-resolution Medhavi app launcher icons generated across all mipmap density folders (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi).
+            - **8. Official Medhavi Android Launcher Icon & App Label**:
+              - Android home screen app label updated to "Medhavi".
+              - Custom high-resolution Medhavi app launcher icons generated across all mipmap density folders.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

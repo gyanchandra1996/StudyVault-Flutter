@@ -178,7 +178,7 @@ class SettingsProvider extends ChangeNotifier {
     }
 
     _aiModel = prefs.getString('aiModel') ?? 'gemini-3.5-flash-lite';
-    if (_aiModel.isEmpty || _aiModel == 'gemini-1.5-flash') {
+    if (_aiModel.isEmpty || _aiModel.contains('1.5') || _aiModel.contains('2.0') || _aiModel.contains('2.5')) {
       _aiModel = 'gemini-3.5-flash-lite';
     }
     _aiFlashcardCount = prefs.getInt('aiFlashcardCount') ?? 5;
