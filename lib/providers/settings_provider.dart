@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/ai_service.dart';
+import '../models/user_profile.dart';
+import '../database/user_profile_repo.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static String get defaultGeminiApiKey {
@@ -39,6 +41,11 @@ class SettingsProvider extends ChangeNotifier {
   String _categoryViewMode = 'grid'; // 'grid', 'list'
   bool _isTestingApiKey = false;
   String? _apiTestResult;
+  UserProfile _userProfile = UserProfile();
+  final String _assistantName = 'Aarna';
+
+  UserProfile get userProfile => _userProfile;
+  String get assistantName => _assistantName;
 
   bool get isAiEnabled => _isAiEnabled;
   String get aiProvider => _aiProvider;
@@ -201,6 +208,15 @@ class SettingsProvider extends ChangeNotifier {
     _lockPin = prefs.getString('lockPin') ?? '';
     _categoryViewMode = prefs.getString('categoryViewMode') ?? 'grid';
     _isAppUnlocked = !_isLockEnabled;
+    try {
+      _userProfile = await UserProfileRepo().getProfile();
+    } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> updateUserProfile(UserProfile newProfile) async {
+    _userProfile = newProfile;
+    await UserProfileRepo().saveProfile(newProfile);
     notifyListeners();
   }
 

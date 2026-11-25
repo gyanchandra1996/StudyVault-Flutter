@@ -107,6 +107,7 @@ class _AiFlashcardModalState extends State<AiFlashcardModal> {
         await _flashcardRepo.addFlashcard(
           question: card['question']!,
           answer: card['answer']!,
+          category: _topicController.text.trim().isNotEmpty ? _topicController.text.trim() : 'AI Deck',
         );
         savedCount++;
       }

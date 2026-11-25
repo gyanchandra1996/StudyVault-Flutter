@@ -1363,138 +1363,184 @@ class _HomeScreenState extends State<HomeScreen>
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      // Action Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.indigo,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              icon: const Icon(Icons.play_arrow),
-                              label: const Text('Start Quiz'),
-                              onPressed: _allQuestions.isEmpty ? null : _showStartQuizDialog,
-                            ),
+                      // 🌟 REDESIGNED QUIZ COMMAND CENTER (All tools retained & enhanced)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: LinearGradient(
+                            colors: Theme.of(context).brightness == Brightness.dark
+                                ? [const Color(0xFF1E1B4B), const Color(0xFF0F172A)]
+                                : [Colors.indigo.shade50.withOpacity(0.9), Colors.white],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          if (settings.isAiEnabled && settings.isAiQuizEnabled) ...[
-                            const SizedBox(width: 8),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.purple,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              icon: const Icon(Icons.auto_awesome, size: 18),
-                              label: const Text('AI Quiz'),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => AiQuizModal(
-                                    examId: study.selectedExam?.id,
-                                    onGenerated: _loadAssessmentData,
-                                  ),
-                                );
-                              },
+                          border: Border.all(color: Colors.indigo.withOpacity(0.18)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
-                          const SizedBox(width: 8),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.file_upload_outlined, size: 18),
-                            label: const Text('Excel/CSV', style: TextStyle(fontSize: 12)),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => ImportQuestionsDialog(
-                                  examId: study.selectedExam?.id,
-                                  onImported: _loadAssessmentData,
+                        ),
+                        child: Column(
+                          children: [
+                            // Row 1: Primary Action Buttons
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 6,
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.indigo,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 13),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      elevation: 2,
+                                    ),
+                                    icon: const Icon(Icons.play_circle_fill, size: 20),
+                                    label: Text(
+                                      _allQuestions.isEmpty ? 'Start Quiz' : 'Start Quiz (${_allQuestions.length} Qs)',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                    ),
+                                    onPressed: _allQuestions.isEmpty ? null : _showStartQuizDialog,
+                                  ),
                                 ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 6),
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                if (settings.isAiEnabled && settings.isAiQuizEnabled) ...[
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: 4,
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF7C3AED),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 13),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 2,
+                                      ),
+                                      icon: const Icon(Icons.auto_awesome, size: 18),
+                                      label: const Text('AI Quiz', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => AiQuizModal(
+                                            examId: study.selectedExam?.id,
+                                            onGenerated: _loadAssessmentData,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                            child: const Icon(Icons.add),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => QuestionModal(
-                                  examId: study.selectedExam?.id,
-                                  onSaved: _loadAssessmentData,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
+                            const SizedBox(height: 10),
 
-                      // Performance Analytics & Heatmap Banner
-                      InkWell(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => ExamAnalyticsModal(
-                              pastResults: _pastResults,
-                              mistakeQuestions: _mistakeQuestions,
-                              onRefresh: _loadAssessmentData,
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF0D9488), Color(0xFF115E59)],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.teal.withOpacity(0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.insights_rounded, color: Colors.white, size: 22),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Mock Test Performance Analytics & Heatmap',
-                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                            // Row 2: Secondary Quick-Action Ribbon (Import, Add Question, Heatmap & Analytics)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => ImportQuestionsDialog(
+                                          examId: study.selectedExam?.id,
+                                          onImported: _loadAssessmentData,
+                                        ),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.indigo.withOpacity(0.07),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.indigo.withOpacity(0.15)),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.file_upload_outlined, size: 16, color: Colors.indigo),
+                                          SizedBox(width: 4),
+                                          Text('Import CSV', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                        ],
+                                      ),
                                     ),
-                                    Text(
-                                      'Speed vs accuracy heatmap, subject strengths & revision alerts',
-                                      style: TextStyle(color: Colors.white70, fontSize: 11),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 14),
-                            ],
-                          ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => QuestionModal(
+                                          examId: study.selectedExam?.id,
+                                          onSaved: _loadAssessmentData,
+                                        ),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.indigo.withOpacity(0.07),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.indigo.withOpacity(0.15)),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.add_circle_outline, size: 16, color: Colors.indigo),
+                                          SizedBox(width: 4),
+                                          Text('Add Qs', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => ExamAnalyticsModal(
+                                          pastResults: _pastResults,
+                                          mistakeQuestions: _mistakeQuestions,
+                                          onRefresh: _loadAssessmentData,
+                                        ),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0D9488).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: const Color(0xFF0D9488).withOpacity(0.3)),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.insights_rounded, size: 16, color: Color(0xFF0D9488)),
+                                          SizedBox(width: 4),
+                                          Text('Analytics', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 14),
 
-                      // Subject Category Filter Chips
+                      // Redesigned Modern Category Filter Slider
                       Builder(
                         builder: (ctx) {
                           final Set<String> categories = {'all'};
@@ -1509,11 +1555,15 @@ class _HomeScreenState extends State<HomeScreen>
                           }
 
                           if (categories.length > 1) {
-                            return SizedBox(
+                            return Container(
                               height: 38,
-                              child: ListView(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                children: categories.map((sub) {
+                                itemCount: categories.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                itemBuilder: (ctx, idx) {
+                                  final sub = categories.elementAt(idx);
                                   final isSelected = _quizFilterSubject == sub;
                                   final count = sub == 'all'
                                       ? _pastResults.length
@@ -1521,17 +1571,32 @@ class _HomeScreenState extends State<HomeScreen>
                                   final labelText = sub == 'all'
                                       ? 'All Categories ($count)'
                                       : '$sub ($count)';
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: ChoiceChip(
-                                      label: Text(labelText),
-                                      selected: isSelected,
-                                      onSelected: (val) {
-                                        if (val) setState(() => _quizFilterSubject = sub);
-                                      },
+
+                                  return FilterChip(
+                                    selected: isSelected,
+                                    showCheckmark: false,
+                                    label: Text(labelText),
+                                    labelStyle: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      fontSize: 11.5,
                                     ),
+                                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                        ? const Color(0xFF1E293B)
+                                        : const Color(0xFFF1F5F9),
+                                    selectedColor: Colors.indigo,
+                                    side: BorderSide(
+                                      color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.2),
+                                    ),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    onSelected: (val) {
+                                      if (val) setState(() => _quizFilterSubject = sub);
+                                    },
                                   );
-                                }).toList(),
+                                },
                               ),
                             );
                           }

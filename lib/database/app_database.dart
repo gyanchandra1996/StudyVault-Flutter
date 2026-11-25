@@ -19,13 +19,14 @@ class AppDatabase {
 
     final db = await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
     await _upgradeToV3(db);
     await _upgradeToV4(db);
     await _upgradeToV5(db);
+    await _upgradeToV6(db);
     return db;
   }
 
@@ -42,6 +43,33 @@ class AppDatabase {
     if (oldVersion < 5) {
       await _upgradeToV5(db);
     }
+    if (oldVersion < 6) {
+      await _upgradeToV6(db);
+    }
+  }
+
+  Future<void> _upgradeToV6(Database db) async {
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS target_exam_reminders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          exam_date TEXT NOT NULL,
+          category TEXT,
+          target_score TEXT,
+          reminder_time TEXT DEFAULT '08:00',
+          is_notification_enabled INTEGER DEFAULT 1,
+          color_hex TEXT DEFAULT '#6366F1',
+          created_at INTEGER NOT NULL
+        )
+      ''');
+
+      final fcColumns = await db.rawQuery('PRAGMA table_info(flashcards)');
+      final fcColNames = fcColumns.map((c) => c['name'] as String).toSet();
+      if (!fcColNames.contains('category')) {
+        await db.execute('ALTER TABLE flashcards ADD COLUMN category TEXT DEFAULT "General"');
+      }
+    } catch (_) {}
   }
 
   Future<void> _upgradeToV5(Database db) async {
@@ -251,6 +279,20 @@ class AppDatabase {
         doc_number TEXT,
         notes TEXT,
         is_locked INTEGER DEFAULT 1,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE target_exam_reminders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        exam_date TEXT NOT NULL,
+        category TEXT,
+        target_score TEXT,
+        reminder_time TEXT DEFAULT '08:00',
+        is_notification_enabled INTEGER DEFAULT 1,
+        color_hex TEXT DEFAULT '#6366F1',
         created_at INTEGER NOT NULL
       )
     ''');

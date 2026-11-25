@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/study_provider.dart';
@@ -84,6 +85,27 @@ class _PdfToolsModalState extends State<PdfToolsModal> with SingleTickerProvider
           }
         }
       });
+    }
+  }
+
+  // Snap photo with camera
+  void _snapCameraImage() async {
+    try {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 90);
+      if (photo != null) {
+        setState(() {
+          if (!_selectedImagePaths.contains(photo.path)) {
+            _selectedImagePaths.add(photo.path);
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Camera error: $e')),
+        );
+      }
     }
   }
 
@@ -388,15 +410,34 @@ class _PdfToolsModalState extends State<PdfToolsModal> with SingleTickerProvider
                         ),
                         const SizedBox(height: 12),
 
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          ),
-                          icon: const Icon(Icons.add_photo_alternate),
-                          label: const Text('Pick Images from Device'),
-                          onPressed: _pickImages,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: accent,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.camera_alt),
+                                label: const Text('Open Camera'),
+                                onPressed: _snapCameraImage,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.add_photo_alternate),
+                                label: const Text('From Gallery'),
+                                onPressed: _pickImages,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 14),
 

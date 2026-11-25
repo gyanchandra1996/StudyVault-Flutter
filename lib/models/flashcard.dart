@@ -8,6 +8,7 @@ class Flashcard {
   final int interval;
   final double easeFactor;
   final String dueDate; // YYYY-MM-DD
+  final String category;
   final int createdAt;
 
   Flashcard({
@@ -20,6 +21,7 @@ class Flashcard {
     this.interval = 1,
     this.easeFactor = 2.5,
     required this.dueDate,
+    this.category = 'General',
     int? createdAt,
   }) : createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch;
 
@@ -34,6 +36,7 @@ class Flashcard {
       'interval': interval,
       'ease_factor': easeFactor,
       'due_date': dueDate,
+      'category': category,
       'created_at': createdAt,
     };
   }
@@ -49,7 +52,36 @@ class Flashcard {
       interval: (map['interval'] as int?) ?? 1,
       easeFactor: (map['ease_factor'] as num?)?.toDouble() ?? 2.5,
       dueDate: (map['due_date'] as String?) ?? '',
+      category: (map['category'] as String?) ?? 'General',
       createdAt: map['created_at'] as int?,
+    );
+  }
+
+  Flashcard copyWith({
+    int? id,
+    int? pdfId,
+    String? question,
+    String? answer,
+    int? pageNumber,
+    int? repetition,
+    int? interval,
+    double? easeFactor,
+    String? dueDate,
+    String? category,
+    int? createdAt,
+  }) {
+    return Flashcard(
+      id: id ?? this.id,
+      pdfId: pdfId ?? this.pdfId,
+      question: question ?? this.question,
+      answer: answer ?? this.answer,
+      pageNumber: pageNumber ?? this.pageNumber,
+      repetition: repetition ?? this.repetition,
+      interval: interval ?? this.interval,
+      easeFactor: easeFactor ?? this.easeFactor,
+      dueDate: dueDate ?? this.dueDate,
+      category: category ?? this.category,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

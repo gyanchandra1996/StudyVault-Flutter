@@ -14,6 +14,7 @@ class FlashcardRepo {
     required String question,
     required String answer,
     int pageNumber = 1,
+    String category = 'General',
   }) async {
     final db = await _db.database;
     final card = Flashcard(
@@ -22,6 +23,7 @@ class FlashcardRepo {
       answer: answer,
       pageNumber: pageNumber,
       dueDate: _today(),
+      category: category.trim().isNotEmpty ? category.trim() : 'General',
     );
     return await db.insert('flashcards', card.toMap());
   }
@@ -57,6 +59,61 @@ class FlashcardRepo {
   Future<int> getDueCount() async {
     final due = await getDueFlashcards();
     return due.length;
+  }
+
+  Future<List<Flashcard>> searchFlashcards(String query) async {
+    final db = await _db.database;
+    final cleanQuery = '%${query.trim()}%';
+    final maps = await db.query(
+      'flashcards',
+      where: 'question LIKE ? OR answer LIKE ? OR category LIKE ?',
+      whereArgs: [cleanQuery, cleanQuery, cleanQuery],
+      orderBy: 'id DESC',
+    );
+    return maps.map((m) => Flashcard.fromMap(m)).toList();
+  }
+
+  Future<int> updateFlashcard(Flashcard card) async {
+    if (card.id == null) return 0;
+    final db = await _db.database;
+    return await db.update(
+      'flashcards',
+      card.toMap(),
+      where: 'id = ?',
+      whereArgs: [card.id],
+    );
+  }
+
+  Future<void> resetCardSchedule(int cardId) async {
+    final db = await _db.database;
+    await db.update(
+      'flashcards',
+      {
+        'repetition': 0,
+        'interval': 1,
+        'ease_factor': 2.5,
+        'due_date': _today(),
+      },
+      where: 'id = ?',
+      whereArgs: [cardId],
+    );
+  }
+
+  Future<Map<String, int>> getFlashcardStats() async {
+    final all = await getAllFlashcards();
+    final today = _today();
+    int due = 0;
+    int mastered = 0;
+    for (final c in all) {
+      if (c.dueDate.compareTo(today) <= 0) due++;
+      if (c.interval >= 14) mastered++;
+    }
+    return {
+      'total': all.length,
+      'due': due,
+      'mastered': mastered,
+      'learning': all.length - mastered,
+    };
   }
 
   // SuperMemo SM-2 Spaced Repetition calculation

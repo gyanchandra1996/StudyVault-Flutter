@@ -89,49 +89,28 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.3.0
-          name: "Medhavi (मेधावी) Flutter v2.3.0 - Modern Segmented Capsule Top Tabs, Strict Quiz Category Purity & DSA Bank"
+          tag_name: v2.4.0
+          name: "Medhavi (मेधावी) Flutter v2.4.0 - Aarna AI Assistant, Brain Games, Multi-Exam Reminders, Camera-to-PDF & Flashcards Library"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.3.0 Official Major Release APK
-            - **1. Modern Segmented Capsule Top TabBar Design**:
-              - Replaced flat underline with an ultra-modern floating segmented capsule container (`PreferredSize` 60px).
-              - Active tab rendered with a sleek glowing rounded pill indicator in theme accent color with subtle border.
-              - Custom slate dark card (`#1E293B`) in Dark Mode and soft card (`#F1F5F9`) in Light Mode.
-              - Symmetrical 20px icons with 11px bold typography and transparent divider line.
-            - **2. Strict Quiz Category & Subject Purity (Zero Cross-Contamination)**:
-              - Fixed cross-category question leakage where Hindi grammar questions appeared in Data Structures/Computer quizzes.
-              - Passed explicit `category` parameters to `AiService` and enforced strict domain boundaries:
-                - Technical English enforced for Computer Science, Data Structures, IT, Programming, and Mathematics.
-                - Hindi language questions strictly restricted to Hindi grammar/literature quizzes.
-              - Guaranteed subject purity in `OfflineQuizGenerator`: cycles only within the selected subject's question pool.
-            - **3. Expanded Data Structures & Algorithms (DSA) Core Bank**:
-              - Added 20+ curated exam-level Data Structures questions (Stacks, Queues, Binary Search Trees, Graphs, Hash Tables, Sorting, Heaps, Dynamic Programming, Time Complexities).
-            - **1. Granular AI Enable/Disable Controls on Dashboard & All Pages**:
-              - Instant 1-tap **AI: ON / AI: OFF** status pill on the top AppBar accessible from Dashboard, Study, Quizzes, Tools, and ID Vault.
-              - BottomSheet modal for quick toggling of Master AI switch and individual modules:
-                - AI Quiz & Mock Test Generator (`isAiQuizEnabled`)
-                - AI Flashcards Generator (`isAiFlashcardsEnabled`)
-                - AI Tutor & Concept Solver (`isAiTutorEnabled`)
-                - AI Notes to PDF Generator (`isAiPdfNotesEnabled`)
-              - Dedicated individual switches in Settings -> AI Engine Configuration.
-              - Quizzes tab, Category Details, and Dashboard dynamically show or hide AI buttons when features are toggled.
-            - **2. Excel / CSV Question Bank Importer (Category-Wise)**:
-              - Bulk import MCQs directly from Excel (.csv / .tsv / .txt) files into your Question Bank.
-              - Auto-detection mode: automatically reads and maps questions to categories from the Excel 'Category' column.
-              - Targeted assignment mode: assign all imported questions to any existing or custom category.
-              - In-app file parser with duplicate detection, skipped row reporting, and instant database ingestion.
-            - **3. Sample Excel Template (.csv) Downloader & Previewer**:
-              - 1-Click "Download Sample .csv" to open and edit directly in Microsoft Excel, Google Sheets, or WPS Office.
-              - Built-in "Preview Table" modal showing column headers (`Question, Option A, Option B, Option C, Option D, Correct Option, Explanation, Category`).
-              - "Copy CSV to Clipboard" button to quickly create questions on mobile or PC.
-            - **4. Dynamic Syllabus Tracker with Custom Categories & Exams**:
-              - Add custom subjects / categories to any exam (e.g. "General Science & Tech", "Indian Economy", "Ethics") with persistent SharedPreferences storage.
-              - Add custom topics to any subject card with 1 tap.
-              - Create brand new Exam Tracks (e.g. "State PSC", "Railway RRB", "CTET / Teaching") with custom syllabus checklists.
-            - **5. Dynamic Quick Revision Handbook with Custom Tabs**:
-              - Add custom subjects / tabs to the handbook (e.g. "Economics & Budget", "Current Affairs", "Computer Aptitude").
-              - Add revision notes, formulas, and key facts to any tab with persistent storage.
-            - **6. Build Fix**:
-              - Corrected `primaryColor` property reference in `import_questions_dialog.dart` to `activeAccentColor`.
+            ### 📱 Medhavi (मेधावी) Flutter v2.4.0 Official Release APK
+            - **1. Brain Games Suite**:
+              - Speed Math Blitz (60s mental math rush with streak multipliers).
+              - Schulte Grid Focus Trainer (peripheral vision & reading speed).
+              - Memory Match Deck (study symbols flip & recall).
+              - Stroop Color Reflex (cognitive agility & alertness).
+            - **2 & 5. AI Assistant "Aarna" (आर्ना)**:
+              - Rebranded to Aarna with personal memory ("About Me") profile.
+              - Built-in default offline intelligence engine (always replies even without internet or API key).
+              - Link with Google Gemini when enabled in Settings.
+            - **3. Multiple Target Exam Reminders**:
+              - Swipeable multi-exam countdown carousel on Dashboard.
+              - Scheduled local notification alarms & milestone alerts (30d, 15d, 7d, 1d).
+            - **4. Camera & Image to PDF**:
+              - Multi-snap camera capture, gallery selection, page reordering, rotation & conversion to PDF.
+              - Direct 1-tap "Open in PDF Reader" and "Share PDF".
+            - **6. Redesigned Quiz Top Bar**:
+              - Command Center Hero Card + Quick Action Ribbon + Smooth Category Pill Slider (zero removed items).
+            - **7. Flashcards Stored Library & Browser**:
+              - 2-Tab deck experience: "Due Review" (SM-2 Spaced Repetition) and "All Stored Flashcards" with live search, filters, edit, delete, and "Review Today" reset.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

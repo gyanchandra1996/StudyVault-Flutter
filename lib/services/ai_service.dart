@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/question.dart';
+import '../models/user_profile.dart';
 import 'offline_quiz_generator.dart';
 
 class AiService {
@@ -618,13 +619,30 @@ Do not wrap with commentary. Return raw valid JSON.
     required String prompt,
     List<Map<String, String>> history = const [],
     String? contextNotes,
+    UserProfile? userProfile,
   }) async {
-    const systemPrompt = '''
-You are StudyVault AI, an expert academic tutor and exam preparation assistant.
-Help the student by explaining concepts clearly, answering their questions, solving problems step-by-step, or summarizing study material.
-Use clear headings, markdown bullets, bold key terms, and concise examples.
-Support both English and Hindi (Devanagari) naturally according to what the student asks.
-Keep responses focused, encouraging, and academically accurate.
+    final userName = userProfile?.name.trim().isNotEmpty == true ? userProfile!.name : 'the student';
+    final targetExams = userProfile?.targetExams.isNotEmpty == true ? userProfile!.targetExams.join(', ') : 'competitive examinations';
+    final strengths = userProfile?.strongAreas ?? 'General awareness';
+    final weakAreas = userProfile?.weakAreas ?? 'General revision';
+    final prefLang = userProfile?.preferredLanguage ?? 'English / Hindi (Hinglish)';
+    final customNotes = userProfile?.customBioNotes ?? '';
+
+    final systemPrompt = '''
+You are Aarna (आर्ना), an intelligent, dedicated, inspiring, and empathetic personal AI study mentor and companion in the Medhavi study companion app.
+You are mentoring $userName, who is diligently preparing for: $targetExams.
+Student strengths: $strengths.
+Student focus/weak areas needing extra care: $weakAreas.
+Preferred communication language: $prefLang.
+Personal notes/context from student: $customNotes.
+
+Rules for your responses:
+1. Always maintain your warm, intelligent, and motivating persona as Aarna (आर्ना).
+2. Answer questions thoroughly, clearly, and concisely with well-structured Markdown, bold keywords, and bullet points.
+3. Tailor conceptual explanations, examples, and practice questions to $userName's target exams ($targetExams).
+4. Use English, Hindi, or bilingual Hinglish naturally based on the student's question and preference.
+5. Provide step-by-step solutions for mathematical/logical problems.
+6. Support learning with memory mnemonics, formula tips, and exam-focused takeaways.
 ''';
 
     final userPrompt = contextNotes != null && contextNotes.trim().isNotEmpty

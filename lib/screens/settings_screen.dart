@@ -8,6 +8,7 @@ import 'recent_screen.dart';
 import 'storage_screen.dart';
 import 'recycle_bin_screen.dart';
 import '../widgets/ai_assistant_modal.dart';
+import '../widgets/aarna_profile_dialog.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
@@ -786,17 +787,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Divider(height: 8),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const CircleAvatar(
-                        backgroundColor: Color(0xFFDBEAFE),
-                        child: Icon(Icons.question_answer, color: Colors.blue, size: 20),
+                      leading: CircleAvatar(
+                        backgroundColor: settings.activeAccentColor.withOpacity(0.15),
+                        child: Text('आ', style: TextStyle(color: settings.activeAccentColor, fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
-                      title: const Text('AI Study Q&A Assistant', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text('Ask doubts, problem solving, concept explanations', style: TextStyle(fontSize: 12)),
+                      title: const Text('Aarna AI Study Assistant (आर्ना)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Text(
+                        settings.isAiEnabled && settings.activeApiKey.isNotEmpty
+                            ? 'Gemini Linked • Ask doubts, problem solving, concepts'
+                            : 'Built-in Offline Engine • Always replies',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                       onTap: () {
                         showDialog(
                           context: context,
                           builder: (_) => const AiAssistantModal(),
+                        );
+                      },
+                    ),
+                    const Divider(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFFEF3C7),
+                        child: Icon(Icons.badge_outlined, color: Colors.amber, size: 20),
+                      ),
+                      title: const Text('My Profile & Aarna Memory ("About Me")', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Text(
+                        '${settings.userProfile.name} • ${settings.userProfile.targetExams.firstOrNull ?? "General"} • Tap to update',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => const AarnaProfileDialog(),
                         );
                       },
                     ),

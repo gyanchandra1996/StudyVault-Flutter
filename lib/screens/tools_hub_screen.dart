@@ -16,6 +16,8 @@ import '../widgets/digital_signature_pad_dialog.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/exam_analytics_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
+import 'camera_to_pdf_screen.dart';
+import 'brain_games/brain_games_hub_screen.dart';
 
 class ToolsHubScreen extends StatefulWidget {
   final VoidCallback? onRefresh;
@@ -30,6 +32,16 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
   String _selectedFilter = 'all';
 
   final List<Map<String, dynamic>> _allTools = [
+    {
+      'id': 'brain_games',
+      'title': 'Brain Games & Mental Focus',
+      'hindi': 'मस्तिष्क खेल एवं एकाग्रता',
+      'category': 'study',
+      'icon': Icons.psychology_rounded,
+      'color': Colors.amber.shade800,
+      'description': 'Speed Math Blitz, Schulte Focus Grid, Memory Match & Stroop Reflex to warm up your cognitive speed before mock tests.',
+      'badge': 'BRAIN WARM-UP',
+    },
     {
       'id': 'passport_photo',
       'title': 'Passport Size Photo Maker',
@@ -169,6 +181,12 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
 
   void _openTool(Map<String, dynamic> tool) {
     switch (tool['id']) {
+      case 'brain_games':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BrainGamesHubScreen()),
+        );
+        break;
       case 'passport_photo':
         _showPassportPhotoModal();
         break;
@@ -261,74 +279,10 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
 
   // ---------------- TOOL 4: IMAGE TO PDF ----------------
   Future<void> _showImageToPdfModal() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-
-    final paths = result.files.where((f) => f.path != null).map((f) => f.path!).toList();
-    if (paths.isEmpty) return;
-
-    final titleController = TextEditingController(text: 'Image Document ${DateTime.now().day}_${DateTime.now().month}');
-
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Convert Images to PDF'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${paths.length} image(s) selected.', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'PDF Title / Document Name',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                final pdf = await PdfToolsService.convertImagesToPdf(
-                  paths,
-                  titleController.text.trim().isNotEmpty ? titleController.text.trim() : 'Image Notes',
-                );
-                widget.onRefresh?.call();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('PDF "${pdf.title}" generated successfully!'),
-                      action: SnackBarAction(
-                        label: 'Open',
-                        onPressed: () => OpenFile.open(pdf.localPath),
-                      ),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error generating PDF: $e'), backgroundColor: Colors.red),
-                  );
-                }
-              }
-            },
-            child: const Text('Generate PDF'),
-          ),
-        ],
-      ),
-    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CameraToPdfScreen()),
+    ).then((_) => widget.onRefresh?.call());
   }
 
   // ---------------- TOOL 5: PDF TO IMAGE EXTRACTOR ----------------
