@@ -106,7 +106,7 @@ Based on your profile, your primary focus should be on: **${profile.weakAreas}**
    • Step 3: Identify knowledge gaps and re-read source notes.
 
 3. **🗂️ SuperMemo Spaced Repetition (SM-2)**:
-   • Review information right at the forgetting curve threshold ($1, 3, 7, 14, 30$ days).
+   • Review information right at the forgetting curve threshold (1, 3, 7, 14, 30 days).
    • *Medhavi\'s Flashcard section uses this exact SM-2 algorithm automatically!*''';
     }
 
@@ -147,18 +147,18 @@ Based on your profile, your primary focus should be on: **${profile.weakAreas}**
       return '''### 🔬 General Science High-Probability Points:
 
 • **Important Vitamins & Deficiency Diseases**:
-  - Vitamin A (Retinol) $\\to$ Night Blindness, Xerophthalmia
-  - Vitamin B1 (Thiamine) $\\to$ Beriberi
-  - Vitamin C (Ascorbic Acid) $\\to$ Scurvy
-  - Vitamin D (Calciferol) $\\to$ Rickets (children), Osteomalacia
-  - Vitamin K (Phylloquinone) $\\to$ Delayed blood clotting
+  - Vitamin A (Retinol) → Night Blindness, Xerophthalmia
+  - Vitamin B1 (Thiamine) → Beriberi
+  - Vitamin C (Ascorbic Acid) → Scurvy
+  - Vitamin D (Calciferol) → Rickets (children), Osteomalacia
+  - Vitamin K (Phylloquinone) → Delayed blood clotting
 • **Physics Laws**:
   - Newton's 1st Law: Law of Inertia
-  - Newton's 2nd Law: $F = m \\times a$ (Force equals rate of change of momentum)
+  - Newton's 2nd Law: F = m × a (Force equals rate of change of momentum)
   - Newton's 3rd Law: Every action has an equal and opposite reaction
 • **Chemistry Essentials**:
-  - pH Scale: $<7$ Acidic, $7$ Neutral, $>7$ Basic. Human blood pH: $\\approx 7.35 - 7.45$.
-  - Rusting of iron is a chemical change (Oxidation: $Fe_2O_3 \\cdot xH_2O$).''';
+  - pH Scale: < 7 Acidic, 7 Neutral, > 7 Basic. Human blood pH: ≈ 7.35 - 7.45.
+  - Rusting of iron is a chemical change (Oxidation: Fe₂O₃·xH₂O).''';
     }
 
     // 8. Math & Quantitative Aptitude Tricks
@@ -166,17 +166,17 @@ Based on your profile, your primary focus should be on: **${profile.weakAreas}**
       return '''### 🔢 High-Speed Math & Calculation Shortcuts:
 
 1. **Square of numbers ending in 5**:
-   • Example: $65^2$: Multiply $6 \\times (6 + 1) = 42$, append $25 \\to 4225$.
-   • Example: $85^2 = 8 \\times 9 = 72 \\to 7225$.
+   • Example: 65²: Multiply 6 × (6 + 1) = 42, append 25 → 4225.
+   • Example: 85²: 8 × 9 = 72 → 7225.
 2. **Speed, Distance & Time**:
-   • $\\text{Speed} = \\frac{\\text{Distance}}{\\text{Time}}$
-   • $\\text{km/h} \\to \\text{m/s}$: Multiply by $\\frac{5}{18}$
-   • $\\text{m/s} \\to \\text{km/h}$: Multiply by $\\frac{18}{5}$
+   • Speed = Distance / Time
+   • km/h → m/s: Multiply by 5/18
+   • m/s → km/h: Multiply by 18/5
 3. **Compound Interest Shortcuts**:
-   • Difference between CI and SI for 2 years: $D = P \\left(\\frac{R}{100}\\right)^2$
+   • Difference between CI and SI for 2 years: D = P × (R / 100)²
 4. **Profit & Loss**:
-   • $\\text{Profit \\%} = \\frac{\\text{Profit}}{\\text{Cost Price}} \\times 100$
-   • If selling price of $x$ items equals cost price of $y$ items: $\\text{Gain \\%} = \\frac{y - x}{x} \\times 100$.''';
+   • Profit % = (Profit / Cost Price) × 100
+   • If selling price of X items equals cost price of Y items: Gain % = ((Y - X) / X) × 100.''';
     }
 
     // 9. Document Context Query (if student is reviewing PDF notes)

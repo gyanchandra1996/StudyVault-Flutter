@@ -18,7 +18,7 @@ class BrainGamesHubScreen extends StatelessWidget {
     final List<Map<String, dynamic>> games = [
       {
         'title': '⚡ Speed Math Blitz',
-        'subtitle': '60-second rapid mental arithmetic ($+, -, \\times, \\div$, squares & %)',
+        'subtitle': '60-second rapid mental arithmetic (+, -, ×, ÷, squares & %)',
         'benefit': 'Boosts calculation speed for Banking & SSC exams',
         'icon': Icons.flash_on_rounded,
         'color': Colors.amber.shade700,

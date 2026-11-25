@@ -495,7 +495,7 @@ class _CameraToPdfScreenState extends State<CameraToPdfScreen> {
                     ),
                     icon: const Icon(Icons.share_outlined),
                     label: const Text('Share PDF'),
-                    onPressed: () => ShareService.sharePdf(pdf.localPath, pdf.title),
+                    onPressed: () => ShareService.sharePdf(pdf.localPath, title: pdf.title),
                   ),
                 ),
                 const SizedBox(width: 12),
