@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/gamification_service.dart';
 
 class SpeedMathGame extends StatefulWidget {
   const SpeedMathGame({Key? key}) : super(key: key);
@@ -72,6 +73,11 @@ class _SpeedMathGameState extends State<SpeedMathGame> {
       } else {
         timer.cancel();
         _saveHighScore(_score);
+        GamificationService.recordActivity(
+          xp: 15,
+          reason: 'Speed Math Blitz',
+          badgeToUnlock: 'math_genius',
+        );
         setState(() {
           _isPlaying = false;
           _isGameOver = true;

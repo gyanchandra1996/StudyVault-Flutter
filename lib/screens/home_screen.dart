@@ -21,6 +21,7 @@ import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
 import '../widgets/exam_countdown_widget.dart';
+import '../widgets/streak_banner_widget.dart';
 import '../widgets/backup_restore_modal.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/exam_analytics_modal.dart';
@@ -744,6 +745,9 @@ class _HomeScreenState extends State<HomeScreen>
               children: [
                 // 0. Target Exam Countdown Widget
                 const ExamCountdownWidget(),
+
+                // 0.1 🔥 Daily Study Streak & XP Gamification Banner
+                const StreakBannerWidget(),
 
                 // 1. Reading Streak & Habit Tracker Card
                 const Padding(

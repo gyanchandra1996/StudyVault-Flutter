@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
 
 class BackupResult {
@@ -35,9 +36,10 @@ class BackupService {
     'reading_logs',
     'bookmarks',
     'study_sessions',
+    'target_exam_reminders',
   ];
 
-  /// Exports all StudyVault SQLite tables to a timestamped JSON backup file
+  /// Exports all StudyVault SQLite tables & user profile to a timestamped JSON backup file
   static Future<File> exportBackup() async {
     final db = await AppDatabase.instance.database;
     final Map<String, List<Map<String, dynamic>>> tablesData = {};
@@ -52,11 +54,21 @@ class BackupService {
       }
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    final userProfileJson = prefs.getString('user_profile_data_v1');
+    final gamificationJson = prefs.getString('medhavi_gamification_v1');
+    final customHandbookJson = prefs.getString('revision_handbook_custom_tabs_v2');
+
     final backupPayload = {
       'app': 'StudyVault',
-      'version': 2,
+      'version': 3,
       'exported_at': DateTime.now().toIso8601String(),
       'tables': tablesData,
+      'preferences': {
+        'user_profile': userProfileJson,
+        'gamification': gamificationJson,
+        'custom_handbook': customHandbookJson,
+      },
     };
 
     final jsonString = const JsonEncoder.withIndent('  ').convert(backupPayload);
@@ -76,7 +88,7 @@ class BackupService {
     return backupFile;
   }
 
-  /// Restores SQLite tables from a JSON backup file
+  /// Restores SQLite tables & user profile from a JSON backup file
   static Future<Map<String, int>> restoreBackup(String filePath) async {
     final file = File(filePath);
     if (!await file.exists()) {
@@ -88,6 +100,23 @@ class BackupService {
 
     if (decoded is! Map<String, dynamic> || !decoded.containsKey('tables')) {
       throw Exception('Invalid file format. This is not a valid StudyVault backup file.');
+    }
+
+    // Restore SharedPreferences if present
+    if (decoded.containsKey('preferences') && decoded['preferences'] is Map) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final pMap = decoded['preferences'] as Map<String, dynamic>;
+        if (pMap['user_profile'] != null) {
+          await prefs.setString('user_profile_data_v1', pMap['user_profile'].toString());
+        }
+        if (pMap['gamification'] != null) {
+          await prefs.setString('medhavi_gamification_v1', pMap['gamification'].toString());
+        }
+        if (pMap['custom_handbook'] != null) {
+          await prefs.setString('revision_handbook_custom_tabs_v2', pMap['custom_handbook'].toString());
+        }
+      } catch (_) {}
     }
 
     final Map<String, dynamic> tables = decoded['tables'];

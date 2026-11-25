@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../models/quiz_result.dart';
 import '../database/quiz_repo.dart';
+import '../services/gamification_service.dart';
 import 'quiz_scorecard_screen.dart';
 
 class QuizRunnerScreen extends StatefulWidget {
@@ -179,6 +180,14 @@ class _QuizRunnerScreenState extends State<QuizRunnerScreen> {
     } else {
       await _quizRepo.saveQuizResult(result);
     }
+
+    // Award XP and check streak & badges
+    final isMastery = widget.questions.isNotEmpty && (correct / widget.questions.length) >= 0.8;
+    await GamificationService.recordActivity(
+      xp: 25,
+      reason: 'Quiz Finished',
+      badgeToUnlock: isMastery ? 'quiz_ace' : null,
+    );
 
     if (!mounted) return;
     Navigator.pushReplacement(

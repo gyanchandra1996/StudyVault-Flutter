@@ -660,6 +660,119 @@ Rules for your responses:
     );
   }
 
+  static Future<String> solveDoubtWithImage({
+    required String provider,
+    required String apiKey,
+    required String model,
+    required String base64Image,
+    String? questionText,
+    UserProfile? userProfile,
+  }) async {
+    final userName = userProfile?.name.trim().isNotEmpty == true ? userProfile!.name : 'the student';
+    final targetExams = userProfile?.targetExams.isNotEmpty == true ? userProfile!.targetExams.join(', ') : 'competitive exams';
+
+    final systemPrompt = '''
+You are Aarna (आर्ना), expert AI study mentor and doubt solver in the Medhavi app.
+You are helping $userName (Target: $targetExams) solve a doubt from an uploaded question or textbook image.
+Please carefully read and analyze the image:
+1. State the exact Question identified.
+2. Identify Core Concept, Theorem, or Formulas required.
+3. Provide a Step-by-Step Clear Solution with intermediate working.
+4. Highlight the Final Answer clearly.
+5. Provide 1 high-yield Exam Tip or Memory Trick for this topic.
+Format with clean Markdown, bold headers, and bullet points. Use English/Hindi as appropriate.
+''';
+
+    final userText = questionText != null && questionText.trim().isNotEmpty
+        ? 'Question details from student:\n$questionText\n\nPlease solve this step-by-step.'
+        : 'Please solve this question from the image step-by-step.';
+
+    if (provider == providerOpenAi) {
+      final response = await http.post(
+        Uri.parse('https://api.openai.com/v1/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${apiKey.trim()}',
+        },
+        body: jsonEncode({
+          'model': model.isNotEmpty ? model : 'gpt-4o-mini',
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            {
+              'role': 'user',
+              'content': [
+                {'type': 'text', 'text': userText},
+                {
+                  'type': 'image_url',
+                  'image_url': {'url': 'data:image/jpeg;base64,$base64Image'}
+                }
+              ]
+            }
+          ],
+          'temperature': 0.4,
+          'max_tokens': 4096,
+        }),
+      );
+      if (response.statusCode != 200) {
+        throw Exception('OpenAI error: ${response.body}');
+      }
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final choices = data['choices'] as List<dynamic>?;
+      return choices?.first?['message']?['content']?.toString() ?? '';
+    }
+
+    // Default to Gemini Multimodal
+    final endpoints = _getGeminiEndpoints(model, apiKey);
+    final contents = [
+      {
+        'role': 'user',
+        'parts': [
+          {
+            'inline_data': {
+              'mime_type': 'image/jpeg',
+              'data': base64Image,
+            }
+          },
+          {'text': '$systemPrompt\n\n$userText'},
+        ]
+      }
+    ];
+
+    http.Response? lastResponse;
+    for (final ep in endpoints) {
+      try {
+        final res = await http.post(
+          Uri.parse(ep),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'contents': contents,
+            'generationConfig': {
+              'temperature': 0.4,
+              'maxOutputTokens': 4096,
+            }
+          }),
+        ).timeout(const Duration(seconds: 30));
+        lastResponse = res;
+        if (res.statusCode == 200) break;
+      } catch (_) {}
+    }
+
+    if (lastResponse == null || lastResponse.statusCode != 200) {
+      throw Exception('Gemini Vision error (${lastResponse?.statusCode ?? "Timeout"}): ${lastResponse?.body ?? "Unable to connect"}');
+    }
+
+    final Map<String, dynamic> data = jsonDecode(lastResponse.body);
+    final candidates = data['candidates'] as List<dynamic>?;
+    if (candidates != null && candidates.isNotEmpty) {
+      final content = candidates[0]['content'] as Map<String, dynamic>?;
+      final parts = content?['parts'] as List<dynamic>?;
+      if (parts != null && parts.isNotEmpty) {
+        return parts.map((p) => p['text']?.toString() ?? '').join('\n');
+      }
+    }
+    return 'Aarna could not extract an answer from this image. Please ensure the question text in the photo is clear and legible.';
+  }
+
   static Future<List<Map<String, String>>> generateFlashcards({
     required String provider,
     required String apiKey,

@@ -18,6 +18,8 @@ import '../widgets/exam_analytics_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
 import 'camera_to_pdf_screen.dart';
 import 'brain_games/brain_games_hub_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import '../widgets/ai_assistant_modal.dart';
 
 class ToolsHubScreen extends StatefulWidget {
   final VoidCallback? onRefresh;
@@ -32,6 +34,16 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
   String _selectedFilter = 'all';
 
   final List<Map<String, dynamic>> _allTools = [
+    {
+      'id': 'snap_solve_doubt',
+      'title': 'Snap & Solve AI Doubt Scanner',
+      'hindi': 'कैमरा से डाउट स्कैनर',
+      'category': 'ai',
+      'icon': Icons.camera_enhance_rounded,
+      'color': Colors.deepOrange,
+      'description': 'Click photo of any textbook question or equation. Aarna solves it step-by-step with formulas and concepts!',
+      'badge': 'AARNA VISION',
+    },
     {
       'id': 'brain_games',
       'title': 'Brain Games & Mental Focus',
@@ -181,6 +193,21 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
 
   void _openTool(Map<String, dynamic> tool) {
     switch (tool['id']) {
+      case 'snap_solve_doubt':
+        ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85).then((picked) {
+          if (picked != null && mounted) {
+            showDialog(
+              context: context,
+              builder: (_) => AiAssistantModal(initialImagePath: picked.path),
+            );
+          } else if (mounted) {
+            showDialog(
+              context: context,
+              builder: (_) => const AiAssistantModal(),
+            );
+          }
+        });
+        break;
       case 'brain_games':
         Navigator.push(
           context,

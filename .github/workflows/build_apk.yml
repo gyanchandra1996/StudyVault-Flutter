@@ -89,10 +89,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.4.0
-          name: "Medhavi (मेधावी) Flutter v2.4.0 - Aarna AI Assistant, Brain Games, Multi-Exam Reminders, Camera-to-PDF & Flashcards Library"
+          tag_name: v2.5.0
+          name: "Medhavi (मेधावी) Flutter v2.5.0 - Full Syllabus Handbook, Gamification Streaks & XP, Aarna Vision Doubt Scanner & Voice Mode"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.4.0 Official Release APK
+            ### 📱 Medhavi (मेधावी) Flutter v2.5.0 Official Release APK
+            - **1. Full Syllabus Built-in Revision Handbook**: Math (Arith/Alg), Hindi & English Grammar, General Science.
+            - **2. Gamification Engine**: Streaks 🔥, XP rewards, Level progression & Badges.
+            - **3. Snap & Solve AI Doubt Scanner**: Aarna Vision camera doubt resolver.
+            - **4. Aarna Voice Mode**: Text-to-speech audio explanations.
+            - **5. Enhanced Vault Backup & Restore**: Full SQLite tables, exam reminders & user profile.
             - **1. Brain Games Suite**:
               - Speed Math Blitz (60s mental math rush with streak multipliers).
               - Schulte Grid Focus Trainer (peripheral vision & reading speed).
