@@ -377,10 +377,8 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
   void _saveToNotes(String content) async {
     final title = 'Aarna Study Note (${DateTime.now().day}/${DateTime.now().month})';
     try {
-      await _noteRepo.createNote(
-        title: title,
-        content: content,
-        category: 'Aarna AI Mentorship',
+      await _noteRepo.addNote(
+        noteText: '$title\n\n$content',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -402,7 +400,7 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
 
   void _saveAsFlashcard(String question, String answer) async {
     try {
-      await _flashcardRepo.createCard(
+      await _flashcardRepo.addFlashcard(
         question: question.trim(),
         answer: answer.trim(),
         category: 'Aarna Highlights',
