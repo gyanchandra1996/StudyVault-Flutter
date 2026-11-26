@@ -11,6 +11,8 @@ class Flashcard {
   final String category;
   final int createdAt;
 
+  int get box => (repetition > 5 ? 5 : (repetition < 1 ? 1 : repetition));
+
   Flashcard({
     this.id,
     this.pdfId,

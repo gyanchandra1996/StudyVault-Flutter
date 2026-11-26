@@ -447,6 +447,10 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> toggleAiEnabled() async {
+    await setAiEnabled(!_isAiEnabled);
+  }
+
   Future<void> setAiProvider(String provider) async {
     _aiProvider = provider;
     _aiModel = AiService.getDefaultModel(provider);
