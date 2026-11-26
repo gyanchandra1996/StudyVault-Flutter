@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/user_profile.dart';
@@ -9,12 +12,158 @@ import 'favorites_screen.dart';
 class DigiProfileScreen extends StatelessWidget {
   const DigiProfileScreen({Key? key}) : super(key: key);
 
+  Future<void> _pickAndSetProfilePicture(BuildContext context, SettingsProvider settings) async {
+    final picker = ImagePicker();
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Change Profile Picture',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.camera_alt, color: Color(0xFF1E3A8A)),
+                ),
+                title: const Text('Take Photo with Camera'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final picked = await picker.pickImage(
+                      source: ImageSource.camera,
+                      maxWidth: 800,
+                      maxHeight: 800,
+                      imageQuality: 85,
+                    );
+                    if (picked != null) {
+                      await settings.updateProfilePicture(picked.path);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Camera error: $e')),
+                      );
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.photo_library, color: Color(0xFF1E3A8A)),
+                ),
+                title: const Text('Choose from Gallery'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final picked = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 800,
+                      maxHeight: 800,
+                      imageQuality: 85,
+                    );
+                    if (picked != null) {
+                      await settings.updateProfilePicture(picked.path);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gallery error: $e')),
+                      );
+                    }
+                  }
+                },
+              ),
+              if (settings.userProfile.profilePicturePath.isNotEmpty)
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFEF2F2),
+                    child: Icon(Icons.delete_outline, color: Colors.red),
+                  ),
+                  title: const Text('Remove Profile Picture', style: TextStyle(color: Colors.red)),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await settings.updateProfilePicture('');
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context, SettingsProvider settings) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.logout_rounded, color: Colors.red, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Confirm Logout',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to log out from DigiStudy Medhavi?\n\nYour study records, tests, and vault items remain securely saved on this device. You will be redirected to the student registration/login screen.',
+          style: TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            icon: const Icon(Icons.logout_rounded, size: 18),
+            label: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await settings.logout();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showEditProfileDialog(BuildContext context, SettingsProvider settings) {
     final profile = settings.userProfile;
     final nameCtrl = TextEditingController(text: profile.name);
     final emailCtrl = TextEditingController(text: profile.email);
     final mobileCtrl = TextEditingController(text: profile.mobile);
     String selectedGender = profile.gender;
+    final genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
+    if (!genders.contains(selectedGender)) {
+      selectedGender = 'Male';
+    }
 
     showDialog(
       context: context,
@@ -43,22 +192,27 @@ class DigiProfileScreen extends StatelessWidget {
                     keyboardType: TextInputType.phone,
                     decoration: const InputDecoration(labelText: 'Mobile Number', border: OutlineInputBorder()),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('Gender', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: ['Male', 'Female', 'Other'].map((g) {
-                      final isSel = selectedGender == g;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: ChoiceChip(
-                          label: Text(g, style: TextStyle(color: isSel ? Colors.white : null)),
-                          selected: isSel,
-                          selectedColor: const Color(0xFF1E3A8A),
-                          onSelected: (_) => setDialogState(() => selectedGender = g),
-                        ),
+                  const SizedBox(height: 14),
+                  const Text('Gender', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedGender,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: genders.map((g) {
+                      return DropdownMenuItem<String>(
+                        value: g,
+                        child: Text(g),
                       );
                     }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() => selectedGender = val);
+                      }
+                    },
                   ),
                 ],
               ),
@@ -99,6 +253,10 @@ class DigiProfileScreen extends StatelessWidget {
     const primaryBlue = Color(0xFF1E3A8A);
     const brightBlue = Color(0xFF2563EB);
 
+    final bool hasValidPic = profile.profilePicturePath.isNotEmpty &&
+        !kIsWeb &&
+        File(profile.profilePicturePath).existsSync();
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       body: SingleChildScrollView(
@@ -121,13 +279,44 @@ class DigiProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 38,
-                    backgroundColor: Colors.white,
-                    child: Text(
-                      profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'G',
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryBlue),
-                    ),
+                  // Profile Avatar with Change Option
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 42,
+                        backgroundColor: Colors.white,
+                        backgroundImage: hasValidPic ? FileImage(File(profile.profilePicturePath)) : null,
+                        child: !hasValidPic
+                            ? Text(
+                                profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'G',
+                                style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: primaryBlue),
+                              )
+                            : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: InkWell(
+                          onTap: () => _pickAndSetProfilePicture(context, settings),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.25),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.camera_alt, color: primaryBlue, size: 16),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -174,15 +363,38 @@ class DigiProfileScreen extends StatelessWidget {
             // Edit Profile Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(44),
-                  side: const BorderSide(color: Color(0xFF1E3A8A)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(Icons.edit, size: 16, color: Color(0xFF1E3A8A)),
-                label: const Text('Update Profile Details', style: TextStyle(color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold)),
-                onPressed: () => _showEditProfileDialog(context, settings),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44),
+                        side: const BorderSide(color: Color(0xFF1E3A8A)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.edit, size: 16, color: Color(0xFF1E3A8A)),
+                      label: const Text(
+                        'Update Profile',
+                        style: TextStyle(color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () => _showEditProfileDialog(context, settings),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(120, 44),
+                      side: const BorderSide(color: Color(0xFF2563EB)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.add_a_photo, size: 16, color: Color(0xFF2563EB)),
+                    label: const Text(
+                      'Photo',
+                      style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () => _pickAndSetProfilePicture(context, settings),
+                  ),
+                ],
               ),
             ),
 
@@ -302,6 +514,46 @@ class DigiProfileScreen extends StatelessWidget {
                       },
                     ),
                   ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Clearly Visible Logout Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                elevation: 1.5,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.red.withOpacity(0.3), width: 1.2),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.logout_rounded, color: Colors.red, size: 22),
+                  ),
+                  title: const Text(
+                    'Log Out from DigiStudy',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Securely end session and return to registration screen',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.red, size: 16),
+                  onTap: () => _showLogoutConfirmation(context, settings),
                 ),
               ),
             ),

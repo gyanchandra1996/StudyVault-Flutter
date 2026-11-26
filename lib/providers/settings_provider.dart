@@ -237,6 +237,7 @@ class SettingsProvider extends ChangeNotifier {
     required String email,
     required String mobile,
     required String gender,
+    String? profilePicturePath,
     String? targetExam,
   }) async {
     final updated = _userProfile.copyWith(
@@ -244,6 +245,7 @@ class SettingsProvider extends ChangeNotifier {
       email: email.trim(),
       mobile: mobile.trim(),
       gender: gender.trim(),
+      profilePicturePath: profilePicturePath ?? _userProfile.profilePicturePath,
       isRegistered: true,
       targetExams: targetExam != null && targetExam.trim().isNotEmpty
           ? [targetExam.trim(), ..._userProfile.targetExams]
@@ -251,6 +253,20 @@ class SettingsProvider extends ChangeNotifier {
       lastUpdated: DateTime.now().millisecondsSinceEpoch,
     );
     await updateUserProfile(updated);
+  }
+
+  Future<void> updateProfilePicture(String path) async {
+    final updated = _userProfile.copyWith(
+      profilePicturePath: path,
+      lastUpdated: DateTime.now().millisecondsSinceEpoch,
+    );
+    await updateUserProfile(updated);
+  }
+
+  Future<void> logout() async {
+    await UserProfileRepo().logout();
+    _userProfile = _userProfile.copyWith(isRegistered: false);
+    notifyListeners();
   }
 
   Future<void> updateUserProfile(UserProfile newProfile) async {

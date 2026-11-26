@@ -4,7 +4,8 @@ class UserProfile {
   final String name;
   final String email;
   final String mobile;
-  final String gender; // 'Male', 'Female', 'Other'
+  final String gender; // 'Male', 'Female', 'Other', 'Prefer not to say'
+  final String profilePicturePath; // local file path or empty
   final bool isRegistered;
   final List<String> targetExams;
   final List<String> focusSubjects;
@@ -20,6 +21,7 @@ class UserProfile {
     this.email = '',
     this.mobile = '',
     this.gender = 'Male',
+    this.profilePicturePath = '',
     this.isRegistered = false,
     this.targetExams = const ['General Competitive Exams', 'DSSSB', 'Computer Science'],
     this.focusSubjects = const ['Computer Science', 'Polity', 'History', 'Aptitude', 'Reasoning'],
@@ -37,6 +39,7 @@ class UserProfile {
       'email': email,
       'mobile': mobile,
       'gender': gender,
+      'profilePicturePath': profilePicturePath,
       'isRegistered': isRegistered ? 1 : 0,
       'targetExams': jsonEncode(targetExams),
       'focusSubjects': jsonEncode(focusSubjects),
@@ -68,6 +71,7 @@ class UserProfile {
       email: (map['email'] as String?) ?? '',
       mobile: (map['mobile'] as String?) ?? '',
       gender: (map['gender'] as String?) ?? 'Male',
+      profilePicturePath: (map['profilePicturePath'] as String?) ?? '',
       isRegistered: isReg,
       targetExams: parseList(map['targetExams'], ['General Competitive Exams', 'Computer Science']),
       focusSubjects: parseList(map['focusSubjects'], ['Computer Science', 'Polity', 'Aptitude']),
@@ -85,6 +89,7 @@ class UserProfile {
     String? email,
     String? mobile,
     String? gender,
+    String? profilePicturePath,
     bool? isRegistered,
     List<String>? targetExams,
     List<String>? focusSubjects,
@@ -100,6 +105,7 @@ class UserProfile {
       email: email ?? this.email,
       mobile: mobile ?? this.mobile,
       gender: gender ?? this.gender,
+      profilePicturePath: profilePicturePath ?? this.profilePicturePath,
       isRegistered: isRegistered ?? this.isRegistered,
       targetExams: targetExams ?? this.targetExams,
       focusSubjects: focusSubjects ?? this.focusSubjects,

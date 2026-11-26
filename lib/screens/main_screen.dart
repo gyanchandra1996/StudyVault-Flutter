@@ -290,7 +290,8 @@ class _MainScreenState extends State<MainScreen> {
             if (_showPipOverlay)
               FloatingPipOverlay(
                 onClose: () => setState(() => _showPipOverlay = false),
-                currentSubject: 'DigiStudy Pomodoro',
+                onReturnFullScreen: () => setState(() => _showPipOverlay = false),
+                currentSubject: 'DigiStudy • ${pomodoro.isWorkMode ? "Focus Mode" : "Break Mode"}',
               ),
           ],
         ),

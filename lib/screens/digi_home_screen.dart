@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/question.dart';
@@ -417,10 +419,23 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                           child: CircleAvatar(
                             radius: 17,
                             backgroundColor: Colors.white,
-                            child: Text(
-                              userName.isNotEmpty ? userName[0].toUpperCase() : 'G',
-                              style: const TextStyle(color: primaryBlue, fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
+                            backgroundImage: (settings.userProfile.profilePicturePath.isNotEmpty &&
+                                    !kIsWeb &&
+                                    File(settings.userProfile.profilePicturePath).existsSync())
+                                ? FileImage(File(settings.userProfile.profilePicturePath))
+                                : null,
+                            child: (settings.userProfile.profilePicturePath.isEmpty ||
+                                    kIsWeb ||
+                                    !File(settings.userProfile.profilePicturePath).existsSync())
+                                ? Text(
+                                    userName.isNotEmpty ? userName[0].toUpperCase() : 'G',
+                                    style: const TextStyle(
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  )
+                                : null,
                           ),
                         ),
                       ],

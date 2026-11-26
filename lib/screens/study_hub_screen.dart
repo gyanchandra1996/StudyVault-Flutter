@@ -53,11 +53,30 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
     final study = Provider.of<StudyProvider>(context, listen: false);
     await study.loadInitialData();
 
-    // Load subcategories for each root category
+    // Load subcategories for each root category and merge/deduplicate by category title
     final Map<int, List<Category>> subMap = {};
+    final Map<String, List<Category>> subsByCatTitle = {};
     for (final cat in study.categories) {
       if (cat.id != null) {
-        subMap[cat.id!] = await _categoryRepo.getSubcategories(cat.id!);
+        final subs = await _categoryRepo.getSubcategories(cat.id!);
+        final catKey = cat.title.trim().toLowerCase();
+        subsByCatTitle.putIfAbsent(catKey, () => []).addAll(subs);
+      }
+    }
+    for (final cat in study.categories) {
+      if (cat.id != null) {
+        final catKey = cat.title.trim().toLowerCase();
+        final combined = subsByCatTitle[catKey] ?? [];
+        final seenSubTitles = <String>{};
+        final uniqueSubs = <Category>[];
+        for (final s in combined) {
+          final sKey = s.title.trim().toLowerCase();
+          if (!seenSubTitles.contains(sKey)) {
+            seenSubTitles.add(sKey);
+            uniqueSubs.add(s);
+          }
+        }
+        subMap[cat.id!] = uniqueSubs;
       }
     }
 
@@ -282,11 +301,22 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
     const primaryBlue = Color(0xFF1E3A8A);
     const brightBlue = Color(0xFF2563EB);
 
-    final filteredCategories = study.categories.where((cat) {
+    final rawCategories = study.categories.where((cat) {
       if (_searchQuery.trim().isEmpty) return true;
       return cat.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           cat.description.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
+
+    // Deduplicate categories by normalized lowercase title
+    final seenTitles = <String>{};
+    final filteredCategories = <Category>[];
+    for (final cat in rawCategories) {
+      final key = cat.title.trim().toLowerCase();
+      if (!seenTitles.contains(key)) {
+        seenTitles.add(key);
+        filteredCategories.add(cat);
+      }
+    }
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),

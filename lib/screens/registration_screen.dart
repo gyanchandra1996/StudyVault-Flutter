@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import 'main_screen.dart';
@@ -19,9 +22,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _mobileController = TextEditingController();
   String _selectedGender = 'Male';
   String _selectedStream = 'Computer Science & IT';
+  String? _profileImagePath;
   bool _isSaving = false;
 
-  final List<String> _genders = ['Male', 'Female', 'Other'];
+  final List<String> _genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
   final List<String> _streams = [
     'Computer Science & IT',
     'General Competitive Exams',
@@ -41,6 +45,87 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          _profileImagePath = picked.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not select image: $e')),
+        );
+      }
+    }
+  }
+
+  void _showImagePickerModal() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Select Profile Picture',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.camera_alt, color: Color(0xFF1E3A8A)),
+                ),
+                title: const Text('Take Photo from Camera'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.photo_library, color: Color(0xFF1E3A8A)),
+                ),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              if (_profileImagePath != null)
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFEF2F2),
+                    child: Icon(Icons.delete_outline, color: Colors.red),
+                  ),
+                  title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() => _profileImagePath = null);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _submitRegistration() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -52,6 +137,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       email: _emailController.text.trim(),
       mobile: _mobileController.text.trim(),
       gender: _selectedGender,
+      profilePicturePath: _profileImagePath,
       targetExam: _selectedStream,
     );
 
@@ -195,6 +281,69 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                           const Divider(height: 24),
 
+                          // Profile Picture Avatar Picker
+                          Center(
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 46,
+                                  backgroundColor: const Color(0xFFE2E8F0),
+                                  backgroundImage: (_profileImagePath != null &&
+                                          !kIsWeb &&
+                                          File(_profileImagePath!).existsSync())
+                                      ? FileImage(File(_profileImagePath!))
+                                      : null,
+                                  child: (_profileImagePath == null ||
+                                          (kIsWeb || !File(_profileImagePath!).existsSync()))
+                                      ? const Icon(Icons.person, size: 52, color: primaryBlue)
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: InkWell(
+                                    onTap: _showImagePickerModal,
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(7),
+                                      decoration: BoxDecoration(
+                                        color: primaryBlue,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2.5),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.25),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: _showImagePickerModal,
+                              icon: const Icon(Icons.add_a_photo, size: 15, color: brightBlue),
+                              label: Text(
+                                _profileImagePath == null
+                                    ? 'Upload Profile Picture (Optional)'
+                                    : 'Change Profile Picture',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: brightBlue,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
                           // Name
                           const Text(
                             'Full Name *',
@@ -298,34 +447,65 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Gender Selection
+                          // Gender Selection Dropdown (Fixed visibility & styling)
                           const Text(
                             'Gender *',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: _genders.map((g) {
-                              final isSelected = _selectedGender == g;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: ChoiceChip(
-                                  label: Text(
-                                    g,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : const Color(0xFF334155),
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<String>(
+                            value: _selectedGender,
+                            isExpanded: true,
+                            icon: const Icon(Icons.keyboard_arrow_down, color: primaryBlue),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(
+                              color: Color(0xFF1E293B),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Select Gender',
+                              prefixIcon: const Icon(Icons.people_outline, color: brightBlue),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: brightBlue, width: 1.5),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                            items: _genders.map((g) {
+                              return DropdownMenuItem<String>(
+                                value: g,
+                                child: Text(
+                                  g,
+                                  style: const TextStyle(
+                                    color: Color(0xFF1E293B),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  selected: isSelected,
-                                  selectedColor: primaryBlue,
-                                  backgroundColor: const Color(0xFFF1F5F9),
-                                  onSelected: (selected) {
-                                    if (selected) setState(() => _selectedGender = g);
-                                  },
                                 ),
                               );
                             }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedGender = val);
+                              }
+                            },
+                            validator: (val) {
+                              if (val == null || val.isEmpty) {
+                                return 'Please select your gender';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 16),
 

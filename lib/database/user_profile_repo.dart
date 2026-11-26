@@ -39,6 +39,15 @@ class UserProfileRepo {
     return prefs.getBool(_registeredKey) ?? false;
   }
 
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_registeredKey, false);
+    if (_cachedProfile != null) {
+      _cachedProfile = _cachedProfile!.copyWith(isRegistered: false);
+      await prefs.setString(_key, jsonEncode(_cachedProfile!.toMap()));
+    }
+  }
+
   void clearCache() {
     _cachedProfile = null;
   }
