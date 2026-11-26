@@ -582,7 +582,7 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
                                           const Text('🔥', style: TextStyle(fontSize: 9.5)),
                                           const SizedBox(width: 2),
                                           Text(
-                                            '${_gamificationData!.currentStreak}d Streak (Lvl ${_gamificationData!.currentLevel})',
+                                            '${_gamificationData!.streakDays}d Streak (Lvl ${_gamificationData!.level})',
                                             style: const TextStyle(
                                               fontSize: 9.5,
                                               fontWeight: FontWeight.bold,

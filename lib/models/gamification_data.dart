@@ -23,6 +23,8 @@ class GamificationData {
         unlockedBadges = unlockedBadges ?? ['first_step'];
 
   int get level => (totalXp / 100).floor() + 1;
+  int get currentLevel => level;
+  int get currentStreak => streakDays;
   double get levelProgress => (totalXp % 100) / 100.0;
   int get xpToNextLevel => 100 - (totalXp % 100);
 
