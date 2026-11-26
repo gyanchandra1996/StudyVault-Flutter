@@ -89,17 +89,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.6.0
-          name: "Medhavi (मेधावी) Flutter v2.6.0 - PIN Auth, DigiLocker 5-Tab Dock, Study & Quiz Separation, ID Vault & Brain Games"
+          tag_name: v2.6.1
+          name: "Medhavi (मेधावी) Flutter v2.6.1 - Square Card Grid for Exam Utility Tools Suite & Full Stability"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.6.0 Official Release APK
-            - **1. Simplified PIN Registration & Login**: Name & 4-digit PIN only (default 1996), Master PIN `1996` always unlocks.
-            - **2. Accidental Logout Protection**: Direct PIN Login Screen to instantly unlock your profile.
-            - **3. DigiLocker 5-Item Navigation Dock**: Home | Study | AI Tutor (curved floating pill) | Quizzes | Vault.
-            - **4. Study & Quiz Hub Separation**: Dedicated Quizzes screen with past tests, mistake bank, question pool, CSV import & AI Quiz creator.
-            - **5. Category Hierarchy Clean Design**: Borderless tree view with Rename category & subcategory support.
-            - **6. DigiLocker ID Vault**: Fixed layout overflow, added Royal Blue DigiLocker header with offline encrypted sandbox.
-            - **7. Spaced Memory Flashcards**: Enhanced 3D cards, instant shuffle mode, and pre-seeded high-yield decks.
-            - **8. 6-in-1 Brain Games**: Speed Math Blitz, Schulte Grid, Memory Match, Stroop Reflex, Word Scramble & Number Sequence logic.
+            ### 📱 Medhavi (मेधावी) Flutter v2.6.1 Official Release APK
+            - **1. Exam Utility Tools Suite Square Cards**: Replaced broken horizontal cards with a sleek, responsive 2-column square card grid layout with colored icon tiles, badges, and smooth ripples.
+            - **2. Document & Exam Tools Grid**: Modernized Utility Hub with uniform 2-column square-card grid preventing any layout overflows or breaking lines.
+            - **3. Simplified PIN Registration & Login**: Name & 4-digit PIN only (default 1996), Master PIN `1996` always unlocks.
+            - **4. Accidental Logout Protection**: Direct PIN Login Screen to instantly unlock your profile.
+            - **5. DigiLocker 5-Item Navigation Dock**: Home | Study | AI Tutor (curved floating pill) | Quizzes | Vault.
+            - **6. Study & Quiz Hub Separation**: Dedicated Quizzes screen with past tests, mistake bank, question pool, CSV import & AI Quiz creator.
+            - **7. Category Hierarchy Clean Design**: Borderless tree view with Rename category & subcategory support.
+            - **8. DigiLocker ID Vault**: Fixed layout overflow, added Royal Blue DigiLocker header with offline encrypted sandbox.
+            - **9. Spaced Memory Flashcards**: Enhanced 3D cards, instant shuffle mode, and pre-seeded high-yield decks.
+            - **10. 6-in-1 Brain Games**: Speed Math Blitz, Schulte Grid, Memory Match, Stroop Reflex, Word Scramble & Number Sequence logic.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

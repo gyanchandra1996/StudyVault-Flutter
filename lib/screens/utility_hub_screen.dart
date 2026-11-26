@@ -207,141 +207,109 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
             ),
             const SizedBox(height: 10),
 
-            Row(
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.15,
               children: [
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.handyman_outlined,
-                    color: Colors.teal,
-                    title: 'PDF Tools Hub',
-                    subtitle: 'Merge, split, compress',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.handyman_outlined,
+                  color: Colors.teal,
+                  title: 'PDF Tools Hub',
+                  subtitle: 'Merge, split, compress',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                    );
+                  },
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.camera_alt_outlined,
-                    color: Colors.blue,
-                    title: 'Camera to PDF',
-                    subtitle: 'Scan notes & papers',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CameraToPdfScreen()),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.camera_alt_outlined,
+                  color: Colors.blue,
+                  title: 'Camera to PDF',
+                  subtitle: 'Scan notes & papers',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CameraToPdfScreen()),
+                    );
+                  },
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.gesture,
-                    color: Colors.indigo,
-                    title: 'Digital Sign Pad',
-                    subtitle: 'Create blue/black sign',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.gesture,
+                  color: Colors.indigo,
+                  title: 'Digital Sign Pad',
+                  subtitle: 'Create blue/black sign',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                    );
+                  },
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.auto_stories,
-                    color: Colors.deepPurple,
-                    title: 'Quick Revision',
-                    subtitle: 'Handbook & formulas',
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const QuickRevisionHandbookModal(),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.auto_stories,
+                  color: Colors.deepPurple,
+                  title: 'Quick Revision',
+                  subtitle: 'Handbook & formulas',
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const QuickRevisionHandbookModal(),
+                    );
+                  },
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.checklist_rtl_rounded,
-                    color: Colors.green,
-                    title: 'Syllabus Tracker',
-                    subtitle: 'Track subject completion',
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const SyllabusTrackerModal(),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.checklist_rtl_rounded,
+                  color: Colors.green,
+                  title: 'Syllabus Tracker',
+                  subtitle: 'Track subject completion',
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const SyllabusTrackerModal(),
+                    );
+                  },
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.analytics_outlined,
-                    color: Colors.pink,
-                    title: 'Exam Analytics',
-                    subtitle: 'View preparation graph',
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const ExamAnalyticsModal(),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.analytics_outlined,
+                  color: Colors.pink,
+                  title: 'Exam Analytics',
+                  subtitle: 'View preparation graph',
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const ExamAnalyticsModal(),
+                    );
+                  },
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.edit_note_rounded,
-                    color: Colors.amber.shade900,
-                    title: 'Study Notes',
-                    subtitle: 'Saved points & thoughts',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotesScreen()),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.edit_note_rounded,
+                  color: Colors.amber.shade900,
+                  title: 'Study Notes',
+                  subtitle: 'Saved points & thoughts',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NotesScreen()),
+                    );
+                  },
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildSmallToolCard(
-                    icon: Icons.cloud_sync_outlined,
-                    color: Colors.blueGrey,
-                    title: 'Backup & Restore',
-                    subtitle: 'Export / import data',
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const BackupRestoreModal(),
-                      );
-                    },
-                  ),
+                _buildSmallToolCard(
+                  icon: Icons.cloud_sync_outlined,
+                  color: Colors.blueGrey,
+                  title: 'Backup & Restore',
+                  subtitle: 'Export / import data',
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const BackupRestoreModal(),
+                    );
+                  },
                 ),
               ],
             ),
@@ -439,19 +407,20 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.22), width: 1.2),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6),
+            BoxShadow(color: color.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
               padding: const EdgeInsets.all(8),
@@ -459,21 +428,26 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            const SizedBox(height: 6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
             ),
           ],
         ),
