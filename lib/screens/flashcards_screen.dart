@@ -522,82 +522,120 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
     final card = _dueCards[_currentIndex];
     return Card(
       key: const ValueKey(false),
-      elevation: 6,
-      shadowColor: accent.withOpacity(0.25),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      elevation: 8,
+      shadowColor: accent.withOpacity(0.35),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           gradient: LinearGradient(
             colors: isDark
                 ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                : [Colors.white, const Color(0xFFF0F4FF)],
+                : [Colors.white, const Color(0xFFEFF6FF)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: accent.withOpacity(0.35), width: 1.5),
+          border: Border.all(color: accent.withOpacity(0.4), width: 1.8),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withOpacity(0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
                     color: accent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: accent.withOpacity(0.3)),
+                    border: Border.all(color: accent.withOpacity(0.35)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.label_important_outline, size: 14, color: accent),
+                      Icon(Icons.label_important_rounded, size: 14, color: accent),
                       const SizedBox(width: 4),
                       Text(
                         card.category.toUpperCase(),
-                        style: TextStyle(color: accent, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1),
+                        style: TextStyle(color: accent, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                      const SizedBox(width: 3),
+                      Text(
+                        'Box ${card.box}/5',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Text(
-              'PROMPT / QUESTION',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, letterSpacing: 1.5),
-            ),
             const SizedBox(height: 16),
+            Text(
+              'QUESTION / PROMPT',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 14),
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
                   child: Text(
                     card.question,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.4),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      height: 1.35,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  colors: [accent.withOpacity(0.15), accent.withOpacity(0.08)],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: accent.withOpacity(0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.touch_app, size: 16, color: accent),
-                  const SizedBox(width: 6),
+                  Icon(Icons.flip_to_back_rounded, size: 16, color: accent),
+                  const SizedBox(width: 8),
                   Text(
-                    'Tap anywhere to reveal answer',
-                    style: TextStyle(fontSize: 12, color: accent, fontWeight: FontWeight.w600),
+                    'Tap to Flip Card 🔄',
+                    style: TextStyle(fontSize: 12, color: accent, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -613,14 +651,14 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
     const successGreen = Color(0xFF059669);
     return Card(
       key: const ValueKey(true),
-      elevation: 6,
-      shadowColor: successGreen.withOpacity(0.25),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      elevation: 8,
+      shadowColor: successGreen.withOpacity(0.35),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           gradient: LinearGradient(
             colors: isDark
                 ? [const Color(0xFF064E3B).withOpacity(0.4), const Color(0xFF0F172A)]
@@ -628,23 +666,30 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: successGreen.withOpacity(0.4), width: 1.5),
+          border: Border.all(color: successGreen.withOpacity(0.45), width: 1.8),
+          boxShadow: [
+            BoxShadow(
+              color: successGreen.withOpacity(0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: successGreen.withOpacity(0.12),
+                color: successGreen.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: successGreen.withOpacity(0.3)),
+                border: Border.all(color: successGreen.withOpacity(0.35)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle, size: 14, color: successGreen),
-                  SizedBox(width: 4),
+                  Icon(Icons.check_circle_rounded, size: 16, color: successGreen),
+                  SizedBox(width: 6),
                   Text(
                     'VERIFIED ANSWER',
                     style: TextStyle(color: successGreen, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1),
@@ -652,24 +697,29 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
-              'EXPLANATION & KEY TAKEAWAY',
+              'EXPLANATION & REVISION NOTE',
               style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: successGreen, letterSpacing: 1.5),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
                   child: Text(
                     card.answer,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, height: 1.5),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      height: 1.45,
+                      letterSpacing: 0.1,
+                    ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               'Rate recall difficulty below to schedule next review:',
               style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),

@@ -396,131 +396,169 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                           final docColor = _getDocColor(doc.docType);
                           final docIcon = _getDocIcon(doc.docType);
 
-                          return Card(
-                            elevation: 1.5,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: docColor.withOpacity(0.3), width: 1.2),
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 14),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: docColor.withOpacity(0.12),
-                                        child: Icon(docIcon, color: docColor, size: 22),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    doc.title,
-                                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: docColor.withOpacity(0.12),
-                                                    borderRadius: BorderRadius.circular(6),
-                                                  ),
-                                                  child: Text(
-                                                    doc.docTypeDisplayName,
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: docColor,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            if (doc.docNumber != null && doc.docNumber!.isNotEmpty) ...[
-                                              const SizedBox(height: 4),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(18),
+                              onTap: () => _openDocument(doc),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Header: Icon + Title + Category Chip
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            color: docColor.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(docIcon, color: docColor, size: 24),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
                                               Text(
-                                                'ID No: ${doc.docNumber!}',
+                                                doc.title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                (doc.docNumber != null && doc.docNumber!.isNotEmpty)
+                                                    ? doc.docNumber!
+                                                    : 'Verified Offline Credential',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: isDark ? Colors.white70 : Colors.black87,
+                                                  letterSpacing: 0.8,
+                                                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
                                                 ),
                                               ),
                                             ],
-                                            if (doc.notes != null && doc.notes!.isNotEmpty) ...[
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                doc.notes!,
-                                                style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: docColor.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            doc.docTypeDisplayName,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: docColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    // Authority / Notes Section (DigiLocker style)
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isDark ? Colors.white10 : const Color(0xFFEDF2F7),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        (doc.notes != null && doc.notes!.isNotEmpty)
+                                            ? doc.notes!
+                                            : 'Official Document • Verified & Secured in Medhavi ID Vault',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Footer Actions Row
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.share_outlined, size: 20, color: Colors.blueGrey),
+                                              tooltip: 'Share Document',
+                                              constraints: const BoxConstraints(),
+                                              padding: const EdgeInsets.all(6),
+                                              onPressed: () => ShareService.sharePdf(doc.filePath, title: doc.title),
+                                            ),
+                                            if (settings.showDeleteActions) ...[
+                                              const SizedBox(width: 8),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                                                tooltip: 'Delete Document',
+                                                constraints: const BoxConstraints(),
+                                                padding: const EdgeInsets.all(6),
+                                                onPressed: () async {
+                                                  if (doc.id != null) {
+                                                    await _docRepo.deleteDocument(doc.id!);
+                                                    _loadDocuments();
+                                                  }
+                                                },
                                               ),
                                             ],
                                           ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 6),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Wrap(
-                                      alignment: WrapAlignment.end,
-                                      crossAxisAlignment: WrapCrossAlignment.center,
-                                      spacing: 6,
-                                      runSpacing: 4,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
-                                          tooltip: 'Share Document',
-                                          constraints: const BoxConstraints(),
-                                          padding: const EdgeInsets.all(6),
-                                          onPressed: () => ShareService.sharePdf(doc.filePath, title: doc.title),
-                                        ),
-                                        if (settings.showDeleteActions)
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                                            tooltip: 'Delete Document',
-                                            constraints: const BoxConstraints(),
-                                            padding: const EdgeInsets.all(6),
-                                            onPressed: () async {
-                                              if (doc.id != null) {
-                                                await _docRepo.deleteDocument(doc.id!);
-                                                _loadDocuments();
-                                              }
-                                            },
-                                          ),
                                         ElevatedButton.icon(
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: docColor,
                                             foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                            minimumSize: const Size(0, 34),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                            elevation: 0,
                                           ),
                                           icon: Icon(
                                             doc.fileType == 'pdf' ? Icons.picture_as_pdf : Icons.visibility,
                                             size: 16,
                                           ),
-                                          label: const Text('View Doc', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                          label: const Text('View Document', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                           onPressed: () => _openDocument(doc),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           );

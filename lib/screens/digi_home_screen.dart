@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../models/question.dart';
 import '../models/quiz_result.dart';
 import '../models/pdf_document.dart';
@@ -250,6 +253,215 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
     );
   }
 
+  void _openUserProfileDialog(BuildContext context, SettingsProvider settings) {
+    final nameController = TextEditingController(text: settings.userProfile.name);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const primaryBlue = Color(0xFF1E3A8A);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final profilePic = settings.userProfile.profilePicturePath;
+          final hasImage = profilePic.isNotEmpty && !kIsWeb && File(profilePic).existsSync();
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: const [
+                Icon(Icons.account_circle_rounded, color: primaryBlue, size: 26),
+                SizedBox(width: 8),
+                Text('User Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Avatar with upload badge
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 46,
+                          backgroundColor: primaryBlue.withOpacity(0.12),
+                          backgroundImage: hasImage ? FileImage(File(profilePic)) : null,
+                          child: !hasImage
+                              ? Text(
+                                  settings.userProfile.name.isNotEmpty
+                                      ? settings.userProfile.name[0].toUpperCase()
+                                      : 'M',
+                                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryBlue),
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: InkWell(
+                            onTap: () async {
+                              try {
+                                final res = await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                                );
+                                if (res != null && res.files.single.path != null) {
+                                  final srcPath = res.files.single.path!;
+                                  final appDir = await getApplicationDocumentsDirectory();
+                                  final ext = p.extension(srcPath);
+                                  final destPath = p.join(appDir.path, 'profile_${DateTime.now().millisecondsSinceEpoch}$ext');
+                                  await File(srcPath).copy(destPath);
+                                  await settings.updateProfilePicture(destPath);
+                                  setDialogState(() {});
+                                  if (mounted) setState(() {});
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('✓ Profile picture updated!'), behavior: SnackBarBehavior.floating),
+                                  );
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to update picture: $e')),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: const BoxDecoration(
+                                color: primaryBlue,
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                              ),
+                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    icon: const Icon(Icons.photo_library, size: 16),
+                    label: const Text('Change Profile Picture'),
+                    onPressed: () async {
+                      try {
+                        final res = await FilePicker.platform.pickFiles(
+                          type: FileType.custom,
+                          allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                        );
+                        if (res != null && res.files.single.path != null) {
+                          final srcPath = res.files.single.path!;
+                          final appDir = await getApplicationDocumentsDirectory();
+                          final ext = p.extension(srcPath);
+                          final destPath = p.join(appDir.path, 'profile_${DateTime.now().millisecondsSinceEpoch}$ext');
+                          await File(srcPath).copy(destPath);
+                          await settings.updateProfilePicture(destPath);
+                          setDialogState(() {});
+                          if (mounted) setState(() {});
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('✓ Profile picture updated!'), behavior: SnackBarBehavior.floating),
+                          );
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to update picture: $e')),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Name Field
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Full Name',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // App PIN status
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.pin_outlined, size: 20, color: Colors.blueGrey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('App PIN & Security', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              SizedBox(height: 2),
+                              Text('Master PIN: 1996 is always active', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              // Logout Button
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                icon: const Icon(Icons.logout, size: 18),
+                label: const Text('Logout'),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: ctx,
+                    builder: (c) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: const Text('Logout from Medhavi?'),
+                      content: const Text('You will be logged out to the PIN Login screen. You can unlock again anytime with your 4-digit PIN or Master PIN 1996.'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                          onPressed: () => Navigator.pop(c, true),
+                          child: const Text('Logout'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    Navigator.pop(ctx);
+                    await settings.logout();
+                  }
+                },
+              ),
+              const Spacer(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Save & Close'),
+                onPressed: () async {
+                  if (nameController.text.trim().isNotEmpty) {
+                    final updated = settings.userProfile.copyWith(name: nameController.text.trim());
+                    await settings.updateUserProfile(updated);
+                    if (mounted) setState(() {});
+                  }
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -318,16 +530,16 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'DigiStudy',
+                              'Medhavi',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 17,
+                                fontSize: 18,
                                 letterSpacing: 0.3,
                               ),
                             ),
                             Text(
-                              'MEDHAVI VAULT',
+                              'SMART EXAM VAULT',
                               style: TextStyle(
                                 color: Colors.white70,
                                 fontWeight: FontWeight.w600,
@@ -339,47 +551,63 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                         ),
                         const Spacer(),
 
-                        // Edit Mode / View Mode Pill
+                        // Master AI Control Button (Replaces View/Edit Pill on Home Top)
                         InkWell(
                           onTap: () {
-                            settings.toggleEditMode();
+                            settings.toggleAiEnabled();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(settings.isEditMode
-                                    ? '✏️ Edit Mode ON: Full access to add/modify quizzes & folders'
-                                    : '👁️ View Only Mode: Content is protected in read mode'),
+                                content: Text(settings.isAiEnabled
+                                    ? '✨ Master AI Enabled: Aarna smart tutoring active'
+                                    : '⏸️ Master AI Paused: Tap to re-activate'),
                                 duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
                               ),
+                            );
+                          },
+                          onLongPress: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => const AiAssistantModal(),
                             );
                           },
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: settings.isEditMode
-                                  ? Colors.amber.shade400
-                                  : Colors.white.withOpacity(0.2),
+                              color: settings.isAiEnabled
+                                  ? const Color(0xFF10B981).withOpacity(0.28)
+                                  : Colors.white.withOpacity(0.18),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: settings.isEditMode ? Colors.amber.shade700 : Colors.white30,
-                                width: 1,
+                                color: settings.isAiEnabled ? const Color(0xFF34D399) : Colors.white38,
+                                width: 1.2,
                               ),
+                              boxShadow: settings.isAiEnabled
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withOpacity(0.35),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  settings.isEditMode ? Icons.edit : Icons.visibility,
-                                  size: 14,
-                                  color: settings.isEditMode ? Colors.black87 : Colors.white,
+                                  Icons.auto_awesome,
+                                  size: 13,
+                                  color: settings.isAiEnabled ? const Color(0xFF34D399) : Colors.white70,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  settings.isEditMode ? 'Edit Mode' : 'View Only',
+                                  settings.isAiEnabled ? 'AI: ON' : 'AI: OFF',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: settings.isEditMode ? Colors.black87 : Colors.white,
+                                    color: settings.isAiEnabled ? Colors.white : Colors.white70,
                                   ),
                                 ),
                               ],
@@ -409,13 +637,9 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                         ),
                         const SizedBox(width: 8),
 
-                        // Profile Avatar
+                        // Profile Avatar (Clickable: Opens Profile & Photo Upload)
                         InkWell(
-                          onTap: () {
-                            if (widget.onNavigateToTab != null) {
-                              widget.onNavigateToTab!(3); // Navigate to Profile / Settings
-                            }
-                          },
+                          onTap: () => _openUserProfileDialog(context, settings),
                           child: CircleAvatar(
                             radius: 17,
                             backgroundColor: Colors.white,
@@ -428,7 +652,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                                     kIsWeb ||
                                     !File(settings.userProfile.profilePicturePath).existsSync())
                                 ? Text(
-                                    userName.isNotEmpty ? userName[0].toUpperCase() : 'G',
+                                    userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
                                     style: const TextStyle(
                                       color: primaryBlue,
                                       fontWeight: FontWeight.bold,
@@ -442,32 +666,43 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                     ),
                     const SizedBox(height: 20),
 
-                    // Greeting & Citizen Name (Inspired by DigiLocker!)
+                    // Greeting & Citizen Name (Clickable to open Profile & Upload Picture)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${DateTime.now().hour < 12 ? "Good Morning" : DateTime.now().hour < 17 ? "Good Afternoon" : "Good Evening"}, $userName! ${DateTime.now().hour < 12 ? "🌅" : DateTime.now().hour < 17 ? "☀️" : "🌙"}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                          child: InkWell(
+                            onTap: () => _openUserProfileDialog(context, settings),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '${DateTime.now().hour < 12 ? "Good Morning" : DateTime.now().hour < 17 ? "Good Afternoon" : "Good Evening"}, $userName! ${DateTime.now().hour < 12 ? "🌅" : DateTime.now().hour < 17 ? "☀️" : "🌙"}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const Icon(Icons.chevron_right, color: Colors.white70, size: 20),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Ready for today’s session? DigiStudy Vault documents are at par with physical certificates as per IT ACT 2000.',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.88),
-                                  fontSize: 12,
-                                  height: 1.3,
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Ready for today’s session? Medhavi Vault documents are at par with physical certificates as per IT ACT 2000.',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.88),
+                                    fontSize: 12,
+                                    height: 1.3,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -596,7 +831,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                     Icon(Icons.apps_rounded, color: primaryBlue, size: 20),
                     SizedBox(width: 8),
                     Text(
-                      'DigiLocker Utility',
+                      'Exam & Study Utility',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -616,7 +851,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                   crossAxisCount: 3,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 1.05,
+                  childAspectRatio: 0.88,
                   children: [
                     _buildUtilityCard(
                       icon: Icons.shield,

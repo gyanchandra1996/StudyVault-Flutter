@@ -271,6 +271,72 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
+  void _showRenameCategoryDialog(Category cat) {
+    final titleController = TextEditingController(text: cat.title);
+    final descController = TextEditingController(text: cat.description);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.edit, color: Color(0xFF1E3A8A)),
+            SizedBox(width: 8),
+            Text('Rename Topic / Subject', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'New Name',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              if (titleController.text.trim().isNotEmpty) {
+                final updated = cat.copyWith(
+                  title: titleController.text.trim(),
+                  description: descController.text.trim(),
+                );
+                await _catRepo.updateCategory(updated);
+                Navigator.pop(ctx);
+                _loadData();
+              }
+            },
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _deletePdf(PdfDocument pdf) async {
     await _pdfRepo.deletePdf(pdf.id!);
     _loadData();
@@ -290,6 +356,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       appBar: AppBar(
         title: Text(widget.category.title),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Rename Category',
+            onPressed: () => _showRenameCategoryDialog(widget.category),
+          ),
           // Edit Mode toggle pill
           InkWell(
             onTap: () {
@@ -669,6 +740,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           ),
         ).then((_) => _loadData());
       },
+      onLongPress: () => _showRenameCategoryDialog(sub),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -692,16 +764,28 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Icon(Icons.folder, color: Colors.indigo, size: 28),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '📄 $pdfCount',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
-                  ),
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () => _showRenameCategoryDialog(sub),
+                      child: const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: Icon(Icons.edit, size: 14, color: Colors.blueGrey),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '📄 $pdfCount',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -732,7 +816,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         ),
         title: Text(sub.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         subtitle: Text('📄 $pdfCount Documents inside', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blueGrey),
+              tooltip: 'Rename Folder',
+              onPressed: () => _showRenameCategoryDialog(sub),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
         onTap: () {
           Navigator.push(
             context,

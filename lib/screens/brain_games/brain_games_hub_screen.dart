@@ -7,6 +7,8 @@ import 'memory_match_game.dart';
 import 'stroop_reflex_game.dart';
 import 'word_scramble_game.dart';
 import 'number_sequence_game.dart';
+import 'pattern_matrix_game.dart';
+import 'odd_one_out_game.dart';
 
 class BrainGamesHubScreen extends StatelessWidget {
   const BrainGamesHubScreen({Key? key}) : super(key: key);
@@ -65,6 +67,22 @@ class BrainGamesHubScreen extends StatelessWidget {
         'icon': Icons.pin_outlined,
         'color': const Color(0xFF0D9488),
         'screen': const NumberSequenceGame(),
+      },
+      {
+        'title': '🧩 Spatial Pattern Matrix',
+        'subtitle': 'Identify the missing symbol in 3×3 logic and reasoning grids',
+        'benefit': 'Essential for non-verbal reasoning in UPSC, SSC & Railways',
+        'icon': Icons.extension_rounded,
+        'color': const Color(0xFF6366F1),
+        'screen': const PatternMatrixGame(),
+      },
+      {
+        'title': '🔍 Odd-One-Out Blitz',
+        'subtitle': '10-second speed challenge to spot the term that does not belong',
+        'benefit': 'Tests conceptual clarity and rapid classification aptitude',
+        'icon': Icons.find_in_page_rounded,
+        'color': const Color(0xFF0D9488),
+        'screen': const OddOneOutGame(),
       },
     ];
 

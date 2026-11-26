@@ -200,9 +200,9 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
 
             const SizedBox(height: 20),
 
-            // Section: Document & Exam Tools
+            // Section: Document & Exam Tools (DigiLocker 3-Column Square Cards)
             const Text(
-              'Document & PDF Tools',
+              'Document, Photo & Study Utilities',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
             ),
             const SizedBox(height: 10),
@@ -210,16 +210,26 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
+              crossAxisCount: 3,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: 1.15,
+              childAspectRatio: 0.88,
               children: [
                 _buildSmallToolCard(
                   icon: Icons.handyman_outlined,
                   color: Colors.teal,
                   title: 'PDF Tools Hub',
-                  subtitle: 'Merge, split, compress',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                    );
+                  },
+                ),
+                _buildSmallToolCard(
+                  icon: Icons.portrait_rounded,
+                  color: Colors.blue,
+                  title: 'Passport Photo Maker',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -229,9 +239,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 ),
                 _buildSmallToolCard(
                   icon: Icons.camera_alt_outlined,
-                  color: Colors.blue,
+                  color: Colors.indigo,
                   title: 'Camera to PDF',
-                  subtitle: 'Scan notes & papers',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -241,9 +250,41 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 ),
                 _buildSmallToolCard(
                   icon: Icons.gesture,
-                  color: Colors.indigo,
+                  color: Colors.deepPurple,
                   title: 'Digital Sign Pad',
-                  subtitle: 'Create blue/black sign',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                    );
+                  },
+                ),
+                _buildSmallToolCard(
+                  icon: Icons.photo_size_select_large,
+                  color: Colors.cyan.shade700,
+                  title: 'Image Resizer & Compress',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                    );
+                  },
+                ),
+                _buildSmallToolCard(
+                  icon: Icons.auto_fix_high_rounded,
+                  color: Colors.pink,
+                  title: 'BG Remover & Replacer',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                    );
+                  },
+                ),
+                _buildSmallToolCard(
+                  icon: Icons.auto_awesome,
+                  color: Colors.amber.shade900,
+                  title: 'AI Notes to PDF',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -253,9 +294,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 ),
                 _buildSmallToolCard(
                   icon: Icons.auto_stories,
-                  color: Colors.deepPurple,
-                  title: 'Quick Revision',
-                  subtitle: 'Handbook & formulas',
+                  color: Colors.purple,
+                  title: 'Quick Revision Handbook',
                   onTap: () {
                     showDialog(
                       context: context,
@@ -267,7 +307,6 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                   icon: Icons.checklist_rtl_rounded,
                   color: Colors.green,
                   title: 'Syllabus Tracker',
-                  subtitle: 'Track subject completion',
                   onTap: () {
                     showDialog(
                       context: context,
@@ -277,9 +316,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 ),
                 _buildSmallToolCard(
                   icon: Icons.analytics_outlined,
-                  color: Colors.pink,
+                  color: Colors.deepOrange,
                   title: 'Exam Analytics',
-                  subtitle: 'View preparation graph',
                   onTap: () {
                     showDialog(
                       context: context,
@@ -289,9 +327,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 ),
                 _buildSmallToolCard(
                   icon: Icons.edit_note_rounded,
-                  color: Colors.amber.shade900,
-                  title: 'Study Notes',
-                  subtitle: 'Saved points & thoughts',
+                  color: Colors.blueGrey,
+                  title: 'Study Notes & Points',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -301,9 +338,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 ),
                 _buildSmallToolCard(
                   icon: Icons.cloud_sync_outlined,
-                  color: Colors.blueGrey,
+                  color: const Color(0xFF1E3A8A),
                   title: 'Backup & Restore',
-                  subtitle: 'Export / import data',
                   onTap: () {
                     showDialog(
                       context: context,
@@ -400,56 +436,61 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
     required IconData icon,
     required Color color,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.22), width: 1.2),
-          boxShadow: [
-            BoxShadow(color: color.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(height: 6),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                child: Icon(icon, color: color, size: 23),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  height: 1.2,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

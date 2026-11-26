@@ -845,10 +845,20 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
-      child: ExpansionTile(
-        initiallyExpanded: true,
-        shape: const Border(),
-        collapsedShape: const Border(),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          shape: const RoundedRectangleBorder(
+            side: BorderSide(color: Colors.transparent),
+          ),
+          collapsedShape: const RoundedRectangleBorder(
+            side: BorderSide(color: Colors.transparent),
+          ),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -1000,7 +1010,8 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
             ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildFilterTab(int index, String label) {

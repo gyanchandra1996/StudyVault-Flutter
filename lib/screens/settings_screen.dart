@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../providers/settings_provider.dart';
 import '../services/ai_service.dart';
 import 'flashcards_screen.dart';
@@ -7,6 +12,10 @@ import 'notes_screen.dart';
 import 'recent_screen.dart';
 import 'storage_screen.dart';
 import 'recycle_bin_screen.dart';
+import 'document_vault_screen.dart';
+import 'tools_hub_screen.dart';
+import 'brain_games/brain_games_hub_screen.dart';
+import 'pin_login_screen.dart';
 import '../widgets/ai_assistant_modal.dart';
 import '../widgets/aarna_profile_dialog.dart';
 import '../widgets/ai_notes_generator_modal.dart';
@@ -42,9 +51,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  void _showEditProfileDialog(BuildContext context, SettingsProvider settings) {
+    final nameController = TextEditingController(text: settings.userProfile.name);
+    const primaryBlue = Color(0xFF1E3A8A);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final profilePic = settings.userProfile.profilePicturePath;
+          final hasImage = profilePic.isNotEmpty && !kIsWeb && File(profilePic).existsSync();
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: const [
+                Icon(Icons.account_circle, color: primaryBlue, size: 26),
+                SizedBox(width: 8),
+                Text('Candidate Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 46,
+                          backgroundColor: primaryBlue.withOpacity(0.12),
+                          backgroundImage: hasImage ? FileImage(File(profilePic)) : null,
+                          child: !hasImage
+                              ? Text(
+                                  settings.userProfile.name.isNotEmpty
+                                      ? settings.userProfile.name[0].toUpperCase()
+                                      : 'M',
+                                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryBlue),
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: InkWell(
+                            onTap: () async {
+                              try {
+                                final res = await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                                );
+                                if (res != null && res.files.single.path != null) {
+                                  final srcPath = res.files.single.path!;
+                                  final appDir = await getApplicationDocumentsDirectory();
+                                  final ext = p.extension(srcPath);
+                                  final destPath = p.join(appDir.path, 'profile_${DateTime.now().millisecondsSinceEpoch}$ext');
+                                  await File(srcPath).copy(destPath);
+                                  await settings.updateProfilePicture(destPath);
+                                  setDialogState(() {});
+                                  if (mounted) setState(() {});
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to update photo: $e')),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: const BoxDecoration(color: primaryBlue, shape: BoxShape.circle),
+                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Candidate Name',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text('Security & Master Access', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: primaryBlue)),
+                        SizedBox(height: 4),
+                        Text('• Set custom 4-digit App PIN for daily secure access', style: TextStyle(fontSize: 11)),
+                        Text('• Master Recovery PIN: 1996 (Always unlocks app)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: primaryBlue)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: primaryBlue, foregroundColor: Colors.white),
+                onPressed: () {
+                  final newName = nameController.text.trim();
+                  if (newName.isNotEmpty) {
+                    final updated = settings.userProfile.copyWith(name: newName);
+                    settings.updateUserProfile(updated);
+                  }
+                  Navigator.pop(ctx);
+                  if (mounted) setState(() {});
+                },
+                child: const Text('Save Profile'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const primaryBlue = Color(0xFF1E3A8A);
+    final userProfile = settings.userProfile;
+    final hasProfilePic = userProfile.profilePicturePath.isNotEmpty &&
+        !kIsWeb &&
+        File(userProfile.profilePicturePath).existsSync();
 
     return Scaffold(
       appBar: AppBar(
@@ -53,6 +199,185 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Candidate Profile Card (Upload Photo, Rename, Logout)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: Colors.blue.withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          backgroundImage: hasProfilePic ? FileImage(File(userProfile.profilePicturePath)) : null,
+                          child: !hasProfilePic
+                              ? Text(
+                                  userProfile.name.isNotEmpty ? userProfile.name[0].toUpperCase() : 'M',
+                                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: InkWell(
+                            onTap: () => _showEditProfileDialog(context, settings),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
+                              child: const Icon(Icons.camera_alt, color: Colors.black87, size: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userProfile.name.isNotEmpty ? userProfile.name : 'Scholar Candidate',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            settings.isLockEnabled ? 'Protected with 4-Digit PIN' : 'Master PIN: 1996 active',
+                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.white70),
+                      tooltip: 'Edit Profile & Photo',
+                      onPressed: () => _showEditProfileDialog(context, settings),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(color: Colors.white24, height: 1),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      style: TextButton.styleFrom(foregroundColor: Colors.white),
+                      icon: const Icon(Icons.lock_reset, size: 16),
+                      label: const Text('Change App PIN', style: TextStyle(fontSize: 12)),
+                      onPressed: () => _showSetPinDialog(context, settings),
+                    ),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white70),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      icon: const Icon(Icons.logout, size: 16),
+                      label: const Text('Logout', style: TextStyle(fontSize: 12)),
+                      onPressed: () async {
+                        await settings.logout();
+                        if (context.mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PinLoginScreen()),
+                            (route) => false,
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Quick Access to ID Vault & Exam Tools
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.deepOrange.withOpacity(0.3)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.shield, color: Colors.deepOrange, size: 22),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'ID Vault',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.handyman_outlined, color: Colors.teal, size: 22),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Utility Suite',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           // Safe Study Mode Section
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

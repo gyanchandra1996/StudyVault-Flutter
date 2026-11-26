@@ -7,6 +7,7 @@ import 'digi_home_screen.dart';
 import 'study_hub_screen.dart';
 import 'quiz_hub_screen.dart';
 import 'utility_hub_screen.dart';
+import 'settings_screen.dart';
 import 'digi_profile_screen.dart';
 import 'registration_screen.dart';
 import 'pin_login_screen.dart';
@@ -105,7 +106,7 @@ class _MainScreenState extends State<MainScreen> {
               child: const Icon(Icons.exit_to_app, color: Colors.red, size: 22),
             ),
             const SizedBox(width: 12),
-            const Text('Exit DigiStudy?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Exit Medhavi?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Text(
@@ -285,15 +286,11 @@ class _MainScreenState extends State<MainScreen> {
                         onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
                       ),
                       const StudyHubScreen(),
-                      // AI Tutor Hub View
-                      DigiHomeScreen(
-                        onNavigateToTab: (idx) => setState(() => _currentIndex = idx),
-                        onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
-                      ),
-                      const QuizHubScreen(),
                       UtilityHubScreen(
                         onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
                       ),
+                      const QuizHubScreen(),
+                      const SettingsScreen(),
                     ],
                   ),
                 ),
@@ -304,7 +301,7 @@ class _MainScreenState extends State<MainScreen> {
               FloatingPipOverlay(
                 onClose: () => setState(() => _showPipOverlay = false),
                 onReturnFullScreen: () => setState(() => _showPipOverlay = false),
-                currentSubject: 'DigiStudy • ${pomodoro.isWorkMode ? "Focus Mode" : "Break Mode"}',
+                currentSubject: 'Medhavi • ${pomodoro.isWorkMode ? "Focus Mode" : "Break Mode"}',
               ),
           ],
         ),
@@ -421,11 +418,11 @@ class _MainScreenState extends State<MainScreen> {
               inactiveColor: inactiveColor,
             ),
 
-            // 4: Vault
+            // 4: Settings (Replaced Vault tab as requested, with all settings preserved)
             _buildNavItem(
               index: 4,
-              icon: Icons.shield_rounded,
-              label: 'Vault',
+              icon: Icons.settings_rounded,
+              label: 'Settings',
               isActive: _currentIndex == 4,
               activeColor: activeColor,
               inactiveColor: inactiveColor,
