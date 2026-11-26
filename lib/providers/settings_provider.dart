@@ -43,9 +43,12 @@ class SettingsProvider extends ChangeNotifier {
   String? _apiTestResult;
   UserProfile _userProfile = UserProfile();
   final String _assistantName = 'Aarna';
+  bool _isEditMode = false;
 
   UserProfile get userProfile => _userProfile;
   String get assistantName => _assistantName;
+  bool get isEditMode => _isEditMode;
+  bool get isRegistered => _userProfile.isRegistered;
 
   bool get isAiEnabled => _isAiEnabled;
   String get aiProvider => _aiProvider;
@@ -211,7 +214,43 @@ class SettingsProvider extends ChangeNotifier {
     try {
       _userProfile = await UserProfileRepo().getProfile();
     } catch (_) {}
+    _isEditMode = prefs.getBool('isEditMode') ?? false;
     notifyListeners();
+  }
+
+  Future<void> toggleEditMode() async {
+    _isEditMode = !_isEditMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isEditMode', _isEditMode);
+    notifyListeners();
+  }
+
+  Future<void> setEditMode(bool value) async {
+    _isEditMode = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isEditMode', _isEditMode);
+    notifyListeners();
+  }
+
+  Future<void> registerUser({
+    required String name,
+    required String email,
+    required String mobile,
+    required String gender,
+    String? targetExam,
+  }) async {
+    final updated = _userProfile.copyWith(
+      name: name.trim(),
+      email: email.trim(),
+      mobile: mobile.trim(),
+      gender: gender.trim(),
+      isRegistered: true,
+      targetExams: targetExam != null && targetExam.trim().isNotEmpty
+          ? [targetExam.trim(), ..._userProfile.targetExams]
+          : _userProfile.targetExams,
+      lastUpdated: DateTime.now().millisecondsSinceEpoch,
+    );
+    await updateUserProfile(updated);
   }
 
   Future<void> updateUserProfile(UserProfile newProfile) async {

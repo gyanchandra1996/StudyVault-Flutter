@@ -79,6 +79,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    title: const Text('Edit / Creator Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      settings.isEditMode
+                          ? 'Edit Mode ON: You can add/edit/delete quizzes, topics, and study materials.'
+                          : 'View Only Mode: Safe read-only mode, only viewing and practicing allowed.',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    value: settings.isEditMode,
+                    activeColor: const Color(0xFF1E3A8A),
+                    onChanged: (val) => settings.setEditMode(val),
+                  ),
+                  const Divider(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
                     title: const Text('Show Delete Actions'),
                     subtitle: Text(
                       settings.showDeleteActions ? 'Actions are visible' : 'Delete buttons hidden for safety',

@@ -1,6 +1,10 @@
 package com.studyvault.app
 
+import android.app.PictureInPictureParams
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Rational
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -8,11 +12,14 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.studyvault.app/share"
+    private val SHARE_CHANNEL = "com.studyvault.app/share"
+    private val PIP_CHANNEL = "com.studyvault.app/pip"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+
+        // Share Channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SHARE_CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "shareFile") {
                 val path = call.argument<String>("path")
                 val title = call.argument<String>("title") ?: "StudyVault Document"
@@ -36,6 +43,34 @@ class MainActivity: FlutterActivity() {
                 }
             } else {
                 result.notImplemented()
+            }
+        }
+
+        // Picture-in-Picture Channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PIP_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "enterPip" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        try {
+                            val aspectRatio = Rational(16, 9)
+                            val pipParams = PictureInPictureParams.Builder()
+                                .setAspectRatio(aspectRatio)
+                                .build()
+                            val entered = enterPictureInPictureMode(pipParams)
+                            result.success(entered)
+                        } catch (e: Exception) {
+                            result.error("PIP_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.error("UNSUPPORTED", "PiP requires Android 8.0+", null)
+                    }
+                }
+                "isPipSupported" -> {
+                    val supported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                            packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+                    result.success(supported)
+                }
+                else -> result.notImplemented()
             }
         }
     }

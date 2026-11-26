@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/pomodoro_provider.dart';
-import 'home_screen.dart';
-import 'categories_screen.dart';
-import 'flashcards_screen.dart';
-import 'favorites_screen.dart';
-import 'settings_screen.dart';
+import 'digi_home_screen.dart';
+import 'study_hub_screen.dart';
+import 'utility_hub_screen.dart';
+import 'digi_profile_screen.dart';
+import 'registration_screen.dart';
 import 'lock_screen.dart';
+import '../widgets/floating_pip_overlay.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -20,14 +21,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   bool _isAlarmShowing = false;
-
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    CategoriesScreen(),
-    FlashcardsScreen(),
-    FavoritesScreen(),
-    SettingsScreen(),
-  ];
+  bool _showPipOverlay = false;
 
   void _checkAndShowAlarm(PomodoroProvider pomodoro) {
     if (pomodoro.pendingAlarmMessage != null && !_isAlarmShowing) {
@@ -108,11 +102,11 @@ class _MainScreenState extends State<MainScreen> {
               child: const Icon(Icons.exit_to_app, color: Colors.red, size: 22),
             ),
             const SizedBox(width: 12),
-            const Text('Exit Medhavi?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Exit DigiStudy?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Text(
-          'Are you sure you want to exit the app?\nYour study sessions, bookmarks, and test data are safely saved.',
+          'Are you sure you want to exit the app?\nYour study sessions, test results, and vault data are safely preserved.',
           style: TextStyle(fontSize: 13, height: 1.4),
         ),
         actions: [
@@ -215,6 +209,12 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             const SizedBox(width: 4),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.picture_in_picture_alt, size: 16, color: Color(0xFF2563EB)),
+              tooltip: 'Floating PiP',
+              onPressed: () => setState(() => _showPipOverlay = !_showPipOverlay),
+            ),
             InkWell(
               borderRadius: BorderRadius.circular(15),
               onTap: pomodoro.reset,
@@ -233,8 +233,16 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final pomodoro = Provider.of<PomodoroProvider>(context);
-    final accent = settings.activeAccentColor;
+    const primaryBlue = Color(0xFF1E3A8A);
 
+    // 1. Mandatory First Time Registration Check
+    if (!settings.isRegistered) {
+      return RegistrationScreen(
+        onRegistered: () => setState(() {}),
+      );
+    }
+
+    // 2. Lock screen check
     if (settings.isLockEnabled && !settings.isAppUnlocked) {
       return const LockScreen();
     }
@@ -255,48 +263,63 @@ class _MainScreenState extends State<MainScreen> {
         _showExitConfirmation(context);
       },
       child: Scaffold(
-        body: Column(
+        body: Stack(
           children: [
-            if (showTopTimer) _buildTopFocusInfoBar(pomodoro, accent),
-            Expanded(
-              child: IndexedStack(
-                index: _currentIndex,
-                children: _screens,
-              ),
+            Column(
+              children: [
+                if (showTopTimer) _buildTopFocusInfoBar(pomodoro, primaryBlue),
+                Expanded(
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: [
+                      DigiHomeScreen(
+                        onNavigateToTab: (idx) => setState(() => _currentIndex = idx),
+                        onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
+                      ),
+                      const StudyHubScreen(),
+                      UtilityHubScreen(
+                        onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
+                      ),
+                      const DigiProfileScreen(),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            // Floating Picture-in-Picture Study Overlay
+            if (_showPipOverlay)
+              FloatingPipOverlay(
+                onClose: () => setState(() => _showPipOverlay = false),
+                currentSubject: 'DigiStudy Pomodoro',
+              ),
           ],
         ),
         bottomNavigationBar: NavigationBar(
           height: 68,
           selectedIndex: _currentIndex,
           onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-          indicatorColor: accent.withOpacity(0.2),
+          indicatorColor: primaryBlue.withOpacity(0.18),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: [
+          destinations: const [
             NavigationDestination(
-              icon: const Icon(Icons.home_outlined, size: 24),
-              selectedIcon: Icon(Icons.home, color: accent, size: 24),
+              icon: Icon(Icons.home_outlined, size: 24),
+              selectedIcon: Icon(Icons.home, color: primaryBlue, size: 24),
               label: 'Home',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.category_outlined, size: 24),
-              selectedIcon: Icon(Icons.category, color: accent, size: 24),
-              label: 'Categories',
+              icon: Icon(Icons.menu_book_outlined, size: 24),
+              selectedIcon: Icon(Icons.menu_book, color: primaryBlue, size: 24),
+              label: 'Study',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.style_outlined, size: 24),
-              selectedIcon: Icon(Icons.style, color: accent, size: 24),
-              label: 'Flashcards',
+              icon: Icon(Icons.apps_outlined, size: 24),
+              selectedIcon: Icon(Icons.apps, color: primaryBlue, size: 24),
+              label: 'Utility',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.star_outline, size: 24),
-              selectedIcon: Icon(Icons.star, color: accent, size: 24),
-              label: 'Favorites',
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.settings_outlined, size: 24),
-              selectedIcon: Icon(Icons.settings, color: accent, size: 24),
-              label: 'Settings',
+              icon: Icon(Icons.person_outline, size: 24),
+              selectedIcon: Icon(Icons.person, color: primaryBlue, size: 24),
+              label: 'Menu',
             ),
           ],
         ),

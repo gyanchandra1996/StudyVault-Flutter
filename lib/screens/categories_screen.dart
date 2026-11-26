@@ -113,12 +113,56 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
       appBar: AppBar(
         title: const Text('Subjects & Categories', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
+          // Edit Mode toggle pill
+          InkWell(
+            onTap: () {
+              settings.toggleEditMode();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(settings.isEditMode ? '✏️ Edit Mode ON: You can add and edit categories' : '👁️ View Only Mode: Content is in read-only mode'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: settings.isEditMode ? Colors.orange.withOpacity(0.18) : Colors.blue.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: settings.isEditMode ? Colors.orange : Colors.blue,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    settings.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
+                    size: 16,
+                    color: settings.isEditMode ? Colors.orange.shade800 : Colors.blue.shade800,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    settings.isEditMode ? 'Edit' : 'View',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: settings.isEditMode ? Colors.orange.shade900 : Colors.blue.shade900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           IconButton(
             icon: Icon(settings.isCategoryGridView ? Icons.view_list : Icons.grid_view),
             tooltip: settings.isCategoryGridView ? 'Switch to List View' : 'Switch to Grid View',
             onPressed: () => settings.toggleCategoryViewMode(),
           ),
-          if (settings.isStudyFolderAndImportEnabled)
+          if (settings.isEditMode && settings.isStudyFolderAndImportEnabled)
             IconButton(
               icon: const Icon(Icons.add),
               tooltip: 'Add Category',
@@ -265,7 +309,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                                     ),
                                                   ),
                                                 ),
-                                                if (settings.showDeleteActions) ...[
+                                                if (settings.isEditMode && settings.showDeleteActions) ...[
                                                   const SizedBox(width: 4),
                                                   GestureDetector(
                                                     onTap: () => study.deleteCategory(cat.id!),
@@ -336,7 +380,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        if (settings.showDeleteActions)
+                                        if (settings.isEditMode && settings.showDeleteActions)
                                           IconButton(
                                             icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
                                             onPressed: () => study.deleteCategory(cat.id!),

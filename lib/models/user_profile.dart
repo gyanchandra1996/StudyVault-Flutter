@@ -2,6 +2,10 @@ import 'dart:convert';
 
 class UserProfile {
   final String name;
+  final String email;
+  final String mobile;
+  final String gender; // 'Male', 'Female', 'Other'
+  final bool isRegistered;
   final List<String> targetExams;
   final List<String> focusSubjects;
   final String strongAreas;
@@ -12,10 +16,14 @@ class UserProfile {
   final int lastUpdated;
 
   UserProfile({
-    this.name = 'Aspirant',
-    this.targetExams = const ['General Competitive Exams'],
-    this.focusSubjects = const ['Polity', 'History', 'Aptitude', 'Science'],
-    this.strongAreas = 'Reasoning & General Awareness',
+    this.name = 'Gyanchandra Yadav',
+    this.email = '',
+    this.mobile = '',
+    this.gender = 'Male',
+    this.isRegistered = false,
+    this.targetExams = const ['General Competitive Exams', 'DSSSB', 'Computer Science'],
+    this.focusSubjects = const ['Computer Science', 'Polity', 'History', 'Aptitude', 'Reasoning'],
+    this.strongAreas = 'Data Structures, Reasoning & General Awareness',
     this.weakAreas = 'Quantitative Aptitude, Deep Revision',
     this.dailyGoalHours = 6,
     this.preferredLanguage = 'Hinglish',
@@ -26,6 +34,10 @@ class UserProfile {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
+      'email': email,
+      'mobile': mobile,
+      'gender': gender,
+      'isRegistered': isRegistered ? 1 : 0,
       'targetExams': jsonEncode(targetExams),
       'focusSubjects': jsonEncode(focusSubjects),
       'strongAreas': strongAreas,
@@ -48,11 +60,18 @@ class UserProfile {
       return fallback;
     }
 
+    final isRegVal = map['isRegistered'];
+    final bool isReg = isRegVal == true || isRegVal == 1 || isRegVal == '1';
+
     return UserProfile(
-      name: (map['name'] as String?)?.trim().isNotEmpty == true ? map['name'] as String : 'Aspirant',
-      targetExams: parseList(map['targetExams'], ['General Competitive Exams']),
-      focusSubjects: parseList(map['focusSubjects'], ['Polity', 'History', 'Aptitude']),
-      strongAreas: (map['strongAreas'] as String?) ?? 'Reasoning & General Awareness',
+      name: (map['name'] as String?)?.trim().isNotEmpty == true ? map['name'] as String : 'Gyanchandra Yadav',
+      email: (map['email'] as String?) ?? '',
+      mobile: (map['mobile'] as String?) ?? '',
+      gender: (map['gender'] as String?) ?? 'Male',
+      isRegistered: isReg,
+      targetExams: parseList(map['targetExams'], ['General Competitive Exams', 'Computer Science']),
+      focusSubjects: parseList(map['focusSubjects'], ['Computer Science', 'Polity', 'Aptitude']),
+      strongAreas: (map['strongAreas'] as String?) ?? 'Data Structures, Reasoning & General Awareness',
       weakAreas: (map['weakAreas'] as String?) ?? 'Quantitative Aptitude, Deep Revision',
       dailyGoalHours: (map['dailyGoalHours'] as int?) ?? 6,
       preferredLanguage: (map['preferredLanguage'] as String?) ?? 'Hinglish',
@@ -63,6 +82,10 @@ class UserProfile {
 
   UserProfile copyWith({
     String? name,
+    String? email,
+    String? mobile,
+    String? gender,
+    bool? isRegistered,
     List<String>? targetExams,
     List<String>? focusSubjects,
     String? strongAreas,
@@ -74,6 +97,10 @@ class UserProfile {
   }) {
     return UserProfile(
       name: name ?? this.name,
+      email: email ?? this.email,
+      mobile: mobile ?? this.mobile,
+      gender: gender ?? this.gender,
+      isRegistered: isRegistered ?? this.isRegistered,
       targetExams: targetExams ?? this.targetExams,
       focusSubjects: focusSubjects ?? this.focusSubjects,
       strongAreas: strongAreas ?? this.strongAreas,

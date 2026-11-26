@@ -12,6 +12,7 @@ import '../services/pdf_storage_service.dart';
 import '../widgets/ai_quiz_modal.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/question_modal.dart';
+import '../widgets/import_questions_dialog.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
@@ -166,11 +167,31 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   backgroundColor: Color(0xFFEEF2FF),
                   child: Icon(Icons.create_new_folder, color: Colors.indigo),
                 ),
-                title: const Text('New Subcategory / Folder', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Create a nested folder (e.g. Data Structures)'),
+                title: const Text('New Subcategory / Topic', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Create a nested topic (e.g. Stack, Queue, Linked List)'),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showAddSubcategoryDialog();
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFF0FDF4),
+                  child: Icon(Icons.table_chart, color: Colors.teal),
+                ),
+                title: const Text('Import CSV Quiz / Questions', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Import questions from CSV file directly into this category'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showDialog(
+                    context: context,
+                    builder: (_) => ImportQuestionsDialog(
+                      initialCategory: widget.category.title,
+                      initialCategoryId: widget.category.id,
+                      examId: widget.category.examId,
+                      onImported: _loadData,
+                    ),
+                  );
                 },
               ),
               ListTile(
@@ -269,6 +290,50 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       appBar: AppBar(
         title: Text(widget.category.title),
         actions: [
+          // Edit Mode toggle pill
+          InkWell(
+            onTap: () {
+              settings.toggleEditMode();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(settings.isEditMode ? '✏️ Edit Mode ON: You can add and edit topics/quizzes' : '👁️ View Only Mode: Content is in read-only mode'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: settings.isEditMode ? Colors.orange.withOpacity(0.18) : Colors.blue.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: settings.isEditMode ? Colors.orange : Colors.blue,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    settings.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
+                    size: 16,
+                    color: settings.isEditMode ? Colors.orange.shade800 : Colors.blue.shade800,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    settings.isEditMode ? 'Edit' : 'View',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: settings.isEditMode ? Colors.orange.shade900 : Colors.blue.shade900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           IconButton(
             icon: Icon(isGrid ? Icons.view_list : Icons.grid_view),
             tooltip: isGrid ? 'Switch to List View' : 'Switch to Grid View',
@@ -276,13 +341,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Content'),
-        onPressed: _showActionSheet,
-      ),
+      floatingActionButton: settings.isEditMode
+          ? FloatingActionButton.extended(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Content'),
+              onPressed: _showActionSheet,
+            )
+          : null,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -344,16 +411,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           const Icon(Icons.folder_copy_outlined, color: Colors.indigo, size: 18),
                           const SizedBox(width: 6),
                           Text(
-                            'Subfolders (${_subcategories.length})',
+                            'Subtopics / Folders (${_subcategories.length})',
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.create_new_folder, size: 16),
-                        label: const Text('New Folder', style: TextStyle(fontSize: 12)),
-                        onPressed: _showAddSubcategoryDialog,
-                      ),
+                      if (settings.isEditMode)
+                        TextButton.icon(
+                          icon: const Icon(Icons.create_new_folder, size: 16),
+                          label: const Text('New Topic', style: TextStyle(fontSize: 12)),
+                          onPressed: _showAddSubcategoryDialog,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -416,11 +484,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           ),
                         ],
                       ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.upload_file, size: 16),
-                        label: const Text('Import PDF', style: TextStyle(fontSize: 12)),
-                        onPressed: _addPdf,
-                      ),
+                      if (settings.isEditMode)
+                        TextButton.icon(
+                          icon: const Icon(Icons.upload_file, size: 16),
+                          label: const Text('Import PDF', style: TextStyle(fontSize: 12)),
+                          onPressed: _addPdf,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -512,14 +581,31 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           const Icon(Icons.quiz_outlined, color: Colors.purple, size: 18),
                           const SizedBox(width: 6),
                           Text(
-                            'Quizzes for ${widget.category.title} (${_quizzes.length})',
+                            'Quizzes (${_quizzes.length})',
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
-                      (settings.isAiEnabled && settings.isAiQuizEnabled)
-                          ? TextButton.icon(
-                              icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
+                      if (settings.isEditMode)
+                        Row(
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.table_chart, size: 15, color: Colors.teal),
+                              label: const Text('CSV Quiz', style: TextStyle(fontSize: 12, color: Colors.teal)),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => ImportQuestionsDialog(
+                                    initialCategory: widget.category.title,
+                                    initialCategoryId: widget.category.id,
+                                    examId: widget.category.examId,
+                                    onImported: _loadData,
+                                  ),
+                                );
+                              },
+                            ),
+                            TextButton.icon(
+                              icon: const Icon(Icons.auto_awesome, size: 15, color: Colors.purple),
                               label: const Text('AI Quiz', style: TextStyle(fontSize: 12, color: Colors.purple)),
                               onPressed: () {
                                 showDialog(
@@ -532,22 +618,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                   ),
                                 );
                               },
-                            )
-                          : TextButton.icon(
-                              icon: const Icon(Icons.add, size: 16, color: Colors.indigo),
-                              label: const Text('+ Question', style: TextStyle(fontSize: 12, color: Colors.indigo)),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => QuestionModal(
-                                    initialCategory: widget.category.title,
-                                    initialCategoryId: widget.category.id,
-                                    examId: widget.category.examId,
-                                    onSaved: _loadData,
-                                  ),
-                                );
-                              },
                             ),
+                          ],
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
