@@ -235,19 +235,10 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                       builder: (_) => QuizRunnerScreen(
                         quizTitle: title,
                         questions: testList,
-                        durationMinutes: isUntimed ? 0 : durationMinutes,
-                        onCompleted: (result) {
-                          _loadAssessmentData();
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => QuizScorecardScreen(result: result),
-                            ),
-                          );
-                        },
+                        durationMinutes: isUntimed ? null : durationMinutes,
                       ),
                     ),
-                  );
+                  ).then((_) => _loadAssessmentData());
                 },
               ),
             ],

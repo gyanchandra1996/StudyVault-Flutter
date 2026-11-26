@@ -259,17 +259,10 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                       builder: (_) => QuizRunnerScreen(
                         quizTitle: title,
                         questions: testList,
-                        durationMinutes: isUntimed ? 0 : durationMinutes,
-                        onCompleted: (result) {
-                          _loadAllStudyData();
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => QuizScorecardScreen(result: result)),
-                          );
-                        },
+                        durationMinutes: isUntimed ? null : durationMinutes,
                       ),
                     ),
-                  );
+                  ).then((_) => _loadAllStudyData());
                 },
               ),
             ],
@@ -593,8 +586,18 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => QuizScorecardScreen(result: r)),
-                                  );
+                                    MaterialPageRoute(
+                                      builder: (_) => QuizScorecardScreen(
+                                        quizTitle: r.quizTitle,
+                                        categoryName: r.displayCategory,
+                                        categoryId: r.categoryId,
+                                        questions: r.parsedQuestions,
+                                        selectedAnswers: r.parsedUserAnswers,
+                                        correctCount: r.correctAnswers,
+                                        durationSeconds: r.durationSeconds,
+                                      ),
+                                    ),
+                                  ).then((_) => _loadAllStudyData());
                                 },
                               ),
                             );
