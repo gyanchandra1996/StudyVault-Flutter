@@ -678,9 +678,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
         ),
       ),
     );
-        ),
-      ),
-    );
   }
 
   // ---------------- TAB 2: ALL STORED FLASHCARDS BROWSER ----------------
