@@ -7,11 +7,13 @@ import '../widgets/pomodoro_widget.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/exam_analytics_modal.dart';
+import '../widgets/backup_restore_modal.dart';
 import 'document_vault_screen.dart';
 import 'brain_games/brain_games_hub_screen.dart';
 import 'flashcards_screen.dart';
 import 'tools_hub_screen.dart';
 import 'camera_to_pdf_screen.dart';
+import 'notes_screen.dart';
 
 class UtilityHubScreen extends StatefulWidget {
   final VoidCallback? onTriggerPip;
@@ -171,8 +173,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
               icon: Icons.psychology_rounded,
               color: Colors.amber.shade800,
               title: 'Brain Games & Mental Focus',
-              subtitle: 'Speed Math Blitz, Schulte Focus Grid, Memory Match & Stroop Reflex cognitive warm-ups',
-              badge: '4 GAMES',
+              subtitle: 'Speed Math, Schulte Grid, Memory Match, Stroop Reflex, Word Scramble & Number Logic',
+              badge: '6 GAMES',
               onTap: () {
                 Navigator.push(
                   context,
@@ -308,6 +310,41 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSmallToolCard(
+                    icon: Icons.edit_note_rounded,
+                    color: Colors.amber.shade900,
+                    title: 'Study Notes',
+                    subtitle: 'Saved points & thoughts',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotesScreen()),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildSmallToolCard(
+                    icon: Icons.cloud_sync_outlined,
+                    color: Colors.blueGrey,
+                    title: 'Backup & Restore',
+                    subtitle: 'Export / import data',
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => const BackupRestoreModal(),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 40),
           ],
@@ -356,9 +393,11 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 children: [
                   Row(
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Container(

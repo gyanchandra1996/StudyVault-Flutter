@@ -48,13 +48,42 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
+    var all = await _repo.getAllFlashcards();
+    if (all.isEmpty) {
+      // Seed high-yield starter flashcards for immediate practice
+      await _repo.addFlashcard(
+        category: 'Data Structures',
+        question: 'What is the LIFO principle and which data structure uses it?',
+        answer: 'LIFO stands for Last In First Out. The Stack data structure follows this principle: elements are pushed and popped only from the top.',
+      );
+      await _repo.addFlashcard(
+        category: 'Algorithms',
+        question: 'What is the time complexity of Binary Search?',
+        answer: 'O(log n) time complexity because the search space is divided in half with each comparison on a sorted array.',
+      );
+      await _repo.addFlashcard(
+        category: 'Operating Systems',
+        question: 'What is the difference between a Process and a Thread?',
+        answer: 'A Process is an executing program with its own memory space. A Thread is a lightweight execution unit sharing memory inside a process.',
+      );
+      await _repo.addFlashcard(
+        category: 'DBMS',
+        question: 'What are the ACID properties in Database Systems?',
+        answer: 'Atomicity (all or nothing), Consistency (preserves validity), Isolation (concurrency control), and Durability (committed changes persist permanently).',
+      );
+      await _repo.addFlashcard(
+        category: 'Computer Networks',
+        question: 'What is the primary difference between TCP and UDP?',
+        answer: 'TCP is connection-oriented, reliable, and guarantees order via acknowledgments. UDP is connectionless, ultra-fast, and does not guarantee packet delivery.',
+      );
+      all = await _repo.getAllFlashcards();
+    }
     final due = await _repo.getDueFlashcards();
-    final all = await _repo.getAllFlashcards();
     final stats = await _repo.getFlashcardStats();
 
     if (mounted) {
       setState(() {
-        _dueCards = due;
+        _dueCards = due.isNotEmpty ? due : List.from(all);
         _allCards = all;
         _stats = stats;
         _currentIndex = 0;
@@ -288,6 +317,23 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
                 spacing: 12,
                 runSpacing: 10,
                 children: [
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E3A8A),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.shuffle_rounded, size: 18),
+                    label: const Text('Practice All Cards (Shuffle)'),
+                    onPressed: () {
+                      setState(() {
+                        _dueCards = List.from(_allCards)..shuffle();
+                        _currentIndex = 0;
+                        _isFlipped = false;
+                      });
+                    },
+                  ),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.folder_open),
                     label: const Text('Browse All Stored Cards'),
@@ -476,58 +522,85 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
     final card = _dueCards[_currentIndex];
     return Card(
       key: const ValueKey(false),
-      elevation: 4,
+      elevation: 6,
+      shadowColor: accent.withOpacity(0.25),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
             colors: isDark
                 ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                : [Colors.white, accent.withOpacity(0.04)],
+                : [Colors.white, const Color(0xFFF0F4FF)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: accent.withOpacity(0.2)),
+          border: Border.all(color: accent.withOpacity(0.35), width: 1.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: accent.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                card.category.toUpperCase(),
-                style: TextStyle(color: accent, fontWeight: FontWeight.bold, fontSize: 10.5, letterSpacing: 1),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'QUESTION / TERM',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              card.question,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.4),
-            ),
-            const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.flip_to_back, size: 14, color: Colors.grey.shade600),
-                const SizedBox(width: 6),
-                Text(
-                  'Tap to flip',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: accent.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.label_important_outline, size: 14, color: accent),
+                      const SizedBox(width: 4),
+                      Text(
+                        card.category.toUpperCase(),
+                        style: TextStyle(color: accent, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1),
+                      ),
+                    ],
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'PROMPT / QUESTION',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, letterSpacing: 1.5),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Text(
+                    card.question,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.4),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.touch_app, size: 16, color: accent),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Tap anywhere to reveal answer',
+                    style: TextStyle(fontSize: 12, color: accent, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -537,38 +610,74 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
 
   Widget _buildBackCard(Color accent, bool isDark) {
     final card = _dueCards[_currentIndex];
+    const successGreen = Color(0xFF059669);
     return Card(
       key: const ValueKey(true),
-      elevation: 4,
+      elevation: 6,
+      shadowColor: successGreen.withOpacity(0.25),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
             colors: isDark
-                ? [const Color(0xFF0F172A), const Color(0xFF1E293B)]
-                : [accent.withOpacity(0.08), Colors.white],
+                ? [const Color(0xFF064E3B).withOpacity(0.4), const Color(0xFF0F172A)]
+                : [const Color(0xFFECFDF5), Colors.white],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: Colors.green.withOpacity(0.3)),
+          border: Border.all(color: successGreen.withOpacity(0.4), width: 1.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'ANSWER / EXPLANATION',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green, letterSpacing: 1.2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: successGreen.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: successGreen.withOpacity(0.3)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, size: 14, color: successGreen),
+                  SizedBox(width: 4),
+                  Text(
+                    'VERIFIED ANSWER',
+                    style: TextStyle(color: successGreen, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 20),
             Text(
-              card.answer,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, height: 1.4),
+              'EXPLANATION & KEY TAKEAWAY',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: successGreen, letterSpacing: 1.5),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Text(
+                    card.answer,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, height: 1.5),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Rate recall difficulty below to schedule next review:',
+              style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
             ),
           ],
+        ),
+      ),
+    );
         ),
       ),
     );

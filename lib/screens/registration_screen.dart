@@ -18,14 +18,12 @@ class RegistrationScreen extends StatefulWidget {
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController(text: 'Gyanchandra Yadav');
-  final _emailController = TextEditingController();
-  final _mobileController = TextEditingController();
-  String _selectedGender = 'Male';
+  final _pinController = TextEditingController(text: '1996');
   String _selectedStream = 'Computer Science & IT';
   String? _profileImagePath;
   bool _isSaving = false;
+  bool _obscurePin = false;
 
-  final List<String> _genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
   final List<String> _streams = [
     'Computer Science & IT',
     'General Competitive Exams',
@@ -40,8 +38,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
-    _mobileController.dispose();
+    _pinController.dispose();
     super.dispose();
   }
 
@@ -134,9 +131,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     await settings.registerUser(
       name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      mobile: _mobileController.text.trim(),
-      gender: _selectedGender,
+      pin: _pinController.text.trim(),
       profilePicturePath: _profileImagePath,
       targetExam: _selectedStream,
     );
@@ -373,139 +368,73 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Email
-                          const Text(
-                            'Email Address *',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              hintText: 'e.g. student@gmail.com',
-                              prefixIcon: const Icon(Icons.email_outlined, color: brightBlue),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          // 4-Digit App Security PIN (Required)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'App Security PIN (4-Digits) *',
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              if (!val.contains('@') || !val.contains('.')) {
-                                return 'Please enter a valid email address';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Mobile Number
-                          const Text(
-                            'Mobile Number *',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: _mobileController,
-                            keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(
-                              hintText: '10-digit mobile number',
-                              prefixIcon: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.phone_android, color: brightBlue, size: 20),
-                                    SizedBox(width: 4),
-                                    Text('+91', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                  ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Default: 1996',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
                                 ),
                               ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            ),
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return 'Please enter your mobile number';
-                              }
-                              if (val.trim().length < 10) {
-                                return 'Please enter a valid 10-digit number';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Gender Selection Dropdown (Fixed visibility & styling)
-                          const Text(
-                            'Gender *',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
+                            ],
                           ),
                           const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            value: _selectedGender,
-                            isExpanded: true,
-                            icon: const Icon(Icons.keyboard_arrow_down, color: primaryBlue),
-                            dropdownColor: Colors.white,
+                          TextFormField(
+                            controller: _pinController,
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                            obscureText: _obscurePin,
                             style: const TextStyle(
+                              fontSize: 18,
+                              letterSpacing: 4,
+                              fontWeight: FontWeight.bold,
                               color: Color(0xFF1E293B),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Select Gender',
-                              prefixIcon: const Icon(Icons.people_outline, color: brightBlue),
+                              hintText: '1996',
+                              counterText: '',
+                              prefixIcon: const Icon(Icons.lock_outline, color: brightBlue),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePin ? Icons.visibility_off : Icons.visibility,
+                                  color: Colors.grey,
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                              ),
                               filled: true,
                               fillColor: const Color(0xFFF8FAFC),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: brightBlue, width: 1.5),
-                              ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             ),
-                            items: _genders.map((g) {
-                              return DropdownMenuItem<String>(
-                                value: g,
-                                child: Text(
-                                  g,
-                                  style: const TextStyle(
-                                    color: Color(0xFF1E293B),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() => _selectedGender = val);
-                              }
-                            },
                             validator: (val) {
-                              if (val == null || val.isEmpty) {
-                                return 'Please select your gender';
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Please enter 4-digit PIN (default 1996)';
+                              }
+                              if (val.trim().length != 4) {
+                                return 'PIN must be exactly 4 digits';
                               }
                               return null;
                             },
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            '💡 Default Master PIN is 1996. You can use 1996 or set your own.',
+                            style: TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                           const SizedBox(height: 16),
 

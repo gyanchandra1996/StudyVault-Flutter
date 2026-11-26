@@ -275,24 +275,51 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'DigiLocker ID Vault',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF1E3A8A),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Add Document',
+            onPressed: _pickAndAddDocument,
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: _loadDocuments,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           // Security header banner
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: Colors.indigo.withOpacity(0.06),
+            color: const Color(0xFF1E3A8A).withOpacity(0.08),
             child: Row(
               children: [
-                const Icon(Icons.lock, size: 16, color: Colors.indigo),
+                const Icon(Icons.verified_user, size: 18, color: Color(0xFF1E3A8A)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     settings.isLockEnabled
-                        ? 'Protected by 4-digit PIN • Offline encrypted sandbox'
-                        : 'Secure Personal Document & ID Vault • 100% Offline',
-                    style: const TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.w600),
+                        ? 'Protected by App PIN • 100% Offline Encrypted Vault'
+                        : 'DigiLocker Secure ID Vault • 100% Offline Encrypted',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF1E3A8A),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -395,6 +422,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Expanded(
                                                   child: Text(
@@ -402,6 +430,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                                   ),
                                                 ),
+                                                const SizedBox(width: 6),
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                   decoration: BoxDecoration(
@@ -423,10 +452,10 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                               const SizedBox(height: 4),
                                               Text(
                                                 'ID No: ${doc.docNumber!}',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Colors.black87,
+                                                  color: isDark ? Colors.white70 : Colors.black87,
                                                 ),
                                               ),
                                             ],
@@ -434,7 +463,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                               const SizedBox(height: 2),
                                               Text(
                                                 doc.notes!,
-                                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                                style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                                               ),
                                             ],
                                           ],
@@ -444,42 +473,52 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                   ),
                                   const SizedBox(height: 10),
                                   const Divider(height: 1),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
-                                        tooltip: 'Share Document',
-                                        onPressed: () => ShareService.sharePdf(doc.filePath, title: doc.title),
-                                      ),
-                                      if (settings.showDeleteActions)
+                                  const SizedBox(height: 6),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Wrap(
+                                      alignment: WrapAlignment.end,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: [
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                                          tooltip: 'Delete Document',
-                                          onPressed: () async {
-                                            if (doc.id != null) {
-                                              await _docRepo.deleteDocument(doc.id!);
-                                              _loadDocuments();
-                                            }
-                                          },
+                                          icon: const Icon(Icons.share_outlined, size: 20, color: Colors.grey),
+                                          tooltip: 'Share Document',
+                                          constraints: const BoxConstraints(),
+                                          padding: const EdgeInsets.all(6),
+                                          onPressed: () => ShareService.sharePdf(doc.filePath, title: doc.title),
                                         ),
-                                      const SizedBox(width: 4),
-                                      ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: docColor,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        if (settings.showDeleteActions)
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                                            tooltip: 'Delete Document',
+                                            constraints: const BoxConstraints(),
+                                            padding: const EdgeInsets.all(6),
+                                            onPressed: () async {
+                                              if (doc.id != null) {
+                                                await _docRepo.deleteDocument(doc.id!);
+                                                _loadDocuments();
+                                              }
+                                            },
+                                          ),
+                                        ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: docColor,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                            minimumSize: const Size(0, 34),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                          icon: Icon(
+                                            doc.fileType == 'pdf' ? Icons.picture_as_pdf : Icons.visibility,
+                                            size: 16,
+                                          ),
+                                          label: const Text('View Doc', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                          onPressed: () => _openDocument(doc),
                                         ),
-                                        icon: Icon(
-                                          doc.fileType == 'pdf' ? Icons.picture_as_pdf : Icons.visibility,
-                                          size: 16,
-                                        ),
-                                        label: const Text('View Doc', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                        onPressed: () => _openDocument(doc),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -491,7 +530,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.indigo,
+        backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_a_photo),
         label: const Text('Add Document'),

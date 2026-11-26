@@ -9,6 +9,7 @@ import '../database/quiz_repo.dart';
 import '../database/category_repo.dart';
 import '../database/pdf_repo.dart';
 import '../widgets/ai_quiz_modal.dart';
+import '../widgets/ai_assistant_modal.dart';
 import '../widgets/import_questions_dialog.dart';
 import '../widgets/question_modal.dart';
 import 'category_detail_screen.dart';
@@ -143,6 +144,72 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
               }
             },
             child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenameCategoryDialog(Category cat) {
+    final titleController = TextEditingController(text: cat.title);
+    final descController = TextEditingController(text: cat.description);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.edit, color: Color(0xFF1E3A8A)),
+            SizedBox(width: 8),
+            Text('Rename Subject / Topic', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'New Name',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              if (titleController.text.trim().isNotEmpty) {
+                final updated = cat.copyWith(
+                  title: titleController.text.trim(),
+                  description: descController.text.trim(),
+                );
+                await _categoryRepo.updateCategory(updated);
+                Navigator.pop(ctx);
+                _loadAllStudyData();
+              }
+            },
+            child: const Text('Save Changes'),
           ),
         ],
       ),
@@ -322,61 +389,59 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        title: const Text('Study & Quiz Center', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Study Center & Hierarchy', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0.5,
         actions: [
-          // Edit Mode / View Mode Pill
+          // Master AI Suite Button (Replacing Edit Mode)
           InkWell(
             onTap: () {
-              settings.toggleEditMode();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(settings.isEditMode
-                      ? '✏️ Edit Mode ON: You can add and edit topics/quizzes'
-                      : '👁️ View Only Mode: Content is protected in read mode'),
-                  duration: const Duration(seconds: 2),
-                ),
+              showDialog(
+                context: context,
+                builder: (_) => const AiAssistantModal(),
               );
             },
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: settings.isEditMode ? Colors.orange.withOpacity(0.18) : Colors.blue.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: settings.isEditMode ? Colors.orange : Colors.blue,
-                  width: 1,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8B5CF6).withOpacity(0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    settings.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
-                    size: 16,
-                    color: settings.isEditMode ? Colors.orange.shade800 : Colors.blue.shade800,
-                  ),
-                  const SizedBox(width: 4),
+                children: const [
+                  Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+                  SizedBox(width: 5),
                   Text(
-                    settings.isEditMode ? 'Edit Mode' : 'View Only',
+                    'Master AI',
                     style: TextStyle(
-                      fontSize: 11,
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      color: settings.isEditMode ? Colors.orange.shade900 : Colors.blue.shade900,
+                      fontSize: 12.5,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          if (settings.isEditMode)
-            IconButton(
-              icon: const Icon(Icons.add, color: primaryBlue),
-              tooltip: 'Add Subject / Category',
-              onPressed: _showAddCategoryDialog,
-            ),
+          IconButton(
+            icon: const Icon(Icons.add, color: primaryBlue),
+            tooltip: 'Add Subject / Category',
+            onPressed: _showAddCategoryDialog,
+          ),
         ],
       ),
       body: _isLoading
@@ -782,6 +847,8 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
       ),
       child: ExpansionTile(
         initiallyExpanded: true,
+        shape: const Border(),
+        collapsedShape: const Border(),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -801,6 +868,11 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blueGrey),
+              tooltip: 'Rename Subject',
+              onPressed: () => _showRenameCategoryDialog(cat),
+            ),
             IconButton(
               icon: const Icon(Icons.open_in_new, size: 18, color: Color(0xFF2563EB)),
               tooltip: 'Open Subject Folder',
@@ -824,26 +896,24 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                   const SizedBox(width: 6),
                   const Text('No subcategories yet.', style: TextStyle(fontSize: 12, color: Colors.grey)),
                   const Spacer(),
-                  if (settings.isEditMode)
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
-                        ).then((_) => _loadAllStudyData());
-                      },
-                      child: const Text('+ Add Topic'),
-                    ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
+                      ).then((_) => _loadAllStudyData());
+                    },
+                    child: const Text('+ Add Topic'),
+                  ),
                 ],
               ),
             )
           else
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Divider(),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -860,6 +930,35 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                             ),
                           ).then((_) => _loadAllStudyData());
                         },
+                        onLongPress: () => _showRenameCategoryDialog(sub),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.folder_outlined, size: 14, color: Color(0xFF2563EB)),
+                              const SizedBox(width: 5),
+                              Text(
+                                sub.title,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                              ),
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => _showRenameCategoryDialog(sub),
+                                child: const Icon(Icons.edit, size: 12, color: Colors.blueGrey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

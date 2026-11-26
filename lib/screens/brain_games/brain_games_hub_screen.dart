@@ -5,6 +5,8 @@ import 'speed_math_game.dart';
 import 'schulte_grid_game.dart';
 import 'memory_match_game.dart';
 import 'stroop_reflex_game.dart';
+import 'word_scramble_game.dart';
+import 'number_sequence_game.dart';
 
 class BrainGamesHubScreen extends StatelessWidget {
   const BrainGamesHubScreen({Key? key}) : super(key: key);
@@ -47,6 +49,22 @@ class BrainGamesHubScreen extends StatelessWidget {
         'icon': Icons.palette_rounded,
         'color': Colors.teal,
         'screen': const StroopReflexGame(),
+      },
+      {
+        'title': '🔤 Word Anagram Scramble',
+        'subtitle': 'Unscramble high-yield exam vocabulary and technical terms',
+        'benefit': 'Sharpens verbal aptitude, term recall & spelling agility',
+        'icon': Icons.spellcheck_rounded,
+        'color': Colors.deepPurple,
+        'screen': const WordScrambleGame(),
+      },
+      {
+        'title': '🔢 Number Sequence Logic',
+        'subtitle': 'Discover patterns, arithmetic differences & geometric progressions',
+        'benefit': 'Strengthens logical deduction for Aptitude & Reasoning sections',
+        'icon': Icons.pin_outlined,
+        'color': const Color(0xFF0D9488),
+        'screen': const NumberSequenceGame(),
       },
     ];
 

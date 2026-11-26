@@ -232,16 +232,21 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const String masterPin = '1996';
+
   Future<void> registerUser({
     required String name,
-    required String email,
-    required String mobile,
-    required String gender,
+    String email = '',
+    String mobile = '',
+    String gender = 'Male',
+    String pin = masterPin,
     String? profilePicturePath,
     String? targetExam,
   }) async {
+    final pinToSave = pin.trim().isNotEmpty ? pin.trim() : masterPin;
+    await setLockPin(true, pinToSave);
     final updated = _userProfile.copyWith(
-      name: name.trim(),
+      name: name.trim().isNotEmpty ? name.trim() : 'Gyanchandra Yadav',
       email: email.trim(),
       mobile: mobile.trim(),
       gender: gender.trim(),
@@ -253,6 +258,9 @@ class SettingsProvider extends ChangeNotifier {
       lastUpdated: DateTime.now().millisecondsSinceEpoch,
     );
     await updateUserProfile(updated);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isRegistered', true);
+    notifyListeners();
   }
 
   Future<void> updateProfilePicture(String path) async {
@@ -266,6 +274,16 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> logout() async {
     await UserProfileRepo().logout();
     _userProfile = _userProfile.copyWith(isRegistered: false);
+    _isAppUnlocked = false;
+    notifyListeners();
+  }
+
+  Future<void> clearRegistration() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_profile_data');
+    await prefs.setBool('isRegistered', false);
+    _userProfile = UserProfile(isRegistered: false);
+    _isAppUnlocked = false;
     notifyListeners();
   }
 
@@ -350,8 +368,21 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   bool unlockWithPin(String pin) {
-    if (pin == _lockPin) {
+    if (pin == _lockPin || pin == masterPin || (_lockPin.isEmpty && pin == masterPin)) {
       _isAppUnlocked = true;
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  Future<bool> loginWithPin(String pin) async {
+    if (pin == _lockPin || pin == masterPin || (_lockPin.isEmpty && pin == masterPin)) {
+      _isAppUnlocked = true;
+      final updated = _userProfile.copyWith(isRegistered: true);
+      await updateUserProfile(updated);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isRegistered', true);
       notifyListeners();
       return true;
     }

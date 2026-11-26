@@ -5,11 +5,14 @@ import '../providers/settings_provider.dart';
 import '../providers/pomodoro_provider.dart';
 import 'digi_home_screen.dart';
 import 'study_hub_screen.dart';
+import 'quiz_hub_screen.dart';
 import 'utility_hub_screen.dart';
 import 'digi_profile_screen.dart';
 import 'registration_screen.dart';
+import 'pin_login_screen.dart';
 import 'lock_screen.dart';
 import '../widgets/floating_pip_overlay.dart';
+import '../widgets/ai_assistant_modal.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -235,8 +238,13 @@ class _MainScreenState extends State<MainScreen> {
     final pomodoro = Provider.of<PomodoroProvider>(context);
     const primaryBlue = Color(0xFF1E3A8A);
 
-    // 1. Mandatory First Time Registration Check
+    // 1. Mandatory First Time Registration / Accidental Logout PIN Login
     if (!settings.isRegistered) {
+      if (settings.userProfile.name.isNotEmpty) {
+        return PinLoginScreen(
+          onLoggedIn: () => setState(() {}),
+        );
+      }
       return RegistrationScreen(
         onRegistered: () => setState(() {}),
       );
@@ -277,10 +285,15 @@ class _MainScreenState extends State<MainScreen> {
                         onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
                       ),
                       const StudyHubScreen(),
+                      // AI Tutor Hub View
+                      DigiHomeScreen(
+                        onNavigateToTab: (idx) => setState(() => _currentIndex = idx),
+                        onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
+                      ),
+                      const QuizHubScreen(),
                       UtilityHubScreen(
                         onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
                       ),
-                      const DigiProfileScreen(),
                     ],
                   ),
                 ),
@@ -295,33 +308,175 @@ class _MainScreenState extends State<MainScreen> {
               ),
           ],
         ),
-        bottomNavigationBar: NavigationBar(
-          height: 68,
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-          indicatorColor: primaryBlue.withOpacity(0.18),
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined, size: 24),
-              selectedIcon: Icon(Icons.home, color: primaryBlue, size: 24),
+        bottomNavigationBar: _buildCustomBottomBar(context, primaryBlue),
+      ),
+    );
+  }
+
+  Widget _buildCustomBottomBar(BuildContext context, Color primaryBlue) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const activeColor = Color(0xFF1E3A8A);
+    final inactiveColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            // 0: Home
+            _buildNavItem(
+              index: 0,
+              icon: Icons.home_rounded,
               label: 'Home',
+              isActive: _currentIndex == 0,
+              activeColor: activeColor,
+              inactiveColor: inactiveColor,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.menu_book_outlined, size: 24),
-              selectedIcon: Icon(Icons.menu_book, color: primaryBlue, size: 24),
+
+            // 1: Study
+            _buildNavItem(
+              index: 1,
+              icon: Icons.menu_book_rounded,
               label: 'Study',
+              isActive: _currentIndex == 1,
+              activeColor: activeColor,
+              inactiveColor: inactiveColor,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.apps_outlined, size: 24),
-              selectedIcon: Icon(Icons.apps, color: primaryBlue, size: 24),
-              label: 'Utility',
+
+            // 2: AI Tutor (Raised Center Purple Gradient Pill from Screenshot)
+            InkWell(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => const AiAssistantModal(),
+                );
+              },
+              borderRadius: BorderRadius.circular(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF8B5CF6).withOpacity(0.45),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 24),
+                        Positioned(
+                          top: 10,
+                          right: 12,
+                          child: Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  const Text(
+                    'AI Tutor',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF7C3AED),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline, size: 24),
-              selectedIcon: Icon(Icons.person, color: primaryBlue, size: 24),
-              label: 'Menu',
+
+            // 3: Quizzes
+            _buildNavItem(
+              index: 3,
+              icon: Icons.assignment_turned_in_rounded,
+              label: 'Quizzes',
+              isActive: _currentIndex == 3,
+              activeColor: activeColor,
+              inactiveColor: inactiveColor,
             ),
+
+            // 4: Vault
+            _buildNavItem(
+              index: 4,
+              icon: Icons.shield_rounded,
+              label: 'Vault',
+              isActive: _currentIndex == 4,
+              activeColor: activeColor,
+              inactiveColor: inactiveColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required Color activeColor,
+    required Color inactiveColor,
+  }) {
+    return InkWell(
+      onTap: () => setState(() => _currentIndex = index),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 24,
+              color: isActive ? activeColor : inactiveColor,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive ? activeColor : inactiveColor,
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(height: 2),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: activeColor,
+                ),
+              ),
+            ],
           ],
         ),
       ),

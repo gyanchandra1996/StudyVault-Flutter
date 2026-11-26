@@ -3,8 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/target_exam_reminder.dart';
+import '../models/gamification_data.dart';
+import '../services/gamification_service.dart';
 import '../database/exam_reminder_repo.dart';
 import '../services/notification_service.dart';
+import 'gamification_badges_dialog.dart';
 
 class ExamCountdownWidget extends StatefulWidget {
   const ExamCountdownWidget({Key? key}) : super(key: key);
@@ -17,6 +20,7 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
   final ExamReminderRepo _repo = ExamReminderRepo();
   final PageController _pageController = PageController();
   List<TargetExamReminder> _reminders = [];
+  GamificationData? _gamificationData;
   int _currentPage = 0;
   bool _isLoading = true;
 
@@ -34,10 +38,32 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
 
   Future<void> _loadReminders() async {
     final list = await _repo.getAllReminders();
+    final gData = await GamificationService.getData();
     final settings = Provider.of<SettingsProvider>(context, listen: false);
 
     // Auto-migrate legacy single target exam if list is empty
     if (list.isEmpty && settings.targetExamDate.isNotEmpty) {
+      final legacy = TargetExamReminder(
+        title: settings.targetExamName.isNotEmpty ? settings.targetExamName : 'Target Exam',
+        examDate: settings.targetExamDate,
+        category: 'General',
+        isNotificationEnabled: true,
+      );
+      await _repo.insertReminder(legacy);
+      list.add(legacy);
+    }
+
+    if (mounted) {
+      setState(() {
+        _reminders = list;
+        _gamificationData = gData;
+        _isLoading = false;
+        if (_currentPage >= list.length && list.isNotEmpty) {
+          _currentPage = list.length - 1;
+        }
+      });
+    }
+  }
       final legacy = TargetExamReminder(
         title: settings.targetExamName.isNotEmpty ? settings.targetExamName : 'Target Exam',
         examDate: settings.targetExamDate,
@@ -541,11 +567,54 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
                                 style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
                               ),
                             const SizedBox(height: 3),
-                            Text(
-                              phrase,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: badgeColor),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    phrase,
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: badgeColor),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_gamificationData != null) ...[
+                                  const SizedBox(width: 6),
+                                  InkWell(
+                                    onTap: () async {
+                                      await showDialog(
+                                        context: context,
+                                        builder: (_) => const GamificationBadgesDialog(),
+                                      );
+                                      final d = await GamificationService.getData();
+                                      if (mounted) setState(() => _gamificationData = d);
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.orange.withOpacity(0.25)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text('🔥', style: TextStyle(fontSize: 9.5)),
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            '${_gamificationData!.currentStreak}d Streak (Lvl ${_gamificationData!.currentLevel})',
+                                            style: const TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.deepOrange,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ),

@@ -63,88 +63,10 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
 
     return RepaintBoundary(
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Top Greeting Banner
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                accent,
-                accent.withOpacity(0.75),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _getGreeting(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.22),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('🔥 ', style: TextStyle(fontSize: 13)),
-                        Text(
-                          '$_streakDays ${_streakDays == 1 ? "Day" : "Days"} Streak',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.timer_outlined, color: Colors.white70, size: 16),
-                  const SizedBox(width: 6),
-                  Text(
-                    _todayMinutes == 0
-                        ? 'Ready for today’s session? Start reading below!'
-                        : '$_todayMinutes mins studied today. Keep the momentum!',
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 14),
-
-        // Currently Reading Hero Card
-        if (_recentPdf != null) ...[
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Currently Reading Hero Card
+          if (_recentPdf != null) ...[
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             child: InkWell(

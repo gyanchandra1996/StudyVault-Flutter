@@ -451,7 +451,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Welcome, $userName!',
+                                '${DateTime.now().hour < 12 ? "Good Morning" : DateTime.now().hour < 17 ? "Good Afternoon" : "Good Evening"}, $userName! ${DateTime.now().hour < 12 ? "🌅" : DateTime.now().hour < 17 ? "☀️" : "🌙"}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
@@ -460,7 +460,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'DigiStudy Vault documents are at par with physical certificates as per IT ACT 2000.',
+                                'Ready for today’s session? DigiStudy Vault documents are at par with physical certificates as per IT ACT 2000.',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.88),
                                   fontSize: 12,
@@ -502,11 +502,8 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                 ),
               ),
 
-              // Target Exam Countdown Widget
+              // Target Exam Countdown Widget (Streak & XP merged with minimal info)
               const ExamCountdownWidget(),
-
-              // Daily Streak & XP Gamification Banner
-              const StreakBannerWidget(),
 
               // DigiLocker "Your Credentials Wallet" Style Banner Card
               Padding(
@@ -722,66 +719,58 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildQuickActionChip(
-                        icon: Icons.play_arrow,
-                        label: 'Take Practice Quiz',
-                        color: Colors.green,
-                        onTap: _allQuestions.isEmpty ? null : _showStartQuizDialog,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickActionChip(
-                        icon: Icons.auto_awesome,
-                        label: 'AI Create Quiz',
-                        color: Colors.purple,
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => AiQuizModal(
-                              examId: study.selectedExam?.id,
-                              onGenerated: _loadAssessmentData,
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickActionChip(
-                        icon: Icons.table_chart,
-                        label: 'Import CSV Quiz',
-                        color: Colors.teal,
-                        onTap: () {
-                          if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickActionChip(
-                        icon: Icons.question_answer,
-                        label: 'Ask AI Tutor',
-                        color: Colors.blue,
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => const AiAssistantModal(),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickActionChip(
-                        icon: Icons.menu_book,
-                        label: 'Quick Revision',
-                        color: Colors.deepOrange,
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => const QuickRevisionHandbookModal(),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                child: GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1.85,
+                  children: [
+                    _buildInstantActionCard(
+                      icon: Icons.play_arrow_rounded,
+                      color: Colors.green,
+                      title: 'Practice Quiz',
+                      subtitle: '10Q Mock Test',
+                      onTap: _allQuestions.isEmpty ? null : _showStartQuizDialog,
+                    ),
+                    _buildInstantActionCard(
+                      icon: Icons.auto_awesome,
+                      color: Colors.purple,
+                      title: 'AI Create Quiz',
+                      subtitle: 'Topic to Quiz',
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AiQuizModal(
+                            examId: study.selectedExam?.id,
+                            onGenerated: _loadAssessmentData,
+                          ),
+                        );
+                      },
+                    ),
+                    _buildInstantActionCard(
+                      icon: Icons.table_chart_rounded,
+                      color: Colors.teal,
+                      title: 'Import CSV',
+                      subtitle: 'Question Bank',
+                      onTap: () {
+                        if (widget.onNavigateToTab != null) widget.onNavigateToTab!(3); // Go to Quizzes Tab
+                      },
+                    ),
+                    _buildInstantActionCard(
+                      icon: Icons.chat_bubble_rounded,
+                      color: Colors.blue,
+                      title: 'Ask AI Tutor',
+                      subtitle: 'Instant Doubts',
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => const AiAssistantModal(),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
 
@@ -941,36 +930,71 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
     );
   }
 
-  Widget _buildQuickActionChip({
+  Widget _buildInstantActionCard({
     required IconData icon,
-    required String label,
     required Color color,
+    required String title,
+    required String subtitle,
     required VoidCallback? onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withOpacity(0.25),
+              width: 1.2,
             ),
-          ],
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
