@@ -64,26 +64,6 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
       });
     }
   }
-      final legacy = TargetExamReminder(
-        title: settings.targetExamName.isNotEmpty ? settings.targetExamName : 'Target Exam',
-        examDate: settings.targetExamDate,
-        category: 'General',
-        isNotificationEnabled: true,
-      );
-      await _repo.insertReminder(legacy);
-      list.add(legacy);
-    }
-
-    if (mounted) {
-      setState(() {
-        _reminders = list;
-        _isLoading = false;
-        if (_currentPage >= list.length && list.isNotEmpty) {
-          _currentPage = list.length - 1;
-        }
-      });
-    }
-  }
 
   void _showAddEditExamDialog([TargetExamReminder? existing]) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
