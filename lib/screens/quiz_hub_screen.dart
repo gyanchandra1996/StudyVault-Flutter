@@ -169,8 +169,7 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
                             ? titleController.text.trim()
                             : defaultTitle,
                         questions: selected,
-                        durationMinutes: isUntimed ? 0 : durationMinutes,
-                        isUntimed: isUntimed,
+                        durationMinutes: isUntimed ? null : durationMinutes,
                         categoryName: titlePrefix ?? 'General Practice',
                       ),
                     ),
@@ -531,7 +530,7 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
               child: Text('${idx + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
             ),
             title: Text(q.questionText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text('${q.subject} • ${q.difficulty.toUpperCase()}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            subtitle: Text(q.subject, style: const TextStyle(fontSize: 11, color: Colors.grey)),
           ),
         );
       },

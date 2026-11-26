@@ -959,33 +959,6 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                       );
                     }).toList(),
                   ),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFBFDBFE)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.folder_outlined, size: 16, color: Color(0xFF1E3A8A)),
-                              const SizedBox(width: 6),
-                              Text(
-                                sub.title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                  color: Color(0xFF1E3A8A),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,

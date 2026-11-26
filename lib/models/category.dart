@@ -44,4 +44,26 @@ class Category {
       createdAt: map['created_at'] as int?,
     );
   }
+
+  Category copyWith({
+    int? id,
+    String? title,
+    String? description,
+    String? color,
+    String? icon,
+    int? parentId,
+    int? examId,
+    int? createdAt,
+  }) {
+    return Category(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      color: color ?? this.color,
+      icon: icon ?? this.icon,
+      parentId: parentId ?? this.parentId,
+      examId: examId ?? this.examId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
