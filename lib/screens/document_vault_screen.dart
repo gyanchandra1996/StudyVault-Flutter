@@ -478,7 +478,9 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                       ),
                                       const SizedBox(height: 3),
                                       Text(
-                                        doc.docNumber.isNotEmpty ? doc.docNumber : doc.docType.toUpperCase(),
+                                        (doc.docNumber != null && doc.docNumber!.isNotEmpty)
+                                            ? doc.docNumber!
+                                            : doc.docType.toUpperCase(),
                                         maxLines: 1,
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
