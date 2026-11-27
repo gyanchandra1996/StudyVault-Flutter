@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:open_file/open_file.dart';
-import '../services/pdf_tools_service.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/signature_cleaner_dialog.dart';
@@ -1265,6 +1263,14 @@ class _CustomImageResizerDialogState extends State<_CustomImageResizerDialog> {
   String? _compressedPath;
   int _compressedSizeKb = 0;
 
+  @override
+  void dispose() {
+    _targetKbController.dispose();
+    _widthController.dispose();
+    _heightController.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickImage() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
@@ -1286,23 +1292,33 @@ class _CustomImageResizerDialogState extends State<_CustomImageResizerDialog> {
       final file = File(_sourcePath!);
       final bytes = await file.readAsBytes();
 
-      final targetW = int.tryParse(_widthController.text.trim()) ?? 400;
-      final targetH = int.tryParse(_heightController.text.trim()) ?? 400;
+      int targetW = int.tryParse(_widthController.text.trim()) ?? 400;
+      int targetH = int.tryParse(_heightController.text.trim()) ?? 400;
+      final parsedTargetKb = int.tryParse(_targetKbController.text.trim()) ?? _targetSizeKb;
+      final maxBytes = (parsedTargetKb > 0 ? parsedTargetKb : 50) * 1024;
 
-      final codec = await ui.instantiateImageCodec(
-        bytes,
-        targetWidth: targetW > 0 ? targetW : null,
-        targetHeight: targetH > 0 ? targetH : null,
-      );
-      final frame = await codec.getNextFrame();
-      final img = frame.image;
-
-      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw Exception('Image resize failed');
+      Uint8List? bestBytes;
+      for (int attempt = 0; attempt < 5; attempt++) {
+        final codec = await ui.instantiateImageCodec(
+          bytes,
+          targetWidth: targetW > 0 ? targetW : null,
+          targetHeight: targetH > 0 ? targetH : null,
+        );
+        final frame = await codec.getNextFrame();
+        final byteData = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+        frame.image.dispose();
+        if (byteData == null) throw Exception('Image resize failed');
+        bestBytes = byteData.buffer.asUint8List();
+        if (bestBytes.length <= maxBytes || targetW <= 64 || targetH <= 64) {
+          break;
+        }
+        targetW = (targetW * 0.72).round().clamp(64, 4000);
+        targetH = (targetH * 0.72).round().clamp(64, 4000);
+      }
 
       final tempDir = await getTemporaryDirectory();
       final outPath = p.join(tempDir.path, 'resized_${DateTime.now().millisecondsSinceEpoch}.png');
-      final targetBytes = byteData.buffer.asUint8List();
+      final targetBytes = bestBytes!;
       await File(outPath).writeAsBytes(targetBytes);
 
       final finalSize = (File(outPath).lengthSync() / 1024).round();

@@ -1187,7 +1187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Version 2.9.0 • AI Exam & Study Vault',
+                    'Version 2.9.1 • AI Exam & Study Vault',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 14),

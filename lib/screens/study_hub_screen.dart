@@ -513,7 +513,6 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     const primaryBlue = Color(0xFF1E3A8A);
-    const brightBlue = Color(0xFF2563EB);
 
     final rawCategories = study.categories.where((cat) {
       final q = _searchQuery.trim().toLowerCase();
@@ -1223,21 +1222,25 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.account_tree_outlined, size: 13, color: Color(0xFF1E3A8A)),
+                              Icon(
+                                Icons.account_tree_outlined,
+                                size: 13,
+                                color: isDark ? Colors.lightBlue.shade200 : const Color(0xFF1E3A8A),
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 'Subcategories: ${subcategories.length}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E3A8A),
+                                  color: isDark ? Colors.lightBlue.shade200 : const Color(0xFF1E3A8A),
                                 ),
                               ),
                               const SizedBox(width: 2),
                               Icon(
                                 isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                                 size: 14,
-                                color: const Color(0xFF1E3A8A),
+                                color: isDark ? Colors.lightBlue.shade200 : const Color(0xFF1E3A8A),
                               ),
                             ],
                           ),

@@ -531,32 +531,74 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
               const SizedBox(height: 12),
               const Text('Question Pool is Empty', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
-              const Text('Import question banks via CSV or generate topic-based quizzes with AI.'),
+              const Text('Import question banks via CSV/Excel or generate topic-based quizzes with AI.'),
             ],
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-      itemCount: _allQuestions.length,
-      itemBuilder: (ctx, idx) {
-        final q = _allQuestions[idx];
-        return Card(
-          elevation: 1,
-          margin: const EdgeInsets.only(bottom: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.1),
-              child: Text('${idx + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+    final qLower = _searchQuery.trim().toLowerCase();
+    final filteredPool = qLower.isEmpty
+        ? _allQuestions
+        : _allQuestions
+            .where((q) =>
+                q.questionText.toLowerCase().contains(qLower) ||
+                q.subject.toLowerCase().contains(qLower))
+            .toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+          child: TextField(
+            onChanged: (val) => setState(() => _searchQuery = val),
+            decoration: InputDecoration(
+              hintText: 'Search questions or subject (${_allQuestions.length})...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
-            title: Text(q.questionText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(q.subject, style: const TextStyle(fontSize: 11, color: Colors.grey)),
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: filteredPool.isEmpty
+              ? const Center(child: Text('No matching questions found.'))
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                  itemCount: filteredPool.length,
+                  itemBuilder: (ctx, idx) {
+                    final q = filteredPool[idx];
+                    return Card(
+                      elevation: 1,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.1),
+                          child: Text(
+                            '${idx + 1}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E3A8A),
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          q.questionText,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(q.subject, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

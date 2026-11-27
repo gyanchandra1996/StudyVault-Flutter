@@ -2,39 +2,26 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 import '../models/question.dart';
-import '../models/quiz_result.dart';
 import '../models/pdf_document.dart';
 import '../providers/study_provider.dart';
 import '../providers/settings_provider.dart';
-import '../providers/pomodoro_provider.dart';
 import '../database/quiz_repo.dart';
 import '../database/document_repo.dart';
-import '../database/pdf_repo.dart';
-import '../services/pdf_storage_service.dart';
 import '../services/pip_service.dart';
 import '../widgets/reading_tracker_card.dart';
 import '../widgets/exam_countdown_widget.dart';
-import '../widgets/streak_banner_widget.dart';
 import '../widgets/ai_assistant_modal.dart';
 import '../widgets/ai_quiz_modal.dart';
-import '../widgets/ai_notes_generator_modal.dart';
-import '../widgets/ai_flashcard_modal.dart';
-import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
 import '../widgets/exam_revision_spotlight_card.dart';
 import '../widgets/master_control_section.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
-import 'quiz_scorecard_screen.dart';
 import 'document_vault_screen.dart';
 import 'brain_games/brain_games_hub_screen.dart';
 import 'flashcards_screen.dart';
 import 'tools_hub_screen.dart';
-import 'settings_screen.dart';
 import 'digi_profile_screen.dart';
 
 class DigiHomeScreen extends StatefulWidget {
@@ -54,13 +41,10 @@ class DigiHomeScreen extends StatefulWidget {
 class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAliveClientMixin {
   final QuizRepo _quizRepo = QuizRepo();
   final DocumentRepo _docRepo = DocumentRepo();
-  final PdfRepo _pdfRepo = PdfRepo();
 
   List<QuizQuestion> _allQuestions = [];
-  List<QuizResult> _pastResults = [];
   int _docVaultCount = 0;
   int _readingRefreshSignal = 0;
-  bool _isLoadingAssessment = true;
 
   @override
   bool get wantKeepAlive => true;
@@ -69,39 +53,22 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       Provider.of<StudyProvider>(context, listen: false).loadInitialData();
       _loadAssessmentData();
     });
   }
 
   Future<void> _loadAssessmentData() async {
-    final questions = await _quizRepo.getAllQuestions();
-    final results = await _quizRepo.getAllResults();
-    final docCount = await _docRepo.getDocumentCount();
+    final results = await Future.wait([
+      _quizRepo.getAllQuestions(),
+      _docRepo.getDocumentCount(),
+    ]);
     if (mounted) {
       setState(() {
-        _allQuestions = questions;
-        _pastResults = results;
-        _docVaultCount = docCount;
-        _isLoadingAssessment = false;
+        _allQuestions = results[0] as List<QuizQuestion>;
+        _docVaultCount = results[1] as int;
       });
-    }
-  }
-
-  Future<void> _pickAndAddGlobalPdf() async {
-    final study = Provider.of<StudyProvider>(context, listen: false);
-    final pdf = await PdfStorageService.pickAndSavePdf(
-      examId: study.selectedExam?.id,
-    );
-    if (pdf != null) {
-      await _pdfRepo.insertPdf(pdf);
-      await study.loadInitialData();
-      _loadAssessmentData();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✓ Saved "${pdf.title}" to Study Vault')),
-        );
-      }
     }
   }
 
@@ -257,234 +224,33 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
     );
   }
 
-  void _openUserProfileDialog(BuildContext context, SettingsProvider settings) {
-    final nameController = TextEditingController(text: settings.userProfile.name);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    const primaryBlue = Color(0xFF1E3A8A);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final profilePic = settings.userProfile.profilePicturePath;
-          final hasImage = profilePic.isNotEmpty && !kIsWeb && File(profilePic).existsSync();
-
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: const [
-                Icon(Icons.account_circle_rounded, color: primaryBlue, size: 26),
-                SizedBox(width: 8),
-                Text('User Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Avatar with upload badge
-                  Center(
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 46,
-                          backgroundColor: primaryBlue.withOpacity(0.12),
-                          backgroundImage: hasImage ? FileImage(File(profilePic)) : null,
-                          child: !hasImage
-                              ? Text(
-                                  settings.userProfile.name.isNotEmpty
-                                      ? settings.userProfile.name[0].toUpperCase()
-                                      : 'M',
-                                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primaryBlue),
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: InkWell(
-                            onTap: () async {
-                              try {
-                                final res = await FilePicker.platform.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-                                );
-                                if (res != null && res.files.single.path != null) {
-                                  final srcPath = res.files.single.path!;
-                                  final appDir = await getApplicationDocumentsDirectory();
-                                  final ext = p.extension(srcPath);
-                                  final destPath = p.join(appDir.path, 'profile_${DateTime.now().millisecondsSinceEpoch}$ext');
-                                  await File(srcPath).copy(destPath);
-                                  await settings.updateProfilePicture(destPath);
-                                  setDialogState(() {});
-                                  if (mounted) setState(() {});
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('✓ Profile picture updated!'), behavior: SnackBarBehavior.floating),
-                                  );
-                                }
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to update picture: $e')),
-                                );
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: const BoxDecoration(
-                                color: primaryBlue,
-                                shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                              ),
-                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton.icon(
-                    icon: const Icon(Icons.photo_library, size: 16),
-                    label: const Text('Change Profile Picture'),
-                    onPressed: () async {
-                      try {
-                        final res = await FilePicker.platform.pickFiles(
-                          type: FileType.custom,
-                          allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-                        );
-                        if (res != null && res.files.single.path != null) {
-                          final srcPath = res.files.single.path!;
-                          final appDir = await getApplicationDocumentsDirectory();
-                          final ext = p.extension(srcPath);
-                          final destPath = p.join(appDir.path, 'profile_${DateTime.now().millisecondsSinceEpoch}$ext');
-                          await File(srcPath).copy(destPath);
-                          await settings.updateProfilePicture(destPath);
-                          setDialogState(() {});
-                          if (mounted) setState(() {});
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('✓ Profile picture updated!'), behavior: SnackBarBehavior.floating),
-                          );
-                        }
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to update picture: $e')),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Name Field
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: const Icon(Icons.person_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      isDense: true,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // App PIN status
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.pin_outlined, size: 20, color: Colors.blueGrey),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('App PIN & Security', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              SizedBox(height: 2),
-                              Text('Your offline study data is secure', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              // Logout Button
-              TextButton.icon(
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                icon: const Icon(Icons.logout, size: 18),
-                label: const Text('Logout'),
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: ctx,
-                    builder: (c) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: const Text('Logout from Medhavi?'),
-                      content: const Text('You will be logged out to the PIN Login screen. You can unlock again anytime with your 4-digit PIN.'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                          onPressed: () => Navigator.pop(c, true),
-                          child: const Text('Logout'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    Navigator.pop(ctx);
-                    await settings.logout();
-                  }
-                },
-              ),
-              const Spacer(),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text('Save & Close'),
-                onPressed: () async {
-                  if (nameController.text.trim().isNotEmpty) {
-                    final updated = settings.userProfile.copyWith(name: nameController.text.trim());
-                    await settings.updateUserProfile(updated);
-                    if (mounted) setState(() {});
-                  }
-                  Navigator.pop(ctx);
-                },
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final study = Provider.of<StudyProvider>(context);
-    final settings = Provider.of<SettingsProvider>(context);
+    final studyState = context.select<StudyProvider, ({List<PdfDocument> recentPdfs, int? selectedExamId})>(
+      (s) => (recentPdfs: s.recentPdfs, selectedExamId: s.selectedExam?.id),
+    );
+    final settingsState = context.select<SettingsProvider,
+        ({String name, String pic, bool isEditMode, bool canEdit})>(
+      (s) => (
+        name: s.userProfile.name,
+        pic: s.userProfile.profilePicturePath,
+        isEditMode: s.isEditMode,
+        canEdit: s.canEdit,
+      ),
+    );
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     const primaryBlue = Color(0xFF1E3A8A); // DigiLocker Deep Royal Blue
     const brightBlue = Color(0xFF2563EB);
 
-    final userName = settings.userProfile.name.isNotEmpty
-        ? settings.userProfile.name
-        : 'Scholar';
+    final userName = settingsState.name.isNotEmpty ? settingsState.name : 'Scholar';
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       body: RefreshIndicator(
         onRefresh: () async {
-          await study.loadInitialData();
+          await Provider.of<StudyProvider>(context, listen: false).loadInitialData();
           await _loadAssessmentData();
           if (mounted) setState(() => _readingRefreshSignal++);
         },
@@ -563,25 +329,25 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                             decoration: BoxDecoration(
-                              color: settings.isEditMode
+                              color: settingsState.isEditMode
                                   ? Colors.orange.withOpacity(0.28)
                                   : Colors.white.withOpacity(0.18),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: settings.isEditMode ? Colors.orangeAccent : Colors.white38,
+                                color: settingsState.isEditMode ? Colors.orangeAccent : Colors.white38,
                               ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  settings.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
+                                  settingsState.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
                                   color: Colors.white,
                                   size: 14,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  settings.isEditMode ? 'Edit' : 'View',
+                                  settingsState.isEditMode ? 'Edit' : 'View',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
@@ -626,19 +392,32 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                           child: CircleAvatar(
                             radius: 17,
                             backgroundColor: Colors.white,
-                            foregroundImage: (settings.userProfile.profilePicturePath.isNotEmpty &&
-                                    !kIsWeb &&
-                                    File(settings.userProfile.profilePicturePath).existsSync())
-                                ? FileImage(File(settings.userProfile.profilePicturePath))
-                                : null,
-                            child: Text(
-                              userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
-                              style: const TextStyle(
-                                color: primaryBlue,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
+                            child: (settingsState.pic.isNotEmpty && !kIsWeb)
+                                ? ClipOval(
+                                    child: Image.file(
+                                      File(settingsState.pic),
+                                      width: 34,
+                                      height: 34,
+                                      fit: BoxFit.cover,
+                                      cacheWidth: 96,
+                                      errorBuilder: (_, __, ___) => Text(
+                                        userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
+                                        style: const TextStyle(
+                                          color: primaryBlue,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
+                                    style: const TextStyle(
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -703,12 +482,12 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Primary Study Desk',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
                       ),
                     ),
                     TextButton(
@@ -738,15 +517,19 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
-                  children: const [
-                    Icon(Icons.apps_rounded, color: primaryBlue, size: 20),
-                    SizedBox(width: 8),
+                  children: [
+                    Icon(
+                      Icons.apps_rounded,
+                      color: isDark ? Colors.lightBlue.shade200 : primaryBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
                       'Exam & Study Utility',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
                       ),
                     ),
                   ],
@@ -773,7 +556,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
-                        );
+                        ).then((_) => _loadAssessmentData());
                       },
                     ),
                     _buildUtilityCard(
@@ -855,15 +638,15 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
-                  children: const [
-                    Icon(Icons.bolt, color: Colors.amber, size: 20),
-                    SizedBox(width: 8),
+                  children: [
+                    const Icon(Icons.bolt, color: Colors.amber, size: 20),
+                    const SizedBox(width: 8),
                     Text(
                       'Instant Study Actions',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
                       ),
                     ),
                   ],
@@ -892,9 +675,9 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                       icon: Icons.auto_awesome,
                       color: Colors.purple,
                       title: 'AI Create Quiz',
-                      subtitle: settings.canEdit ? 'Topic to Quiz' : 'View Mode Locked',
+                      subtitle: settingsState.canEdit ? 'Topic to Quiz' : 'View Mode Locked',
                       onTap: () {
-                        if (!settings.canEdit) {
+                        if (!settingsState.canEdit) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text('View-Only Mode: Enable Edit Mode in Master Control to create quizzes.'),
@@ -909,7 +692,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                         showDialog(
                           context: context,
                           builder: (_) => AiQuizModal(
-                            examId: study.selectedExam?.id,
+                            examId: studyState.selectedExamId,
                             onGenerated: _loadAssessmentData,
                           ),
                         );
@@ -943,18 +726,18 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
               const SizedBox(height: 20),
 
               // ==================== 6. RECENT STUDY MATERIALS ====================
-              if (study.recentPdfs.isNotEmpty) ...[
+              if (studyState.recentPdfs.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Recent Notes & Documents',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
                         ),
                       ),
                       TextButton(
@@ -970,17 +753,22 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                   height: 120,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
+                    cacheExtent: 300,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: study.recentPdfs.length,
+                    itemCount: studyState.recentPdfs.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
                     itemBuilder: (ctx, idx) {
-                      final pdf = study.recentPdfs[idx];
+                      final pdf = studyState.recentPdfs[idx];
                       return InkWell(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => PdfReaderScreen(pdf: pdf)),
-                          ).then((_) => study.refreshRecentPdfs());
+                          ).then((_) {
+                            if (mounted) {
+                              Provider.of<StudyProvider>(context, listen: false).refreshRecentPdfs();
+                            }
+                          });
                         },
                         borderRadius: BorderRadius.circular(14),
                         child: Container(

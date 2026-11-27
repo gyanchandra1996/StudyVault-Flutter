@@ -18,6 +18,7 @@ class StudyProvider extends ChangeNotifier {
   Map<int, CategoryStats> _categoryStats = {};
   List<PdfDocument> _recentPdfs = [];
   bool _isLoading = false;
+  Future<void>? _inFlightLoad;
 
   List<Exam> get exams => _exams;
   Exam? get selectedExam => _selectedExam;
@@ -30,7 +31,14 @@ class StudyProvider extends ChangeNotifier {
   List<PdfDocument> get recentPdfs => _recentPdfs;
   bool get isLoading => _isLoading;
 
-  Future<void> loadInitialData({bool force = false}) async {
+  Future<void> loadInitialData({bool force = false}) {
+    if (_inFlightLoad != null && !force) return _inFlightLoad!;
+    final future = _performLoadInitialData(force: force);
+    _inFlightLoad = future.whenComplete(() => _inFlightLoad = null);
+    return _inFlightLoad!;
+  }
+
+  Future<void> _performLoadInitialData({bool force = false}) async {
     if (!force && _exams.isNotEmpty && _categories.isNotEmpty) {
       _recentPdfs = await _pdfRepo.getRecentPdfs();
       _categoryStats = await _categoryRepo.getAllCategoryStats();

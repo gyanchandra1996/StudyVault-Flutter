@@ -48,7 +48,6 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final pomodoro = Provider.of<PomodoroProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     const primaryBlue = Color(0xFF1E3A8A);
@@ -79,96 +78,98 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Pomodoro Focus Timer with PiP Quick Trigger
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(color: Colors.blue.withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.timer, color: Colors.white, size: 18),
-                            SizedBox(width: 6),
-                            Text(
-                              'Study Focus Timer (PiP)',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Current: ${pomodoro.formattedTime} • ${pomodoro.isWorkMode ? "Focus Mode" : "Break Time"}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: primaryBlue,
-                                visualDensity: VisualDensity.compact,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              icon: Icon(pomodoro.isRunning ? Icons.pause : Icons.play_arrow, size: 16),
-                              label: Text(pomodoro.isRunning ? 'Pause' : 'Start Focus'),
-                              onPressed: () {
-                                if (pomodoro.isRunning) {
-                                  pomodoro.pause();
-                                } else {
-                                  pomodoro.start();
-                                }
-                              },
-                            ),
-                            OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white70),
-                                visualDensity: VisualDensity.compact,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              icon: const Icon(Icons.picture_in_picture_alt, size: 16),
-                              label: const Text('Floating PiP'),
-                              onPressed: () {
-                                if (widget.onTriggerPip != null) {
-                                  widget.onTriggerPip!();
-                                } else {
-                                  PipService.enterPip();
-                                }
-                              },
-                            ),
-                            OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white70),
-                                visualDensity: VisualDensity.compact,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              icon: const Icon(Icons.tune, size: 16),
-                              label: const Text('Set Timer'),
-                              onPressed: () => showPomodoroSettingsModal(context),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+            // Pomodoro Focus Timer with PiP Quick Trigger (scoped Consumer avoids rebuilding full screen every second)
+            Consumer<PomodoroProvider>(
+              builder: (context, pomodoro, _) => Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(color: Colors.blue.withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.timer, color: Colors.white, size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                'Study Focus Timer (PiP)',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Current: ${pomodoro.formattedTime} • ${pomodoro.isWorkMode ? "Focus Mode" : "Break Time"}',
+                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: primaryBlue,
+                                  visualDensity: VisualDensity.compact,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: Icon(pomodoro.isRunning ? Icons.pause : Icons.play_arrow, size: 16),
+                                label: Text(pomodoro.isRunning ? 'Pause' : 'Start Focus'),
+                                onPressed: () {
+                                  if (pomodoro.isRunning) {
+                                    pomodoro.pause();
+                                  } else {
+                                    pomodoro.start();
+                                  }
+                                },
+                              ),
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white70),
+                                  visualDensity: VisualDensity.compact,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.picture_in_picture_alt, size: 16),
+                                label: const Text('Floating PiP'),
+                                onPressed: () {
+                                  if (widget.onTriggerPip != null) {
+                                    widget.onTriggerPip!();
+                                  } else {
+                                    PipService.enterPip();
+                                  }
+                                },
+                              ),
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white70),
+                                  visualDensity: VisualDensity.compact,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.tune, size: 16),
+                                label: const Text('Set Timer'),
+                                onPressed: () => showPomodoroSettingsModal(context),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 

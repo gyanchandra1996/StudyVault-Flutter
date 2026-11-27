@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_vault_flutter/services/master_excel_service.dart';
 import 'package:study_vault_flutter/widgets/formatted_ai_text.dart';
+import 'package:study_vault_flutter/widgets/reading_tracker_card.dart';
 
 void main() {
   group('MasterExcelService .xlsx roundtrip', () {
@@ -88,6 +89,59 @@ final x = 10;
       expect(find.textContaining('Study Summary'), findsOneWidget);
       expect(find.textContaining('Polity'), findsOneWidget);
       expect(find.textContaining('final x = 10;'), findsOneWidget);
+    });
+  });
+
+  group('WeeklyLineChartPainter on Home', () {
+    testWidgets('paints 0m, normal, single-day, and large 1200m datasets cleanly', (tester) async {
+      final datasets = <List<Map<String, dynamic>>>[
+        [
+          {'day': 'Mon', 'minutes': 0, 'isToday': false},
+          {'day': 'Tue', 'minutes': 0, 'isToday': false},
+          {'day': 'Wed', 'minutes': 0, 'isToday': false},
+          {'day': 'Thu', 'minutes': 0, 'isToday': false},
+          {'day': 'Fri', 'minutes': 0, 'isToday': false},
+          {'day': 'Sat', 'minutes': 0, 'isToday': false},
+          {'day': 'Sun', 'minutes': 0, 'isToday': true},
+        ],
+        [
+          {'day': 'Mon', 'minutes': 15, 'isToday': false},
+          {'day': 'Tue', 'minutes': 45, 'isToday': false},
+          {'day': 'Wed', 'minutes': 0, 'isToday': false},
+          {'day': 'Thu', 'minutes': 120, 'isToday': false},
+          {'day': 'Fri', 'minutes': 1200, 'isToday': false},
+          {'day': 'Sat', 'minutes': 35, 'isToday': false},
+          {'day': 'Sun', 'minutes': 60, 'isToday': true},
+        ],
+        [
+          {'day': 'Sun', 'minutes': 25, 'isToday': true},
+        ],
+      ];
+
+      for (final data in datasets) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 340,
+                height: 148,
+                child: CustomPaint(
+                  painter: WeeklyLineChartPainter(
+                    weekData: data,
+                    accentColor: Colors.indigo,
+                    isDark: false,
+                    selectedIndex: 0,
+                    animProgress: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      expect(find.byType(CustomPaint), findsWidgets);
     });
   });
 }

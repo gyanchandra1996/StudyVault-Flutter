@@ -56,6 +56,15 @@ const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
   },
 );
 
+class _SmoothScrollBehavior extends MaterialScrollBehavior {
+  const _SmoothScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics();
+  }
+}
+
 class StudyVaultApp extends StatelessWidget {
   const StudyVaultApp({Key? key}) : super(key: key);
 
@@ -213,6 +222,7 @@ class StudyVaultApp extends StatelessWidget {
           return MaterialApp(
             title: 'Medhavi',
             debugShowCheckedModeBanner: false,
+            scrollBehavior: const _SmoothScrollBehavior(),
             theme: _buildTheme(themeState.themeStyle, themeState.accentName, accent),
             home: const MainScreen(),
           );

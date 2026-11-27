@@ -30,11 +30,25 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
   int _todayMinutes = 0;
   List<Map<String, dynamic>> _weekData = [];
   PdfDocument? _recentPdf;
+  int? _selectedDayIndex;
 
   @override
   void initState() {
     super.initState();
+    ReadingRepo.changes.addListener(_onReadingLogChanged);
     _loadTrackerData();
+  }
+
+  @override
+  void dispose() {
+    ReadingRepo.changes.removeListener(_onReadingLogChanged);
+    super.dispose();
+  }
+
+  void _onReadingLogChanged() {
+    if (mounted) {
+      _loadTrackerData();
+    }
   }
 
   @override
@@ -46,27 +60,54 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
   }
 
   Future<void> _loadTrackerData() async {
-    final streak = await _readingRepo.getReadingStreakDays();
-    final todayMins = await _readingRepo.getTodayReadingMinutes();
-    final week = await _readingRepo.getWeeklyActivity();
-    final recentList = await _pdfRepo.getRecentPdfs(limit: 1);
+    final results = await Future.wait([
+      _readingRepo.getReadingStreakDays(),
+      _readingRepo.getTodayReadingMinutes(),
+      _readingRepo.getWeeklyActivity(),
+      _pdfRepo.getRecentPdfs(limit: 1),
+    ]);
 
     if (mounted) {
+      final recentList = results[3] as List<PdfDocument>;
       setState(() {
-        _streakDays = streak;
-        _todayMinutes = todayMins;
-        _weekData = week;
+        _streakDays = results[0] as int;
+        _todayMinutes = results[1] as int;
+        _weekData = results[2] as List<Map<String, dynamic>>;
         _recentPdf = recentList.isNotEmpty ? recentList.first : null;
       });
     }
+  }
+
+  void _handleChartTap(Offset localPos, double width) {
+    if (_weekData.isEmpty) return;
+    final n = _weekData.length;
+    if (n == 0) return;
+
+    const double leftPad = 36.0;
+    const double rightPad = 14.0;
+    final double chartW = math.max(10.0, width - leftPad - rightPad);
+
+    int nearest = 0;
+    double bestDist = double.infinity;
+    for (int i = 0; i < n; i++) {
+      final double x = n == 1 ? leftPad + chartW / 2 : leftPad + (chartW * i / (n - 1));
+      final dist = (localPos.dx - x).abs();
+      if (dist < bestDist) {
+        bestDist = dist;
+        nearest = i;
+      }
+    }
+
+    setState(() {
+      _selectedDayIndex = _selectedDayIndex == nearest ? null : nearest;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
-    final settings = Provider.of<SettingsProvider>(context);
-    final accent = settings.activeAccentColor;
+    final accent = context.select<SettingsProvider, Color>((s) => s.activeAccentColor);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final int totalWeekMinutes = _weekData.fold<int>(
@@ -74,6 +115,11 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
       (sum, d) => sum + ((d['minutes'] as int?) ?? 0),
     );
     final int avgDailyMinutes = _weekData.isNotEmpty ? (totalWeekMinutes / _weekData.length).round() : 0;
+
+    final int? safeSelected = (_selectedDayIndex != null && _selectedDayIndex! < _weekData.length)
+        ? _selectedDayIndex
+        : null;
+    final Map<String, dynamic>? selectedDay = safeSelected != null ? _weekData[safeSelected] : null;
 
     return RepaintBoundary(
       child: Column(
@@ -96,7 +142,6 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      // Circular Progress
                       Stack(
                         alignment: Alignment.center,
                         children: [
@@ -208,7 +253,7 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                               ),
                               Text(
-                                'Last 7 Days Trend',
+                                'Last 7 Days Trend • Tap point for details',
                                 style: TextStyle(fontSize: 10.5, color: Colors.grey),
                               ),
                             ],
@@ -222,7 +267,9 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '${totalWeekMinutes}m total',
+                          selectedDay != null
+                              ? '${selectedDay['day']}: ${selectedDay['minutes'] ?? 0}m'
+                              : '${totalWeekMinutes}m total',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -246,10 +293,10 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                   ),
                   const SizedBox(height: 14),
 
-                  // Line Chart Canvas
+                  // Animated Interactive Line Chart Canvas
                   SizedBox(
                     width: double.infinity,
-                    height: 142,
+                    height: 148,
                     child: _weekData.isEmpty
                         ? const Center(
                             child: Text(
@@ -257,12 +304,33 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                               style: TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           )
-                        : CustomPaint(
-                            painter: _WeeklyLineChartPainter(
-                              weekData: _weekData,
-                              accentColor: accent,
-                              isDark: isDark,
-                            ),
+                        : LayoutBuilder(
+                            builder: (ctx, constraints) {
+                              return GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTapDown: (details) => _handleChartTap(
+                                  details.localPosition,
+                                  constraints.maxWidth,
+                                ),
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                                  duration: const Duration(milliseconds: 500),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (ctx, animValue, _) {
+                                    return CustomPaint(
+                                      size: Size(constraints.maxWidth, 148),
+                                      painter: WeeklyLineChartPainter(
+                                        weekData: _weekData,
+                                        accentColor: accent,
+                                        isDark: isDark,
+                                        selectedIndex: safeSelected,
+                                        animProgress: animValue,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           ),
                   ),
                 ],
@@ -300,49 +368,66 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
   }
 }
 
-class _WeeklyLineChartPainter extends CustomPainter {
+class WeeklyLineChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> weekData;
   final Color accentColor;
   final bool isDark;
+  final int? selectedIndex;
+  final double animProgress;
 
-  const _WeeklyLineChartPainter({
+  const WeeklyLineChartPainter({
     required this.weekData,
     required this.accentColor,
     required this.isDark,
+    this.selectedIndex,
+    this.animProgress = 1.0,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (weekData.isEmpty) return;
 
-    const double leftPad = 34.0;
-    const double rightPad = 14.0;
+    final List<int> values = weekData.map((d) => (d['minutes'] as int?) ?? 0).toList();
+    final int rawMax = values.fold<int>(0, (m, v) => v > m ? v : m);
+    final int maxScale = rawMax <= 30
+        ? 30
+        : (((rawMax + 14) ~/ 15) * 15);
+
+    final gridColor = (isDark ? Colors.white : Colors.grey).withOpacity(0.18);
+    final labelColor = isDark ? Colors.white60 : Colors.grey.shade600;
+
+    // Measure max Y-axis label width dynamically so 3-4 digit numbers never clip
+    final yTicks = [0, (maxScale / 2).round(), maxScale];
+    double maxTickW = 0;
+    final tickPainters = <int, TextPainter>{};
+    for (final tick in yTicks) {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: '${tick}m',
+          style: TextStyle(fontSize: 9.5, color: labelColor, fontWeight: FontWeight.w500),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tickPainters[tick] = tp;
+      if (tp.width > maxTickW) maxTickW = tp.width;
+    }
+
+    final double leftPad = math.max(34.0, maxTickW + 10.0);
+    const double rightPad = 16.0;
     const double topPad = 20.0;
     const double bottomPad = 24.0;
 
     final double chartW = math.max(10.0, size.width - leftPad - rightPad);
     final double chartH = math.max(10.0, size.height - topPad - bottomPad);
 
-    final List<int> values = weekData.map((d) => (d['minutes'] as int?) ?? 0).toList();
-    final int rawMax = values.fold<int>(0, (m, v) => v > m ? v : m);
-    final int maxScale = rawMax <= 30
-        ? 30
-        : (((rawMax + 14) ~/ 15) * 15); // clean multiple of 15
-
-    final gridColor = (isDark ? Colors.white : Colors.grey).withOpacity(0.18);
-    final labelColor = isDark ? Colors.white60 : Colors.grey.shade600;
-
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1.0;
 
-    // Horizontal guide lines & Y-axis labels (0, mid, max)
-    final yTicks = [0, (maxScale / 2).round(), maxScale];
     for (final tick in yTicks) {
       final ratio = tick / maxScale;
       final y = topPad + chartH * (1.0 - ratio);
 
-      // Draw dashed guide line
       const dashW = 4.0;
       const gapW = 4.0;
       double startX = leftPad;
@@ -352,30 +437,24 @@ class _WeeklyLineChartPainter extends CustomPainter {
         startX += dashW + gapW;
       }
 
-      // Y-axis tick text
-      final tp = TextPainter(
-        text: TextSpan(
-          text: '${tick}m',
-          style: TextStyle(fontSize: 9.5, color: labelColor, fontWeight: FontWeight.w500),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
+      final tp = tickPainters[tick]!;
       tp.paint(canvas, Offset(leftPad - tp.width - 6, y - tp.height / 2));
     }
 
-    // Compute (x, y) coordinates for each day
+    // Compute (x, y) coordinates with smooth vertical growth animation
     final int n = weekData.length;
+    final double baselineY = topPad + chartH;
     final List<Offset> points = [];
     for (int i = 0; i < n; i++) {
       final double x = n == 1
           ? leftPad + chartW / 2
           : leftPad + (chartW * i / (n - 1));
-      final double ratio = (values[i] / maxScale).clamp(0.0, 1.0);
-      final double y = topPad + chartH * (1.0 - ratio);
+      final double ratio = ((values[i] / maxScale) * animProgress).clamp(0.0, 1.0);
+      final double y = baselineY - chartH * ratio;
       points.add(Offset(x, y));
     }
 
-    // Build smooth horizontal-tangent cubic path (monotonic without overshooting below 0)
+    // Build smooth horizontal-tangent cubic path
     final Path linePath = Path()..moveTo(points.first.dx, points.first.dy);
     for (int i = 0; i < points.length - 1; i++) {
       final p0 = points[i];
@@ -386,8 +465,8 @@ class _WeeklyLineChartPainter extends CustomPainter {
 
     // Gradient fill beneath the line
     final Path fillPath = Path.from(linePath)
-      ..lineTo(points.last.dx, topPad + chartH)
-      ..lineTo(points.first.dx, topPad + chartH)
+      ..lineTo(points.last.dx, baselineY)
+      ..lineTo(points.first.dx, baselineY)
       ..close();
 
     final fillPaint = Paint()
@@ -401,6 +480,18 @@ class _WeeklyLineChartPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(leftPad, topPad, chartW, chartH));
 
     canvas.drawPath(fillPath, fillPaint);
+
+    // Draw selected vertical guide line
+    if (selectedIndex != null && selectedIndex! >= 0 && selectedIndex! < points.length) {
+      final selPt = points[selectedIndex!];
+      canvas.drawLine(
+        Offset(selPt.dx, topPad),
+        Offset(selPt.dx, baselineY),
+        Paint()
+          ..color = accentColor.withOpacity(0.4)
+          ..strokeWidth = 1.4,
+      );
+    }
 
     // Draw line stroke
     final linePaint = Paint()
@@ -418,11 +509,12 @@ class _WeeklyLineChartPainter extends CustomPainter {
       final mins = values[i];
       final dayLabel = (weekData[i]['day'] as String?) ?? '';
       final isToday = (weekData[i]['isToday'] as bool?) ?? false;
+      final isSelected = selectedIndex == i;
 
-      if (isToday) {
-        canvas.drawCircle(pt, 8.5, Paint()..color = accentColor.withOpacity(0.22));
-        canvas.drawCircle(pt, 4.8, Paint()..color = accentColor);
-        canvas.drawCircle(pt, 2.0, Paint()..color = Colors.white);
+      if (isSelected || isToday) {
+        canvas.drawCircle(pt, isSelected ? 10.0 : 8.5, Paint()..color = accentColor.withOpacity(0.22));
+        canvas.drawCircle(pt, isSelected ? 5.5 : 4.8, Paint()..color = accentColor);
+        canvas.drawCircle(pt, 2.2, Paint()..color = Colors.white);
       } else {
         canvas.drawCircle(pt, 4.0, Paint()..color = isDark ? const Color(0xFF1E293B) : Colors.white);
         canvas.drawCircle(
@@ -435,20 +527,22 @@ class _WeeklyLineChartPainter extends CustomPainter {
         );
       }
 
-      // Value label above point
-      if (mins > 0 || isToday) {
+      // Value label above point (clamped cleanly inside canvas bounds)
+      if (mins > 0 || isToday || isSelected) {
         final valTp = TextPainter(
           text: TextSpan(
             text: '${mins}m',
             style: TextStyle(
               fontSize: 9.5,
-              fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
-              color: isToday ? accentColor : labelColor,
+              fontWeight: (isToday || isSelected) ? FontWeight.bold : FontWeight.w600,
+              color: (isToday || isSelected) ? accentColor : labelColor,
             ),
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        valTp.paint(canvas, Offset(pt.dx - valTp.width / 2, math.max(0, pt.dy - valTp.height - 7)));
+        final double vx = (pt.dx - valTp.width / 2).clamp(leftPad, math.max(leftPad, size.width - valTp.width - 2));
+        final double vy = (pt.dy - valTp.height - 7).clamp(0.0, math.max(0.0, baselineY - valTp.height));
+        valTp.paint(canvas, Offset(vx, vy));
       }
 
       // Day label below X-axis
@@ -457,20 +551,33 @@ class _WeeklyLineChartPainter extends CustomPainter {
           text: dayLabel,
           style: TextStyle(
             fontSize: 10.5,
-            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-            color: isToday ? accentColor : labelColor,
+            fontWeight: (isToday || isSelected) ? FontWeight.bold : FontWeight.w500,
+            color: (isToday || isSelected) ? accentColor : labelColor,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      dayTp.paint(canvas, Offset(pt.dx - dayTp.width / 2, topPad + chartH + 7));
+      final double dx = (pt.dx - dayTp.width / 2).clamp(2.0, math.max(2.0, size.width - dayTp.width - 2));
+      dayTp.paint(canvas, Offset(dx, baselineY + 7));
     }
   }
 
   @override
-  bool shouldRepaint(covariant _WeeklyLineChartPainter oldDelegate) {
-    return oldDelegate.weekData != weekData ||
-        oldDelegate.accentColor != accentColor ||
-        oldDelegate.isDark != isDark;
+  bool shouldRepaint(covariant WeeklyLineChartPainter oldDelegate) {
+    if (oldDelegate.accentColor != accentColor ||
+        oldDelegate.isDark != isDark ||
+        oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.animProgress != animProgress ||
+        oldDelegate.weekData.length != weekData.length) {
+      return true;
+    }
+    for (int i = 0; i < weekData.length; i++) {
+      if (oldDelegate.weekData[i]['minutes'] != weekData[i]['minutes'] ||
+          oldDelegate.weekData[i]['day'] != weekData[i]['day'] ||
+          oldDelegate.weekData[i]['isToday'] != weekData[i]['isToday']) {
+        return true;
+      }
+    }
+    return false;
   }
 }

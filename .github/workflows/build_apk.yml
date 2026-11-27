@@ -92,14 +92,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.9.0
-          name: "Medhavi (मेधावी) Flutter v2.9.0 - Full Sepia PDF Reader, Formatted Aarna AI, Interactive Revision Handbook, E-Book Library & Master Excel Import"
+          tag_name: v2.9.1
+          name: "Medhavi (मेधावी) Flutter v2.9.1 - Smoothness Polish, Interactive Weekly Line Chart, Scoped Rebuilds & All-Screen Audit"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.9.0 Official Release APK
-            - **1. Full Sepia & Night PDF Chrome**: Extended Sepia Paper (and Night Mode) styling to the PDF reader top AppBar, search bar, status/navigation bars, page canvas, and bottom toolbar.
-            - **2. Formatted Aarna AI Responses**: Added native rich-text `FormattedAiText` rendering (headings, bold/italic, inline/fenced code blocks, blockquotes, bullet/numbered lists, and styled tables) in Aarna AI Chat and AI Notes preview.
-            - **3. Interactive Exam Revision & Handbook on Home**: Replaced Home's Digital Sign tile with Exam Revision & Handbook (`ExamRevisionSpotlightCard` with subject chips, active-recall reveal cards, and revised progress) plus upgraded `QuickRevisionHandbookModal` with Flash Recall Mode, progress tracking, bookmarks, TTS listening, and `+ Flashcard`.
-            - **4. E-Book Library & Reader in Exam & Utility Hub**: Added a dedicated E-Book shelf supporting PDF E-Books, single-image E-Books, and multi-page image E-Books with zoom, Sepia/Night eye-care modes, progress sync, and edit/delete master controls.
-            - **5. Master Excel Data Import in Settings**: Added pure-Dart `.xlsx` & `.csv` Master Import (`MasterExcelService` & `MasterExcelImportModal`) to bulk-import Handbook formulas, Quizzes, Flashcards, Categories/Subfolders, and Notes together, plus `.xlsx` template & current-data export.
+            ### 📱 Medhavi (मेधावी) Flutter v2.9.1 Official Release APK
+            - **1. App-Wide Smoothness & Performance**: Added lazy tab initialization in `MainScreen` (`_visitedTabs`) with smooth animated active indicators, global `BouncingScrollPhysics` scroll behavior, deduplicated concurrent `StudyProvider.loadInitialData()` startup loads, and scoped `Selector`/`Consumer` rebuilds in `DigiHomeScreen` and `UtilityHubScreen`.
+            - **2. Home Weekly Line Chart Upgrades**: Batched `ReadingRepo.getWeeklyActivity()` into a single `GROUP BY` query, added `ReadingRepo.changes` live refresh after reading sessions finish saving, added tap-to-inspect day tooltips, smooth animated line drawing, dynamic Y-axis padding, and clamped edge labels.
+            - **3. Bug Fixes & Verification**: Wired searchable Question Pool in `QuizHubScreen`, enforced target KB size limits in `ToolsHubScreen` Image Resizer, removed blocking `File.existsSync()` in Home avatar build, improved dark-mode contrast, and added automated widget & service tests (`flutter test`).
+            - **4. All v2.9.0 Features Preserved**: Full Sepia/Night PDF bars, rich formatted Aarna AI output, interactive Exam Revision & Handbook, E-Book PDF/Image library, and Master Excel (`.xlsx`/`.csv`) import.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

@@ -8,7 +8,6 @@ import 'study_hub_screen.dart';
 import 'quiz_hub_screen.dart';
 import 'utility_hub_screen.dart';
 import 'settings_screen.dart';
-import 'digi_profile_screen.dart';
 import 'registration_screen.dart';
 import 'pin_login_screen.dart';
 import 'lock_screen.dart';
@@ -25,9 +24,18 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final Set<int> _visitedTabs = {0};
   bool _isAlarmShowing = false;
   bool _isExitDialogShowing = false;
   bool _showPipOverlay = false;
+
+  void _selectTab(int idx) {
+    if (_currentIndex == idx && _visitedTabs.contains(idx)) return;
+    setState(() {
+      _visitedTabs.add(idx);
+      _currentIndex = idx;
+    });
+  }
 
   void _checkAndShowAlarm(PomodoroProvider pomodoro) {
     if (pomodoro.pendingAlarmMessage != null && !_isAlarmShowing) {
@@ -316,7 +324,7 @@ class _MainScreenState extends State<MainScreen> {
           return;
         }
         if (_currentIndex != 0) {
-          setState(() => _currentIndex = 0);
+          _selectTab(0);
           return;
         }
         _showExitConfirmation(context);
@@ -341,15 +349,17 @@ class _MainScreenState extends State<MainScreen> {
                       index: _currentIndex,
                       children: [
                         DigiHomeScreen(
-                          onNavigateToTab: (idx) => setState(() => _currentIndex = idx),
+                          onNavigateToTab: _selectTab,
                           onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
                         ),
-                        const StudyHubScreen(),
-                        UtilityHubScreen(
-                          onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
-                        ),
-                        const QuizHubScreen(),
-                        const SettingsScreen(),
+                        _visitedTabs.contains(1) ? const StudyHubScreen() : const SizedBox.shrink(),
+                        _visitedTabs.contains(2)
+                            ? UtilityHubScreen(
+                                onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
+                              )
+                            : const SizedBox.shrink(),
+                        _visitedTabs.contains(3) ? const QuizHubScreen() : const SizedBox.shrink(),
+                        _visitedTabs.contains(4) ? const SettingsScreen() : const SizedBox.shrink(),
                       ],
                     ),
                   ),
@@ -506,17 +516,22 @@ class _MainScreenState extends State<MainScreen> {
     required Color inactiveColor,
   }) {
     return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => _selectTab(index),
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isActive ? activeColor : inactiveColor,
+            AnimatedScale(
+              scale: isActive ? 1.12 : 1.0,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              child: Icon(
+                icon,
+                size: 24,
+                color: isActive ? activeColor : inactiveColor,
+              ),
             ),
             const SizedBox(height: 3),
             Text(
@@ -527,17 +542,17 @@ class _MainScreenState extends State<MainScreen> {
                 color: isActive ? activeColor : inactiveColor,
               ),
             ),
-            if (isActive) ...[
-              const SizedBox(height: 2),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: activeColor,
-                ),
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              width: isActive ? 14 : 0,
+              height: 3,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                color: activeColor,
               ),
-            ],
+            ),
           ],
         ),
       ),

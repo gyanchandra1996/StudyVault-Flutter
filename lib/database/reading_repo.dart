@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'app_database.dart';
 
 class ReadingRepo {
   final AppDatabase _db = AppDatabase.instance;
+
+  /// Notifies active listeners (e.g. Home Weekly Line Chart) whenever reading logs update.
+  static final ValueNotifier<int> changes = ValueNotifier<int>(0);
 
   String _today() {
     return DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -42,6 +46,7 @@ class ReadingRepo {
         'created_at': DateTime.now().millisecondsSinceEpoch,
       });
     }
+    changes.value++;
   }
 
   Future<int> getTodayReadingMinutes() async {
@@ -97,18 +102,29 @@ class ReadingRepo {
   Future<List<Map<String, dynamic>>> getWeeklyActivity() async {
     final db = await _db.database;
     final now = DateTime.now();
-    List<Map<String, dynamic>> weekData = [];
+    final startDate = now.subtract(const Duration(days: 6));
+    final startStr = DateFormat('yyyy-MM-dd').format(startDate);
 
+    final rows = await db.rawQuery(
+      'SELECT session_date, SUM(duration_seconds) as total FROM reading_logs WHERE session_date >= ? GROUP BY session_date',
+      [startStr],
+    );
+
+    final Map<String, int> secsByDate = {};
+    for (final row in rows) {
+      final dateKey = row['session_date'] as String?;
+      final secs = (row['total'] as int?) ?? 0;
+      if (dateKey != null) {
+        secsByDate[dateKey] = secs;
+      }
+    }
+
+    final List<Map<String, dynamic>> weekData = [];
     for (int i = 6; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
-      final dayLabel = DateFormat('E').format(date); // Mon, Tue, etc.
-
-      final res = await db.rawQuery(
-        'SELECT SUM(duration_seconds) as total FROM reading_logs WHERE session_date = ?',
-        [dateStr],
-      );
-      final totalSecs = (res.first['total'] as int?) ?? 0;
+      final dayLabel = DateFormat('E').format(date);
+      final totalSecs = secsByDate[dateStr] ?? 0;
       final minutes = (totalSecs / 60).round();
 
       weekData.add({
