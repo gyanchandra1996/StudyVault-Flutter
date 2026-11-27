@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/settings_provider.dart';
 import '../providers/pomodoro_provider.dart';
 import '../services/pip_service.dart';
-import '../widgets/pomodoro_widget.dart';
 import '../widgets/pomodoro_settings_sheet.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
 import '../widgets/syllabus_tracker_modal.dart';
@@ -50,7 +48,6 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final settings = Provider.of<SettingsProvider>(context);
     final pomodoro = Provider.of<PomodoroProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 

@@ -124,7 +124,8 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
 
     final extraCustomEntries = _extraCustomTabEntries();
     final totalTabs = _coreTabs.length + extraCustomEntries.length;
-    final initialIdx = widget.initialTabIndex.clamp(0, math.max(0, totalTabs - 1));
+    final maxIdx = math.max(0, totalTabs - 1);
+    final initialIdx = widget.initialTabIndex.clamp(0, maxIdx).toInt();
     _tabController = TabController(length: totalTabs, vsync: this, initialIndex: initialIdx);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging && mounted) {

@@ -508,7 +508,7 @@ class MasterExcelService {
       final hasFormulaOrDesc = findCol(['formula', 'description', 'desc']) != -1;
       final hasAnswer = findCol(['answer', 'back']) != -1;
       final hasQuestion = findCol(['question', 'front']) != -1;
-      final hasSubcategory = findCol(['subcategory', 'sub_category', 'topic']) != -1;
+      final hasSubcategory = findCol(['subcategory', 'sub_category', 'sub category']) != -1;
 
       if (sLower.contains('quiz') || sLower.contains('mcq') || hasOptionA) {
         final qCol = findCol(['question', 'q_text', 'prompt']);
@@ -585,9 +585,20 @@ class MasterExcelService {
             ));
           }
         }
+      } else if (sLower.contains('note') && !sLower.contains('handbook')) {
+        final titleCol = findCol(['title', 'topic', 'heading']);
+        final contentCol = findCol(['note content', 'content', 'note', 'text']);
+        for (final r in dataRows) {
+          final t = cellAt(r, titleCol != -1 ? titleCol : 0);
+          final c = cellAt(r, contentCol != -1 ? contentCol : 1);
+          final full = t.isNotEmpty && c.isNotEmpty ? '$t\n\n$c' : (c.isNotEmpty ? c : t);
+          if (full.isNotEmpty) {
+            notes.add(ExcelNoteEntry(title: t, content: full));
+          }
+        }
       } else if (sLower.contains('categor') || sLower.contains('folder') || sLower.contains('subject') || hasSubcategory) {
         final catCol = findCol(['category', 'subject', 'parent']);
-        final subCol = findCol(['subcategory', 'sub_category', 'topic']);
+        final subCol = findCol(['subcategory', 'sub_category', 'sub category', 'topic']);
         final descCol = findCol(['description', 'desc']);
         for (final r in dataRows) {
           final cat = cellAt(r, catCol != -1 ? catCol : 0);
@@ -597,17 +608,6 @@ class MasterExcelService {
               subcategory: cellAt(r, subCol != -1 ? subCol : 1),
               description: cellAt(r, descCol != -1 ? descCol : 2),
             ));
-          }
-        }
-      } else if (sLower.contains('note')) {
-        final titleCol = findCol(['title', 'topic', 'heading']);
-        final contentCol = findCol(['note content', 'content', 'note', 'text']);
-        for (final r in dataRows) {
-          final t = cellAt(r, titleCol != -1 ? titleCol : 0);
-          final c = cellAt(r, contentCol != -1 ? contentCol : 1);
-          final full = t.isNotEmpty && c.isNotEmpty ? '$t\n\n$c' : (c.isNotEmpty ? c : t);
-          if (full.isNotEmpty) {
-            notes.add(ExcelNoteEntry(title: t, content: full));
           }
         }
       } else {
