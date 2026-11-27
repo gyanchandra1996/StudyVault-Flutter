@@ -400,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   const Divider(height: 20),
 
-                  // Master AI Switch
+                  // Aarna AI Switch
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
@@ -413,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen>
                     child: SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        'Master AI Switch (${isAi ? "Active" : "Disabled"})',
+                        'Aarna AI Switch (${isAi ? "Active" : "Disabled"})',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,

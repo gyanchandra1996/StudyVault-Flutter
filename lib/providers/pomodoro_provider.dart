@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PomodoroProvider extends ChangeNotifier {
   int _workMinutes = 25;
@@ -10,6 +11,22 @@ class PomodoroProvider extends ChangeNotifier {
   bool _isWorkMode = true;
   String? _pendingAlarmMessage;
   Timer? _timer;
+
+  PomodoroProvider() {
+    _loadDurations();
+  }
+
+  Future<void> _loadDurations() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final w = prefs.getInt('pomodoro_work_minutes');
+      final b = prefs.getInt('pomodoro_break_minutes');
+      if (w != null && w > 0) _workMinutes = w;
+      if (b != null && b > 0) _breakMinutes = b;
+      _remainingSeconds = (_isWorkMode ? _workMinutes : _breakMinutes) * 60;
+      notifyListeners();
+    } catch (_) {}
+  }
 
   int get workMinutes => _workMinutes;
   int get breakMinutes => _breakMinutes;
@@ -92,11 +109,18 @@ class PomodoroProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setDurations(int work, int breakTime) {
+  Future<void> setDurations(int work, int breakTime) async {
     _workMinutes = work > 0 ? work : 25;
     _breakMinutes = breakTime > 0 ? breakTime : 5;
+    _isRunning = false;
+    _timer?.cancel();
     _remainingSeconds = (_isWorkMode ? _workMinutes : _breakMinutes) * 60;
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('pomodoro_work_minutes', _workMinutes);
+      await prefs.setInt('pomodoro_break_minutes', _breakMinutes);
+    } catch (_) {}
   }
 
   @override

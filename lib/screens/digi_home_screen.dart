@@ -33,6 +33,7 @@ import 'brain_games/brain_games_hub_screen.dart';
 import 'flashcards_screen.dart';
 import 'tools_hub_screen.dart';
 import 'settings_screen.dart';
+import 'digi_profile_screen.dart';
 
 class DigiHomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -399,7 +400,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                             children: const [
                               Text('App PIN & Security', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                               SizedBox(height: 2),
-                              Text('Master PIN: 1996 is always active', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              Text('Your offline study data is secure', style: TextStyle(fontSize: 11, color: Colors.grey)),
                             ],
                           ),
                         ),
@@ -421,7 +422,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                     builder: (c) => AlertDialog(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       title: const Text('Logout from Medhavi?'),
-                      content: const Text('You will be logged out to the PIN Login screen. You can unlock again anytime with your 4-digit PIN or Master PIN 1996.'),
+                      content: const Text('You will be logged out to the PIN Login screen. You can unlock again anytime with your 4-digit PIN.'),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
                         ElevatedButton(
@@ -551,71 +552,6 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                         ),
                         const Spacer(),
 
-                        // Master AI Control Button (Replaces View/Edit Pill on Home Top)
-                        InkWell(
-                          onTap: () {
-                            settings.toggleAiEnabled();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(settings.isAiEnabled
-                                    ? '✨ Master AI Enabled: Aarna smart tutoring active'
-                                    : '⏸️ Master AI Paused: Tap to re-activate'),
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          onLongPress: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => const AiAssistantModal(),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: settings.isAiEnabled
-                                  ? const Color(0xFF10B981).withOpacity(0.28)
-                                  : Colors.white.withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: settings.isAiEnabled ? const Color(0xFF34D399) : Colors.white38,
-                                width: 1.2,
-                              ),
-                              boxShadow: settings.isAiEnabled
-                                  ? [
-                                      BoxShadow(
-                                        color: const Color(0xFF10B981).withOpacity(0.35),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.auto_awesome,
-                                  size: 13,
-                                  color: settings.isAiEnabled ? const Color(0xFF34D399) : Colors.white70,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  settings.isAiEnabled ? 'AI: ON' : 'AI: OFF',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: settings.isAiEnabled ? Colors.white : Colors.white70,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
                         // Picture-in-Picture Button
                         InkWell(
                           onTap: () async {
@@ -639,27 +575,28 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
 
                         // Profile Avatar (Clickable: Opens Profile & Photo Upload)
                         InkWell(
-                          onTap: () => _openUserProfileDialog(context, settings),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const DigiProfileScreen()),
+                            );
+                          },
                           child: CircleAvatar(
                             radius: 17,
                             backgroundColor: Colors.white,
-                            backgroundImage: (settings.userProfile.profilePicturePath.isNotEmpty &&
+                            foregroundImage: (settings.userProfile.profilePicturePath.isNotEmpty &&
                                     !kIsWeb &&
                                     File(settings.userProfile.profilePicturePath).existsSync())
                                 ? FileImage(File(settings.userProfile.profilePicturePath))
                                 : null,
-                            child: (settings.userProfile.profilePicturePath.isEmpty ||
-                                    kIsWeb ||
-                                    !File(settings.userProfile.profilePicturePath).existsSync())
-                                ? Text(
-                                    userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
-                                    style: const TextStyle(
-                                      color: primaryBlue,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  )
-                                : null,
+                            child: Text(
+                              userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
+                              style: const TextStyle(
+                                color: primaryBlue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -672,7 +609,12 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                       children: [
                         Expanded(
                           child: InkWell(
-                            onTap: () => _openUserProfileDialog(context, settings),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const DigiProfileScreen()),
+                              );
+                            },
                             borderRadius: BorderRadius.circular(12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -739,79 +681,6 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
 
               // Target Exam Countdown Widget (Streak & XP merged with minimal info)
               const ExamCountdownWidget(),
-
-              // DigiLocker "Your Credentials Wallet" Style Banner Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFEDE9FE), Color(0xFFF3E8FF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFDDD6FE), width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Your Study Credentials Wallet',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                                color: Color(0xFF4C1D95),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'All your notes, category quizzes & identity vault in one place',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF6D28D9),
-                                height: 1.3,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6D28D9),
-                                foregroundColor: Colors.white,
-                                visualDensity: VisualDensity.compact,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () {
-                                if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
-                              },
-                              child: const Text('Open Study Hierarchy', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(color: Colors.purple.withOpacity(0.1), blurRadius: 8),
-                          ],
-                        ),
-                        child: const Icon(Icons.account_balance_wallet, color: Color(0xFF6D28D9), size: 36),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 12),
 

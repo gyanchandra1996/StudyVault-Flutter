@@ -26,7 +26,13 @@ class StudyProvider extends ChangeNotifier {
   List<PdfDocument> get recentPdfs => _recentPdfs;
   bool get isLoading => _isLoading;
 
-  Future<void> loadInitialData() async {
+  Future<void> loadInitialData({bool force = false}) async {
+    if (!force && _exams.isNotEmpty && _categories.isNotEmpty) {
+      _recentPdfs = await _pdfRepo.getRecentPdfs();
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 

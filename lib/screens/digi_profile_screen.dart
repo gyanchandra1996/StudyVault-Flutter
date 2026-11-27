@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/user_profile.dart';
@@ -11,6 +14,23 @@ import 'favorites_screen.dart';
 
 class DigiProfileScreen extends StatelessWidget {
   const DigiProfileScreen({Key? key}) : super(key: key);
+
+  Future<void> _saveAndSetProfilePic(String srcPath, SettingsProvider settings, BuildContext context) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final ext = p.extension(srcPath);
+      final destPath = p.join(appDir.path, 'profile_${DateTime.now().millisecondsSinceEpoch}$ext');
+      await File(srcPath).copy(destPath);
+      await settings.updateProfilePicture(destPath);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✓ Profile picture updated!'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (_) {
+      await settings.updateProfilePicture(srcPath);
+    }
+  }
 
   Future<void> _pickAndSetProfilePicture(BuildContext context, SettingsProvider settings) async {
     final picker = ImagePicker();
@@ -47,7 +67,7 @@ class DigiProfileScreen extends StatelessWidget {
                       imageQuality: 85,
                     );
                     if (picked != null) {
-                      await settings.updateProfilePicture(picked.path);
+                      await _saveAndSetProfilePic(picked.path, settings, context);
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -74,12 +94,37 @@ class DigiProfileScreen extends StatelessWidget {
                       imageQuality: 85,
                     );
                     if (picked != null) {
-                      await settings.updateProfilePicture(picked.path);
+                      await _saveAndSetProfilePic(picked.path, settings, context);
                     }
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Gallery error: $e')),
+                      );
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEFF6FF),
+                  child: Icon(Icons.folder_open, color: Color(0xFF1E3A8A)),
+                ),
+                title: const Text('Choose from Device Files'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final res = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                    );
+                    if (res != null && res.files.single.path != null) {
+                      await _saveAndSetProfilePic(res.files.single.path!, settings, context);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('File picker error: $e')),
                       );
                     }
                   }
@@ -127,7 +172,7 @@ class DigiProfileScreen extends StatelessWidget {
           ],
         ),
         content: const Text(
-          'Are you sure you want to log out from DigiStudy Medhavi?\n\nYour study records, tests, and vault items remain securely saved on this device. You will be redirected to the student registration/login screen.',
+          'Are you sure you want to log out from Medhavi?\n\nYour study records, tests, and vault items remain securely saved on this device. You will be redirected to the student registration/login screen.',
           style: TextStyle(fontSize: 13, height: 1.4),
         ),
         actions: [
@@ -262,10 +307,10 @@ class DigiProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // DigiLocker Header
+            // Medhavi Profile Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.only(top: 60, bottom: 28, left: 20, right: 20),
+              padding: const EdgeInsets.only(top: 48, bottom: 24, left: 16, right: 16),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [primaryBlue, brightBlue],
@@ -279,16 +324,41 @@ class DigiProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  // Top Navigation Bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (Navigator.canPop(context))
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                          tooltip: 'Back',
+                          onPressed: () => Navigator.pop(context),
+                        )
+                      else
+                        const SizedBox(width: 40),
+                      const Text(
+                        'Student Profile',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+                        tooltip: 'Edit Profile',
+                        onPressed: () => _showEditProfileDialog(context, settings),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
                   // Profile Avatar with Change Option
                   Stack(
                     children: [
                       CircleAvatar(
-                        radius: 42,
+                        radius: 46,
                         backgroundColor: Colors.white,
-                        backgroundImage: hasValidPic ? FileImage(File(profile.profilePicturePath)) : null,
+                        foregroundImage: hasValidPic ? FileImage(File(profile.profilePicturePath)) : null,
                         child: !hasValidPic
                             ? Text(
-                                profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'G',
+                                profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'M',
                                 style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: primaryBlue),
                               )
                             : null,
@@ -300,7 +370,7 @@ class DigiProfileScreen extends StatelessWidget {
                           onTap: () => _pickAndSetProfilePicture(context, settings),
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
-                            padding: const EdgeInsets.all(7),
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -312,7 +382,7 @@ class DigiProfileScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.camera_alt, color: primaryBlue, size: 16),
+                            child: const Icon(Icons.camera_alt, color: primaryBlue, size: 18),
                           ),
                         ),
                       ),
@@ -320,12 +390,12 @@ class DigiProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    profile.name,
+                    profile.name.isNotEmpty ? profile.name : 'Gyanchandra Yadav',
                     style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    profile.email.isNotEmpty ? profile.email : 'student@digistudy.vault',
+                    profile.email.isNotEmpty ? profile.email : 'student@medhavi.vault',
                     style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
                   ),
                   if (profile.mobile.isNotEmpty) ...[
@@ -348,7 +418,7 @@ class DigiProfileScreen extends StatelessWidget {
                         Icon(Icons.verified, size: 14, color: Colors.white),
                         SizedBox(width: 4),
                         Text(
-                          'Verified DigiStudy Profile',
+                          'Verified Medhavi Student',
                           style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ],

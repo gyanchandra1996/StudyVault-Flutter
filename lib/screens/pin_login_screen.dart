@@ -39,7 +39,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
           }
         } else {
           setState(() {
-            _errorMessage = 'Incorrect PIN. Try again or enter Master PIN: 1996';
+            _errorMessage = 'Incorrect PIN. Please try again.';
           });
           Future.delayed(const Duration(milliseconds: 600), () {
             if (mounted) setState(() => _pinInput = '');
@@ -246,17 +246,7 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
                 ],
               ),
 
-              const SizedBox(height: 20),
-
-              // Quick Action: Use Master PIN (1996)
-              TextButton.icon(
-                icon: const Icon(Icons.key, size: 16, color: primaryBlue),
-                label: const Text(
-                  'Quick Unlock with Master PIN: 1996',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryBlue),
-                ),
-                onPressed: () => _onDigitPress('1', settings),
-              ),
+              const SizedBox(height: 24),
 
               const Divider(height: 24),
 

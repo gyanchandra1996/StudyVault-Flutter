@@ -23,6 +23,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
   List<PersonalDocument> _documents = [];
   bool _isLoading = true;
   String _selectedType = 'all';
+  bool _isGridView = true;
 
   final List<Map<String, String>> _typeFilters = [
     {'id': 'all', 'label': 'All Vault'},
@@ -289,6 +290,11 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: Icon(_isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded),
+            tooltip: _isGridView ? 'Switch to List View' : 'Switch to Grid View (3 Cards/Row)',
+            onPressed: () => setState(() => _isGridView = !_isGridView),
+          ),
+          IconButton(
             icon: const Icon(Icons.add_circle_outline),
             tooltip: 'Add Document',
             onPressed: _pickAndAddDocument,
@@ -388,7 +394,103 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                           ],
                         ),
                       )
-                    : ListView.builder(
+                    : _isGridView
+                        ? GridView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 0.85,
+                            ),
+                            itemCount: _documents.length,
+                            itemBuilder: (ctx, idx) {
+                              final doc = _documents[idx];
+                              final docColor = _getDocColor(doc.docType);
+                              final docIcon = _getDocIcon(doc.docType);
+
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => _openDocument(doc),
+                                onLongPress: () async {
+                                  final del = await showDialog<bool>(
+                                    context: context,
+                                    builder: (c) => AlertDialog(
+                                      title: const Text('Delete Document?'),
+                                      content: Text('Do you want to delete "${doc.title}"?'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                          onPressed: () => Navigator.pop(c, true),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (del == true && doc.id != null) {
+                                    await _docRepo.deleteDocument(doc.id!);
+                                    _loadDocuments();
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.03),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: docColor.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(docIcon, color: docColor, size: 24),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        doc.title,
+                                        maxLines: 2,
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 11,
+                                          height: 1.2,
+                                          color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        doc.docNumber.isNotEmpty ? doc.docNumber : doc.docType.toUpperCase(),
+                                        maxLines: 1,
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 9.5, color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
                         itemCount: _documents.length,
                         itemBuilder: (ctx, idx) {

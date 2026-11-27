@@ -44,10 +44,12 @@ class SettingsProvider extends ChangeNotifier {
   UserProfile _userProfile = UserProfile();
   final String _assistantName = 'Aarna';
   bool _isEditMode = false;
+  bool _isInitialized = false;
 
   UserProfile get userProfile => _userProfile;
   String get assistantName => _assistantName;
   bool get isEditMode => _isEditMode;
+  bool get isInitialized => _isInitialized;
   bool get isRegistered => _userProfile.isRegistered;
 
   bool get isAiEnabled => _isAiEnabled;
@@ -215,6 +217,7 @@ class SettingsProvider extends ChangeNotifier {
       _userProfile = await UserProfileRepo().getProfile();
     } catch (_) {}
     _isEditMode = prefs.getBool('isEditMode') ?? false;
+    _isInitialized = true;
     notifyListeners();
   }
 

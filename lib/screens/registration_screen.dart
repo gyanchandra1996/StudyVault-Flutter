@@ -18,7 +18,7 @@ class RegistrationScreen extends StatefulWidget {
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController(text: 'Gyanchandra Yadav');
-  final _pinController = TextEditingController(text: '1996');
+  final _pinController = TextEditingController();
   String _selectedStream = 'Computer Science & IT';
   String? _profileImagePath;
   bool _isSaving = false;
@@ -205,7 +205,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'DigiStudy Medhavi',
+                    'Medhavi',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -379,12 +379,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.12),
+                                  color: Colors.blue.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Text(
-                                  'Default: 1996',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
+                                  '4-Digit PIN',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: brightBlue),
                                 ),
                               ),
                             ],
@@ -402,7 +402,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               color: Color(0xFF1E293B),
                             ),
                             decoration: InputDecoration(
-                              hintText: '1996',
+                              hintText: '••••',
                               counterText: '',
                               prefixIcon: const Icon(Icons.lock_outline, color: brightBlue),
                               suffixIcon: IconButton(
@@ -423,7 +423,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             ),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'Please enter 4-digit PIN (default 1996)';
+                                return 'Please enter 4-digit PIN';
                               }
                               if (val.trim().length != 4) {
                                 return 'PIN must be exactly 4 digits';
@@ -433,7 +433,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            '💡 Default Master PIN is 1996. You can use 1996 or set your own.',
+                            '🔒 Set a 4-digit PIN to securely protect your study vault and results.',
                             style: TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                           const SizedBox(height: 16),
@@ -496,7 +496,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                         Icon(Icons.lock_open_rounded, size: 20),
                                         SizedBox(width: 8),
                                         Text(
-                                          'Register & Access DigiStudy',
+                                          'Register & Access Medhavi',
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,

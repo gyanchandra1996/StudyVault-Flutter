@@ -14,6 +14,7 @@ import 'pin_login_screen.dart';
 import 'lock_screen.dart';
 import '../widgets/floating_pip_overlay.dart';
 import '../widgets/ai_assistant_modal.dart';
+import '../widgets/pomodoro_settings_sheet.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -31,9 +32,10 @@ class _MainScreenState extends State<MainScreen> {
     if (pomodoro.pendingAlarmMessage != null && !_isAlarmShowing) {
       _isAlarmShowing = true;
       final msg = pomodoro.pendingAlarmMessage!;
-      pomodoro.clearPendingAlarm();
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        pomodoro.clearPendingAlarm();
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -219,6 +221,12 @@ class _MainScreenState extends State<MainScreen> {
               tooltip: 'Floating PiP',
               onPressed: () => setState(() => _showPipOverlay = !_showPipOverlay),
             ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.tune, size: 16, color: Color(0xFF64748B)),
+              tooltip: 'Set Focus Time',
+              onPressed: () => showPomodoroSettingsModal(context),
+            ),
             InkWell(
               borderRadius: BorderRadius.circular(15),
               onTap: pomodoro.reset,
@@ -236,8 +244,38 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final pomodoro = Provider.of<PomodoroProvider>(context);
     const primaryBlue = Color(0xFF1E3A8A);
+
+    // 0. Wait for initial settings & profile to load from local storage
+    if (!settings.isInitialized) {
+      return const Scaffold(
+        backgroundColor: primaryBlue,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 36,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.verified_user_rounded, color: primaryBlue, size: 40),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Medhavi',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              SizedBox(height: 20),
+              CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+            ],
+          ),
+        ),
+      );
+    }
 
     // 1. Mandatory First Time Registration / Accidental Logout PIN Login
     if (!settings.isRegistered) {
@@ -256,11 +294,6 @@ class _MainScreenState extends State<MainScreen> {
       return const LockScreen();
     }
 
-    _checkAndShowAlarm(pomodoro);
-
-    final showTopTimer = pomodoro.isRunning ||
-        pomodoro.remainingSeconds != (pomodoro.isWorkMode ? pomodoro.workMinutes : pomodoro.breakMinutes) * 60;
-
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -276,7 +309,15 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             Column(
               children: [
-                if (showTopTimer) _buildTopFocusInfoBar(pomodoro, primaryBlue),
+                Consumer<PomodoroProvider>(
+                  builder: (context, pomodoro, _) {
+                    _checkAndShowAlarm(pomodoro);
+                    final showTopTimer = pomodoro.isRunning ||
+                        pomodoro.remainingSeconds != (pomodoro.isWorkMode ? pomodoro.workMinutes : pomodoro.breakMinutes) * 60;
+                    if (!showTopTimer) return const SizedBox.shrink();
+                    return _buildTopFocusInfoBar(pomodoro, primaryBlue);
+                  },
+                ),
                 Expanded(
                   child: IndexedStack(
                     index: _currentIndex,
@@ -298,10 +339,14 @@ class _MainScreenState extends State<MainScreen> {
             ),
             // Floating Picture-in-Picture Study Overlay
             if (_showPipOverlay)
-              FloatingPipOverlay(
-                onClose: () => setState(() => _showPipOverlay = false),
-                onReturnFullScreen: () => setState(() => _showPipOverlay = false),
-                currentSubject: 'Medhavi • ${pomodoro.isWorkMode ? "Focus Mode" : "Break Mode"}',
+              Consumer<PomodoroProvider>(
+                builder: (context, pomodoro, _) {
+                  return FloatingPipOverlay(
+                    onClose: () => setState(() => _showPipOverlay = false),
+                    onReturnFullScreen: () => setState(() => _showPipOverlay = false),
+                    currentSubject: 'Medhavi • ${pomodoro.isWorkMode ? "Focus Mode" : "Break Mode"}',
+                  );
+                },
               ),
           ],
         ),

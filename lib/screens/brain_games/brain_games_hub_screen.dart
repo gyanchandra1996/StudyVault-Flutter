@@ -9,6 +9,8 @@ import 'word_scramble_game.dart';
 import 'number_sequence_game.dart';
 import 'pattern_matrix_game.dart';
 import 'odd_one_out_game.dart';
+import 'tic_tac_toe_game.dart';
+import 'study_spinner_game.dart';
 
 class BrainGamesHubScreen extends StatelessWidget {
   const BrainGamesHubScreen({Key? key}) : super(key: key);
@@ -83,6 +85,22 @@ class BrainGamesHubScreen extends StatelessWidget {
         'icon': Icons.find_in_page_rounded,
         'color': const Color(0xFF0D9488),
         'screen': const OddOneOutGame(),
+      },
+      {
+        'title': '❌ Tic-Tac-Toe Blitz',
+        'subtitle': 'Tactical 3×3 strategy vs Aarna AI or local 2-Player friend',
+        'benefit': 'Sharpens forward planning, strategy & cognitive decision speed',
+        'icon': Icons.grid_3x3_rounded,
+        'color': const Color(0xFF2563EB),
+        'screen': const TicTacToeGame(),
+      },
+      {
+        'title': '🎡 Study Decision Spinner',
+        'subtitle': 'Physics wheel to choose revision topics, break activities & challenges',
+        'benefit': 'Eliminates study decision fatigue with engaging spin-to-study',
+        'icon': Icons.motion_photos_on_rounded,
+        'color': const Color(0xFFD97706),
+        'screen': const StudySpinnerGame(),
       },
     ];
 

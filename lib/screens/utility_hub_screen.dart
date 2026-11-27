@@ -4,6 +4,7 @@ import '../providers/settings_provider.dart';
 import '../providers/pomodoro_provider.dart';
 import '../services/pip_service.dart';
 import '../widgets/pomodoro_widget.dart';
+import '../widgets/pomodoro_settings_sheet.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/exam_analytics_modal.dart';
@@ -135,6 +136,17 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                                   PipService.enterPip();
                                 }
                               },
+                            ),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.white70),
+                                visualDensity: VisualDensity.compact,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              icon: const Icon(Icons.tune, size: 16),
+                              label: const Text('Set Timer'),
+                              onPressed: () => showPomodoroSettingsModal(context),
                             ),
                           ],
                         ),

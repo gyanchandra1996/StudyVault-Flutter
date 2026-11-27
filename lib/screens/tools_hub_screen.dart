@@ -18,6 +18,8 @@ import '../widgets/exam_analytics_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
 import 'camera_to_pdf_screen.dart';
 import 'brain_games/brain_games_hub_screen.dart';
+import 'brain_games/tic_tac_toe_game.dart';
+import 'brain_games/study_spinner_game.dart';
 import 'package:image_picker/image_picker.dart';
 import '../widgets/ai_assistant_modal.dart';
 
@@ -184,6 +186,26 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
       'description': 'Digital cheat sheets with high-yield revision points: Indian Constitution Articles, Modern History Timeline, Essential Math Formulas & General Science.',
       'badge': 'CHEAT SHEETS',
     },
+    {
+      'id': 'tic_tac_toe',
+      'title': 'Tic-Tac-Toe Game',
+      'hindi': 'टिक-टैक-टो गेम',
+      'category': 'study',
+      'icon': Icons.grid_3x3_rounded,
+      'color': const Color(0xFF2563EB),
+      'description': 'Play classic Tic-Tac-Toe vs Aarna AI or pass-and-play with a study partner!',
+      'badge': 'NEW GAME',
+    },
+    {
+      'id': 'study_spinner',
+      'title': 'Study Spinner Wheel',
+      'hindi': 'स्टडी स्पिनर व्हील',
+      'category': 'study',
+      'icon': Icons.motion_photos_on_rounded,
+      'color': const Color(0xFFD97706),
+      'description': 'Spin the wheel to decide revision subjects, break activities, and challenges!',
+      'badge': 'DECISION WHEEL',
+    },
   ];
 
   List<Map<String, dynamic>> get _filteredTools {
@@ -275,6 +297,18 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
         showDialog(
           context: context,
           builder: (_) => AiNotesGeneratorModal(onGenerated: () => widget.onRefresh?.call()),
+        );
+        break;
+      case 'tic_tac_toe':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TicTacToeGame()),
+        );
+        break;
+      case 'study_spinner':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const StudySpinnerGame()),
         );
         break;
     }
@@ -380,57 +414,78 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-      children: [
-        // Tools Suite Banner
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.indigo.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.handyman_outlined, color: Colors.white, size: 30),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Exam Utility Tools Suite',
-                      style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Passport photo with crop & zoom, signature pad, background remover, and custom PDF generator for exams.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const primaryBlue = Color(0xFF1E3A8A);
+
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text(
+          'Exam Utility Suite',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
         ),
+        backgroundColor: primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 80),
+          children: [
+            // Tools Suite Banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.handyman_outlined, color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Exam Utility Suite',
+                          style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Passport photo with crop & zoom, signature pad, background remover, and custom PDF generator for exams.',
+                          style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
         const SizedBox(height: 16),
 
         // Filter Pills
@@ -529,6 +584,8 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
           },
         ),
       ],
+    ),
+    ),
     );
   }
 

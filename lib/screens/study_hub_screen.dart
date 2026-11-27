@@ -392,7 +392,7 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
         title: const Text('Study Center & Hierarchy', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0.5,
         actions: [
-          // Master AI Suite Button (Replacing Edit Mode)
+          // Aarna AI Suite Button (Replacing Edit Mode)
           InkWell(
             onTap: () {
               showDialog(
@@ -425,7 +425,7 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                   Icon(Icons.auto_awesome, size: 16, color: Colors.white),
                   SizedBox(width: 5),
                   Text(
-                    'Master AI',
+                    'Aarna AI',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

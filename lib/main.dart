@@ -11,11 +11,13 @@ void main() async {
   runApp(const StudyVaultApp());
 }
 
+final TextTheme _cachedDevanagariTextTheme = GoogleFonts.notoSansDevanagariTextTheme();
+
 class StudyVaultApp extends StatelessWidget {
   const StudyVaultApp({Key? key}) : super(key: key);
 
   ThemeData _buildTheme(SettingsProvider settings) {
-    final textTheme = GoogleFonts.notoSansDevanagariTextTheme();
+    final textTheme = _cachedDevanagariTextTheme;
     final accent = settings.activeAccentColor;
 
     switch (settings.themeStyle) {

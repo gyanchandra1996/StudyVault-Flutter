@@ -147,10 +147,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: const [
-                        Text('Security & Master Access', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: primaryBlue)),
+                        Text('Security & App Access', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: primaryBlue)),
                         SizedBox(height: 4),
                         Text('• Set custom 4-digit App PIN for daily secure access', style: TextStyle(fontSize: 11)),
-                        Text('• Master Recovery PIN: 1996 (Always unlocks app)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: primaryBlue)),
+                        Text('• Encrypted and stored safely on this device', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -257,7 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            settings.isLockEnabled ? 'Protected with 4-Digit PIN' : 'Master PIN: 1996 active',
+                            settings.isLockEnabled ? 'Protected with 4-Digit PIN' : 'Local Offline Security Active',
                             style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
                           ),
                         ],

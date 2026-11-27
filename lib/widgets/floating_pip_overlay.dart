@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/pomodoro_provider.dart';
 import '../services/pip_service.dart';
+import 'pomodoro_settings_sheet.dart';
 
 class FloatingPipOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -340,7 +341,21 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
                 onPressed: pomodoro.reset,
               ),
 
-              // 4. Close PiP Control
+              // 4. Set Timer Durations
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                icon: const Icon(
+                  Icons.tune,
+                  color: Colors.white70,
+                  size: 18,
+                ),
+                tooltip: 'Set Durations',
+                onPressed: () => showPomodoroSettingsModal(context),
+              ),
+
+              // 5. Close PiP Control
               IconButton(
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
