@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:open_file/open_file.dart';
@@ -13,8 +14,13 @@ import '../database/reading_repo.dart';
 
 class PdfReaderScreen extends StatefulWidget {
   final PdfDocument pdf;
+  final void Function(int page, int totalPages)? onProgressChanged;
 
-  const PdfReaderScreen({Key? key, required this.pdf}) : super(key: key);
+  const PdfReaderScreen({
+    Key? key,
+    required this.pdf,
+    this.onProgressChanged,
+  }) : super(key: key);
 
   @override
   State<PdfReaderScreen> createState() => _PdfReaderScreenState();
@@ -49,6 +55,15 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     _isFavorite = widget.pdf.isFavorite == 1;
     _currentPage = widget.pdf.lastPage > 0 ? widget.pdf.lastPage : 1;
     _currentPageNotifier = ValueNotifier<int>(_currentPage);
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    if (settings.readerFilter == 'sepia' ||
+        settings.readerFilter == 'night' ||
+        settings.readerFilter == 'original') {
+      _filterMode = settings.readerFilter;
+    }
+    _scrollDirection = settings.scrollDirection == 'horizontal'
+        ? PdfScrollDirection.horizontal
+        : PdfScrollDirection.vertical;
   }
 
   @override
@@ -248,6 +263,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     if (widget.pdf.lastPage > 1 && widget.pdf.lastPage <= _pageCount) {
       _pdfViewerController.jumpToPage(widget.pdf.lastPage);
     }
+    widget.onProgressChanged?.call(_currentPage, _pageCount);
   }
 
   int _lastRecordedPage = -1;
@@ -257,9 +273,12 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
     _currentPage = details.newPageNumber;
     _currentPageNotifier.value = details.newPageNumber;
     _pagesTurned++;
-    _pdfRepo.updateReadingProgress(widget.pdf.id!, details.newPageNumber, _pageCount);
+    if (widget.pdf.id != null) {
+      _pdfRepo.updateReadingProgress(widget.pdf.id!, details.newPageNumber, _pageCount);
+    }
+    widget.onProgressChanged?.call(details.newPageNumber, _pageCount);
 
-    if (details.newPageNumber == _pageCount && !_isCompleted) {
+    if (details.newPageNumber == _pageCount && !_isCompleted && widget.pdf.id != null) {
       _toggleCompleted(true);
     }
   }
@@ -388,9 +407,58 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final settings = Provider.of<SettingsProvider>(context);
+    final bool isSepia = _filterMode == 'sepia';
+    final bool isNight = _filterMode == 'night';
+
+    final Color? scaffoldBg = isSepia
+        ? const Color(0xFFF3E5C8)
+        : (isNight ? const Color(0xFF0B0F17) : null);
+    final Color barBg = isSepia
+        ? const Color(0xFFEBD9B7)
+        : (isNight
+            ? const Color(0xFF141B29)
+            : (Theme.of(context).cardTheme.color ??
+                (isDark ? const Color(0xFF1E293B) : Colors.white)));
+    final Color searchBg = isSepia
+        ? const Color(0xFFE3CEA7)
+        : (isNight
+            ? const Color(0xFF1E293B)
+            : (isDark ? Colors.grey[900]! : Colors.grey[100]!));
+    final Color? fgColor = isSepia
+        ? const Color(0xFF432F1E)
+        : (isNight ? const Color(0xFFE2E8F0) : null);
+    final Color mutedColor = isSepia
+        ? const Color(0xFF73563D)
+        : (isNight ? const Color(0xFF94A3B8) : Colors.grey);
+    final Color borderColor = isSepia
+        ? const Color(0xFFD5BE94)
+        : (isNight
+            ? const Color(0xFF263145)
+            : Colors.grey.withOpacity(0.2));
 
     return Scaffold(
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
+        backgroundColor: (isSepia || isNight) ? barBg : null,
+        foregroundColor: fgColor,
+        iconTheme: fgColor != null ? IconThemeData(color: fgColor) : null,
+        actionsIconTheme: fgColor != null ? IconThemeData(color: fgColor) : null,
+        elevation: (isSepia || isNight) ? 0 : null,
+        bottomOpacity: 1.0,
+        systemOverlayStyle: isSepia
+            ? SystemUiOverlayStyle.dark.copyWith(
+                statusBarColor: barBg,
+                systemNavigationBarColor: barBg,
+              )
+            : (isNight
+                ? SystemUiOverlayStyle.light.copyWith(
+                    statusBarColor: barBg,
+                    systemNavigationBarColor: barBg,
+                  )
+                : null),
+        shape: (isSepia || isNight)
+            ? Border(bottom: BorderSide(color: borderColor))
+            : null,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -398,37 +466,43 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
               widget.pdf.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: fgColor,
+              ),
             ),
             ValueListenableBuilder<int>(
               valueListenable: _currentPageNotifier,
               builder: (ctx, page, _) => Text(
                 'Page $page of $_pageCount',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: mutedColor),
               ),
             ),
           ],
         ),
         actions: [
-          // Favorite Star Toggle
-          IconButton(
-            icon: Icon(_isFavorite ? Icons.star : Icons.star_border, color: _isFavorite ? Colors.amber : null),
-            tooltip: _isFavorite ? 'Starred' : 'Add to Favorites',
-            onPressed: _toggleFavorite,
-          ),
-          // Scratchpad Modal
-          IconButton(
-            icon: const Icon(Icons.edit_note),
-            tooltip: 'Document Scratchpad',
-            onPressed: _showScratchpadDialog,
-          ),
-          // Create Flashcard
-          if (settings.canEdit)
+          if (widget.pdf.id != null) ...[
+            // Favorite Star Toggle
             IconButton(
-              icon: const Icon(Icons.style),
-              tooltip: 'Create Flashcard',
-              onPressed: _showAddFlashcardDialog,
+              icon: Icon(_isFavorite ? Icons.star : Icons.star_border, color: _isFavorite ? Colors.amber : fgColor),
+              tooltip: _isFavorite ? 'Starred' : 'Add to Favorites',
+              onPressed: _toggleFavorite,
             ),
+            // Scratchpad Modal
+            IconButton(
+              icon: const Icon(Icons.edit_note),
+              tooltip: 'Document Scratchpad',
+              onPressed: _showScratchpadDialog,
+            ),
+            // Create Flashcard
+            if (settings.canEdit)
+              IconButton(
+                icon: const Icon(Icons.style),
+                tooltip: 'Create Flashcard',
+                onPressed: _showAddFlashcardDialog,
+              ),
+          ],
           // Share PDF
           IconButton(
             icon: const Icon(Icons.share_outlined),
@@ -454,15 +528,16 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
               });
             },
           ),
-          // Mark as Complete Toggle
-          IconButton(
-            icon: Icon(
-              _isCompleted ? Icons.check_circle : Icons.check_circle_outline,
-              color: _isCompleted ? Colors.green : null,
+          if (widget.pdf.id != null)
+            // Mark as Complete Toggle
+            IconButton(
+              icon: Icon(
+                _isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                color: _isCompleted ? Colors.green : fgColor,
+              ),
+              tooltip: _isCompleted ? 'Marked Complete' : 'Mark as Complete',
+              onPressed: () => _toggleCompleted(!_isCompleted),
             ),
-            tooltip: _isCompleted ? 'Marked Complete' : 'Mark as Complete',
-            onPressed: () => _toggleCompleted(!_isCompleted),
-          ),
           // Go to Page
           IconButton(
             icon: const Icon(Icons.dialpad),
@@ -475,15 +550,17 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                 preferredSize: const Size.fromHeight(56),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: isDark ? Colors.grey[900] : Colors.grey[100],
+                  color: searchBg,
                   child: Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _searchController,
                           autofocus: true,
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: fgColor),
+                          decoration: InputDecoration(
                             hintText: 'Search text in document...',
+                            hintStyle: TextStyle(color: mutedColor),
                             isDense: true,
                             border: InputBorder.none,
                           ),
@@ -496,14 +573,14 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                       if (_searchResult.hasResult) ...[
                         Text(
                           '${_searchResult.currentInstanceIndex}/${_searchResult.totalInstanceCount}',
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12, color: fgColor),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.navigate_before),
+                          icon: Icon(Icons.navigate_before, color: fgColor),
                           onPressed: () => _searchResult.previousInstance(),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.navigate_next),
+                          icon: Icon(Icons.navigate_next, color: fgColor),
                           onPressed: () => _searchResult.nextInstance(),
                         ),
                       ],
@@ -513,105 +590,117 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
               )
             : null,
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: 54,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color ?? (isDark ? const Color(0xFF1E293B) : Colors.white),
-            border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.2))),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Eye-Care Reading Filter
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
-                  setState(() {
-                    if (_filterMode == 'original') {
-                      _filterMode = 'sepia';
-                    } else if (_filterMode == 'sepia') {
-                      _filterMode = 'night';
-                    } else {
-                      _filterMode = 'original';
-                    }
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _filterMode == 'night'
-                            ? Icons.dark_mode
-                            : _filterMode == 'sepia'
-                                ? Icons.wb_twilight
-                                : Icons.wb_sunny_outlined,
-                        size: 18,
-                        color: _filterMode == 'sepia' ? Colors.amber[800] : null,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _filterMode == 'night'
-                            ? 'Night Mode'
-                            : _filterMode == 'sepia'
-                                ? 'Sepia Paper'
-                                : 'Day Mode',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: _filterMode == 'sepia' ? Colors.amber[800] : null,
+      bottomNavigationBar: Material(
+        color: barBg,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            height: 54,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: barBg,
+              border: Border(top: BorderSide(color: borderColor)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Eye-Care Reading Filter
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    setState(() {
+                      if (_filterMode == 'original') {
+                        _filterMode = 'sepia';
+                      } else if (_filterMode == 'sepia') {
+                        _filterMode = 'night';
+                      } else {
+                        _filterMode = 'original';
+                      }
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isNight
+                              ? Icons.dark_mode
+                              : isSepia
+                                  ? Icons.wb_twilight
+                                  : Icons.wb_sunny_outlined,
+                          size: 18,
+                          color: isSepia
+                              ? const Color(0xFF8B4513)
+                              : (isNight ? Colors.amber.shade300 : null),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          isNight
+                              ? 'Night Mode'
+                              : isSepia
+                                  ? 'Sepia Paper'
+                                  : 'Day Mode',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isSepia
+                                ? const Color(0xFF5D3410)
+                                : (isNight ? Colors.amber.shade200 : null),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // Scroll Orientation Toggle
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
-                  setState(() {
-                    _scrollDirection = _scrollDirection == PdfScrollDirection.vertical
-                        ? PdfScrollDirection.horizontal
-                        : PdfScrollDirection.vertical;
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _scrollDirection == PdfScrollDirection.vertical
-                            ? Icons.swap_vert
-                            : Icons.swap_horiz,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _scrollDirection == PdfScrollDirection.vertical ? 'Vertical' : 'Page Flip',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
+                // Scroll Orientation Toggle
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    setState(() {
+                      _scrollDirection = _scrollDirection == PdfScrollDirection.vertical
+                          ? PdfScrollDirection.horizontal
+                          : PdfScrollDirection.vertical;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _scrollDirection == PdfScrollDirection.vertical
+                              ? Icons.swap_vert
+                              : Icons.swap_horiz,
+                          size: 18,
+                          color: fgColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _scrollDirection == PdfScrollDirection.vertical ? 'Vertical' : 'Page Flip',
+                          style: TextStyle(fontSize: 12, color: fgColor),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // Estimated Pace Remaining
-              ValueListenableBuilder<int>(
-                valueListenable: _currentPageNotifier,
-                builder: (ctx, page, _) => Text(
-                  '~${((_pageCount - page) * 1.5).round().clamp(1, 999)}m left',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                // Estimated Pace Remaining
+                ValueListenableBuilder<int>(
+                  valueListenable: _currentPageNotifier,
+                  builder: (ctx, page, _) => Text(
+                    '~${((_pageCount - page) * 1.5).round().clamp(1, 999)}m left',
+                    style: TextStyle(fontSize: 12, color: mutedColor, fontWeight: FontWeight.w500),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-      body: _buildPdfView(),
+      body: Container(
+        color: scaffoldBg,
+        child: _buildPdfView(),
+      ),
     );
   }
 }

@@ -37,6 +37,7 @@ class BackupService {
     'bookmarks',
     'study_sessions',
     'target_exam_reminders',
+    'ebooks',
   ];
 
   /// Exports all StudyVault SQLite tables & user profile to a timestamped JSON backup file

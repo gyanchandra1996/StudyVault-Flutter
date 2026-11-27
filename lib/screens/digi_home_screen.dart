@@ -25,6 +25,7 @@ import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/ai_flashcard_modal.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
+import '../widgets/exam_revision_spotlight_card.dart';
 import '../widgets/master_control_section.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
@@ -825,19 +826,27 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                       },
                     ),
                     _buildUtilityCard(
-                      icon: Icons.gesture,
-                      color: Colors.indigo,
-                      title: 'Digital Sign',
-                      subtitle: 'Signature Pad',
+                      icon: Icons.auto_stories_rounded,
+                      color: Colors.deepOrange,
+                      title: 'Exam Revision',
+                      subtitle: 'Handbook & Formulas',
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ToolsHubScreen()),
+                        showDialog(
+                          context: context,
+                          builder: (_) => const QuickRevisionHandbookModal(),
                         );
                       },
                     ),
                   ],
                 ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ==================== 4B. INTERACTIVE EXAM REVISION & HANDBOOK SPOTLIGHT ====================
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: ExamRevisionSpotlightCard(),
               ),
 
               const SizedBox(height: 20),

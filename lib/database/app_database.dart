@@ -19,7 +19,7 @@ class AppDatabase {
 
     final db = await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -27,6 +27,7 @@ class AppDatabase {
     await _upgradeToV4(db);
     await _upgradeToV5(db);
     await _upgradeToV6(db);
+    await _upgradeToV7(db);
     return db;
   }
 
@@ -46,6 +47,32 @@ class AppDatabase {
     if (oldVersion < 6) {
       await _upgradeToV6(db);
     }
+    if (oldVersion < 7) {
+      await _upgradeToV7(db);
+    }
+  }
+
+  Future<void> _upgradeToV7(Database db) async {
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ebooks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          author TEXT DEFAULT '',
+          subject TEXT DEFAULT 'General',
+          media_type TEXT NOT NULL,
+          file_path TEXT NOT NULL,
+          extra_paths_json TEXT DEFAULT '[]',
+          cover_path TEXT DEFAULT '',
+          total_pages INTEGER DEFAULT 1,
+          last_page INTEGER DEFAULT 1,
+          is_favorite INTEGER DEFAULT 0,
+          notes TEXT DEFAULT '',
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_ebooks_type ON ebooks (media_type)');
+    } catch (_) {}
   }
 
   Future<void> _upgradeToV6(Database db) async {
@@ -309,6 +336,7 @@ class AppDatabase {
     await db.execute('CREATE INDEX idx_flashcards_due ON flashcards (due_date)');
 
     await _createReadingLogsTable(db);
+    await _upgradeToV7(db);
   }
 
   Future<void> close() async {

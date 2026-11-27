@@ -6,6 +6,7 @@ import '../services/ai_service.dart';
 import '../services/pdf_tools_service.dart';
 import '../models/pdf_document.dart';
 import '../screens/pdf_reader_screen.dart';
+import 'formatted_ai_text.dart';
 
 class AiNotesGeneratorModal extends StatefulWidget {
   final VoidCallback onGenerated;
@@ -360,11 +361,12 @@ class _AiNotesGeneratorModalState extends State<AiNotesGeneratorModal> {
                               ],
                             ),
                             const Divider(),
-                            Text(
-                              '1. Overview:\n${_notesData!['overview'] ?? ''}',
-                              style: const TextStyle(fontSize: 12),
-                              maxLines: 4,
-                              overflow: TextOverflow.ellipsis,
+                            FormattedAiText(
+                              data: '1. Overview:\n${_notesData!['overview'] ?? ''}',
+                              textColor: isDark ? Colors.white : Colors.black87,
+                              accentColor: Colors.teal,
+                              fontSize: 12,
+                              selectable: false,
                             ),
                             const SizedBox(height: 8),
                             Text(
@@ -372,18 +374,20 @@ class _AiNotesGeneratorModalState extends State<AiNotesGeneratorModal> {
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              '3. Deep Dive:\n${_notesData!['deepDive'] ?? ''}',
-                              style: const TextStyle(fontSize: 12),
-                              maxLines: 4,
-                              overflow: TextOverflow.ellipsis,
+                            FormattedAiText(
+                              data: '3. Deep Dive:\n${_notesData!['deepDive'] ?? ''}',
+                              textColor: isDark ? Colors.white : Colors.black87,
+                              accentColor: Colors.teal,
+                              fontSize: 12,
+                              selectable: false,
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              '4. Exam Takeaways:\n${_notesData!['examTakeaways'] ?? ''}',
-                              style: const TextStyle(fontSize: 12),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
+                            FormattedAiText(
+                              data: '4. Exam Takeaways:\n${_notesData!['examTakeaways'] ?? ''}',
+                              textColor: isDark ? Colors.white : Colors.black87,
+                              accentColor: Colors.teal,
+                              fontSize: 12,
+                              selectable: false,
                             ),
                           ],
                         ),

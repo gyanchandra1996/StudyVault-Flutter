@@ -22,6 +22,7 @@ import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
 import '../widgets/backup_restore_modal.dart';
+import '../widgets/master_excel_import_modal.dart';
 import '../widgets/api_key_generator_modal.dart';
 import '../widgets/master_control_section.dart';
 
@@ -998,6 +999,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     builder: (_) => const BackupRestoreModal(),
                   ),
                 ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFCCFBF1),
+                    child: Icon(Icons.table_view_rounded, color: Color(0xFF0F766E)),
+                  ),
+                  title: const Text('Master Import Data (Excel / CSV)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Bulk import Handbook formulas, Quizzes, Flashcards, Categories & Notes together'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => const MasterExcelImportModal(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1172,7 +1187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Version 1.8.0 • AI Exam & Study Vault',
+                    'Version 2.9.0 • AI Exam & Study Vault',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 14),

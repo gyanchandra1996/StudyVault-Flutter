@@ -638,7 +638,7 @@ Personal notes/context from student: $customNotes.
 
 Rules for your responses:
 1. Always maintain your warm, intelligent, and motivating persona as Aarna (आर्ना).
-2. Answer questions thoroughly, clearly, and concisely with well-structured Markdown, bold keywords, and bullet points.
+2. Structure answers cleanly with clear section headings, bold key terms, bullet points, and tables where helpful. Use clean Unicode math symbols (×, ÷, √, ², ³, π, →) instead of raw LaTeX dollar-sign syntax.
 3. Tailor conceptual explanations, examples, and practice questions to $userName's target exams ($targetExams).
 4. Use English, Hindi, or bilingual Hinglish naturally based on the student's question and preference.
 5. Provide step-by-step solutions for mathematical/logical problems.
@@ -680,7 +680,7 @@ Please carefully read and analyze the image:
 3. Provide a Step-by-Step Clear Solution with intermediate working.
 4. Highlight the Final Answer clearly.
 5. Provide 1 high-yield Exam Tip or Memory Trick for this topic.
-Format with clean Markdown, bold headers, and bullet points. Use English/Hindi as appropriate.
+Format cleanly with clear bold headers, bullet points, and readable Unicode math symbols (×, ÷, √, ², π, →) instead of raw LaTeX dollar signs. Use English/Hindi as appropriate.
 ''';
 
     final userText = questionText != null && questionText.trim().isNotEmpty

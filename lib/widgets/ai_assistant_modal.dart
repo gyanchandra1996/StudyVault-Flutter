@@ -13,6 +13,7 @@ import '../database/note_repo.dart';
 import '../database/flashcard_repo.dart';
 import '../database/exam_reminder_repo.dart';
 import 'aarna_profile_dialog.dart';
+import 'formatted_ai_text.dart';
 
 class AiAssistantModal extends StatefulWidget {
   final String? initialTopic;
@@ -368,7 +369,7 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
   }
 
   void _copyToClipboard(String text) {
-    Clipboard.setData(ClipboardData(text: text));
+    Clipboard.setData(ClipboardData(text: FormattedAiText.toPlainText(text)));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Copied to clipboard! 📋'), duration: Duration(seconds: 2)),
     );
@@ -376,9 +377,10 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
 
   void _saveToNotes(String content) async {
     final title = 'Aarna Study Note (${DateTime.now().day}/${DateTime.now().month})';
+    final cleanContent = FormattedAiText.toPlainText(content);
     try {
       await _noteRepo.addNote(
-        noteText: '$title\n\n$content',
+        noteText: '$title\n\n$cleanContent',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -694,14 +696,21 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      SelectableText(
-                                        content,
-                                        style: TextStyle(
-                                          color: isUser ? Colors.white : (isDark ? Colors.white : Colors.black87),
-                                          fontSize: 13.5,
-                                          height: 1.45,
+                                      if (isUser)
+                                        SelectableText(
+                                          content,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13.5,
+                                            height: 1.45,
+                                          ),
+                                        )
+                                      else
+                                        FormattedAiText(
+                                          data: content,
+                                          textColor: isDark ? Colors.white : Colors.black87,
+                                          accentColor: accent,
                                         ),
-                                      ),
                                       if (!isUser) ...[
                                         const SizedBox(height: 8),
                                         Divider(color: Colors.grey.withOpacity(0.15), height: 12),
@@ -786,11 +795,11 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
                                             // + Flashcard
                                             InkWell(
                                               onTap: () {
-                                                final firstLine = content.split('\n').first;
-                                                _saveAsFlashcard(
-                                                  firstLine.isNotEmpty ? firstLine : 'Concept',
-                                                  content,
-                                                );
+                                                final clean = FormattedAiText.toPlainText(content);
+                                                final firstLine = clean
+                                                    .split('\n')
+                                                    .firstWhere((l) => l.trim().isNotEmpty, orElse: () => 'Concept');
+                                                _saveAsFlashcard(firstLine, clean);
                                               },
                                               borderRadius: BorderRadius.circular(4),
                                               child: const Padding(

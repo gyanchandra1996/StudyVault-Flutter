@@ -45,6 +45,9 @@ jobs:
         continue-on-error: true
         run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
 
+      - name: Run Unit & Widget Tests
+        run: flutter test
+
       - name: Build Standalone Release APK
         run: |
           set -o pipefail
@@ -89,14 +92,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.8.0
-          name: "Medhavi (मेधावी) Flutter v2.8.0 - Smooth Back Navigation, Hierarchy Counts, Master Control & Weekly Line Chart"
+          tag_name: v2.9.0
+          name: "Medhavi (मेधावी) Flutter v2.9.0 - Full Sepia PDF Reader, Formatted Aarna AI, Interactive Revision Handbook, E-Book Library & Master Excel Import"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.8.0 Official Release APK
-            - **1. Smooth Back Navigation (Anti-Flicker)**: Replaced Android snapshotting zoom transition with `_SmoothSlideFadeTransitionsBuilder`, cached themes, scoped `MaterialApp` / `MainScreen` rebuilds, disabled predictive-back window peeking, and removed loading spinner flashes on back navigation.
-            - **2. Study Category Hierarchy Counts**: Added recursive subcategory, PDF/file, and question counts across `StudyHubScreen`, `CategoriesScreen`, and `CategoryDetailScreen`.
-            - **3. Master Edit & View Control Section**: Added global permission controls (Master Edit/View mode, Edit/Rename, Delete Actions defaulting to OFF, File & Import controls, and Folder & Category controls) with `View Only`, `Safe Edit`, and `Full Admin` presets in Settings, Profile, and quick-access header pills.
-            - **4. Interactive Study & Hierarchy Controls**: Added Expand All / Collapse All, interactive `Subcategories: N` toggle pill, nested topic expand/collapse badges, and `+ Subcategory` quick creation.
-            - **5. Home Weekly Report Line Chart**: Replaced the weekly bar chart with a smooth gradient-filled line chart with Y-axis scale guides, Today highlight, Daily Avg, and Streak metrics.
+            ### 📱 Medhavi (मेधावी) Flutter v2.9.0 Official Release APK
+            - **1. Full Sepia & Night PDF Chrome**: Extended Sepia Paper (and Night Mode) styling to the PDF reader top AppBar, search bar, status/navigation bars, page canvas, and bottom toolbar.
+            - **2. Formatted Aarna AI Responses**: Added native rich-text `FormattedAiText` rendering (headings, bold/italic, inline/fenced code blocks, blockquotes, bullet/numbered lists, and styled tables) in Aarna AI Chat and AI Notes preview.
+            - **3. Interactive Exam Revision & Handbook on Home**: Replaced Home's Digital Sign tile with Exam Revision & Handbook (`ExamRevisionSpotlightCard` with subject chips, active-recall reveal cards, and revised progress) plus upgraded `QuickRevisionHandbookModal` with Flash Recall Mode, progress tracking, bookmarks, TTS listening, and `+ Flashcard`.
+            - **4. E-Book Library & Reader in Exam & Utility Hub**: Added a dedicated E-Book shelf supporting PDF E-Books, single-image E-Books, and multi-page image E-Books with zoom, Sepia/Night eye-care modes, progress sync, and edit/delete master controls.
+            - **5. Master Excel Data Import in Settings**: Added pure-Dart `.xlsx` & `.csv` Master Import (`MasterExcelService` & `MasterExcelImportModal`) to bulk-import Handbook formulas, Quizzes, Flashcards, Categories/Subfolders, and Notes together, plus `.xlsx` template & current-data export.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

@@ -23,17 +23,27 @@ class MainActivity: FlutterActivity() {
             if (call.method == "shareFile") {
                 val path = call.argument<String>("path")
                 val title = call.argument<String>("title") ?: "StudyVault Document"
+                val explicitMime = call.argument<String>("mimeType")
                 if (path != null) {
                     try {
                         val file = File(path)
+                        val lower = path.lowercase()
+                        val detectedMime = explicitMime ?: when {
+                            lower.endsWith(".pdf") -> "application/pdf"
+                            lower.endsWith(".xlsx") -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            lower.endsWith(".csv") -> "text/csv"
+                            lower.endsWith(".png") -> "image/png"
+                            lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp") -> "image/*"
+                            else -> "*/*"
+                        }
                         val uri = FileProvider.getUriForFile(this, "${applicationContext.packageName}.fileprovider", file)
                         val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/pdf"
+                            type = detectedMime
                             putExtra(Intent.EXTRA_STREAM, uri)
                             putExtra(Intent.EXTRA_SUBJECT, title)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        startActivity(Intent.createChooser(intent, "Share PDF"))
+                        startActivity(Intent.createChooser(intent, "Share $title"))
                         result.success(true)
                     } catch (e: Exception) {
                         result.error("ERROR", e.message, null)

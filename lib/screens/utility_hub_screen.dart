@@ -9,7 +9,9 @@ import '../widgets/quick_revision_handbook_modal.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/exam_analytics_modal.dart';
 import '../widgets/backup_restore_modal.dart';
+import '../database/ebook_repo.dart';
 import 'document_vault_screen.dart';
+import 'ebook_library_screen.dart';
 import 'brain_games/brain_games_hub_screen.dart';
 import 'flashcards_screen.dart';
 import 'tools_hub_screen.dart';
@@ -26,8 +28,24 @@ class UtilityHubScreen extends StatefulWidget {
 }
 
 class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepAliveClientMixin {
+  final EbookRepo _ebookRepo = EbookRepo();
+  Map<String, int> _ebookStats = const {'total': 0, 'pdf': 0, 'image': 0};
+
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEbookStats();
+  }
+
+  Future<void> _loadEbookStats() async {
+    final stats = await _ebookRepo.getStats();
+    if (mounted) {
+      setState(() => _ebookStats = stats);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +226,146 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                   MaterialPageRoute(builder: (_) => const FlashcardsScreen()),
                 );
               },
+            ),
+
+            const SizedBox(height: 20),
+
+            // Section: E-Book Library & Reader (Add E-Book PDF, E-Book Images & Notes)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'E-Book Library & Reader',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EbookLibraryScreen()),
+                    ).then((_) => _loadEbookStats());
+                  },
+                  child: const Text('Open Shelf'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.indigo.withOpacity(0.25), width: 1.2),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EbookLibraryScreen()),
+                      ).then((_) => _loadEbookStats());
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(11),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          child: const Icon(Icons.auto_stories_rounded, color: Colors.indigo, size: 26),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'My E-Book Shelf (PDF & Images)',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.indigo.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '${_ebookStats['total'] ?? 0} BOOKS',
+                                      style: const TextStyle(color: Colors.indigo, fontSize: 9.5, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_ebookStats['pdf'] ?? 0} PDF E-Books • ${_ebookStats['image'] ?? 0} Image Books • Supports zoom, Sepia & Night reader',
+                                style: const TextStyle(fontSize: 11.5, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.picture_as_pdf, size: 15, color: Colors.red),
+                          label: const Text('Add E-Book PDF', style: TextStyle(fontSize: 11.5)),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const EbookLibraryScreen(initialAction: 'add_pdf'),
+                              ),
+                            ).then((_) => _loadEbookStats());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.photo_library_outlined, size: 15, color: Colors.indigo),
+                          label: const Text('Add E-Book Image', style: TextStyle(fontSize: 11.5)),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const EbookLibraryScreen(initialAction: 'add_images'),
+                              ),
+                            ).then((_) => _loadEbookStats());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 20),
