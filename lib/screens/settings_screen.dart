@@ -1048,7 +1048,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       backgroundColor: Color(0xFFFFEDD5),
                       child: Icon(Icons.build, color: Colors.deepOrange, size: 20),
                     ),
-                    title: const Text('Open PDF Tools Suite', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    title: const Text('Open Utility Tools', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     subtitle: const Text('Image to PDF • Merge • Edit • PDF to Image', style: TextStyle(fontSize: 12)),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                     onTap: () {
@@ -1187,7 +1187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Version 2.9.1 • AI Exam & Study Vault',
+                    'Version 2.9.2 • AI Exam & Study Vault',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 14),

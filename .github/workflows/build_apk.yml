@@ -92,13 +92,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.9.1
-          name: "Medhavi (मेधावी) Flutter v2.9.1 - Smoothness Polish, Interactive Weekly Line Chart, Scoped Rebuilds & All-Screen Audit"
+          tag_name: v2.9.2
+          name: "Medhavi (मेधावी) Flutter v2.9.2 - Compact Weekly Chart, Home Reorder, Utility Tools Rename & 12 Brain Games"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.9.1 Official Release APK
-            - **1. App-Wide Smoothness & Performance**: Added lazy tab initialization in `MainScreen` (`_visitedTabs`) with smooth animated active indicators, global `BouncingScrollPhysics` scroll behavior, deduplicated concurrent `StudyProvider.loadInitialData()` startup loads, and scoped `Selector`/`Consumer` rebuilds in `DigiHomeScreen` and `UtilityHubScreen`.
-            - **2. Home Weekly Line Chart Upgrades**: Batched `ReadingRepo.getWeeklyActivity()` into a single `GROUP BY` query, added `ReadingRepo.changes` live refresh after reading sessions finish saving, added tap-to-inspect day tooltips, smooth animated line drawing, dynamic Y-axis padding, and clamped edge labels.
-            - **3. Bug Fixes & Verification**: Wired searchable Question Pool in `QuizHubScreen`, enforced target KB size limits in `ToolsHubScreen` Image Resizer, removed blocking `File.existsSync()` in Home avatar build, improved dark-mode contrast, and added automated widget & service tests (`flutter test`).
-            - **4. All v2.9.0 Features Preserved**: Full Sepia/Night PDF bars, rich formatted Aarna AI output, interactive Exam Revision & Handbook, E-Book PDF/Image library, and Master Excel (`.xlsx`/`.csv`) import.
+            ### 📱 Medhavi (मेधावी) Flutter v2.9.2 Official Release APK
+            - **1. Compact Weekly Reading Report**: Reduced chart height (`96px`) and header spacing so Primary Study Desk and Weekly Report fit cleanly without crowding Home.
+            - **2. Home Screen Layout Order**: Placed **Exam Revision & Handbook** as the final section on Home (`Primary Study Desk` → `Weekly Reading Report` → `Exam & Study Utility` → `Instant Study Actions` → `Recent Notes & Documents` → `Exam Revision & Handbook`).
+            - **3. Utility Tools Rename**: Renamed **PDF Tools** cards, settings tile, and tools suite modal header to **Utility Tools**.
+            - **4. Expanded Brain Games Hub (12 Games)**: Added **2048 Logic Merge** (4×4 swipe/arrow puzzle with Undo & persisted Best Score) and **Simon Pulse Memory** (4-Pad Classic & 6-Pad Pro progressive sequence trainer).
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

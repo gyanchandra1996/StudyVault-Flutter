@@ -563,7 +563,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                       icon: Icons.psychology,
                       color: Colors.amber.shade800,
                       title: 'Brain Games',
-                      subtitle: '4 Cognitive Games',
+                      subtitle: '12 Cognitive Games',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -599,8 +599,8 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                     _buildUtilityCard(
                       icon: Icons.handyman_outlined,
                       color: Colors.teal,
-                      title: 'PDF Tools',
-                      subtitle: 'Merge & Convert',
+                      title: 'Utility Tools',
+                      subtitle: 'Exam & PDF Suite',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -622,14 +622,6 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ==================== 4B. INTERACTIVE EXAM REVISION & HANDBOOK SPOTLIGHT ====================
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: ExamRevisionSpotlightCard(),
               ),
 
               const SizedBox(height: 20),
@@ -816,6 +808,14 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                   ),
                 ),
               ],
+
+              const SizedBox(height: 18),
+
+              // ==================== 7. EXAM REVISION & HANDBOOK (LAST SECTION) ====================
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: ExamRevisionSpotlightCard(),
+              ),
 
               const SizedBox(height: 40),
             ],

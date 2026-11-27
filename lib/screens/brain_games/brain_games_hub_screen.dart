@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/settings_provider.dart';
 import 'speed_math_game.dart';
 import 'schulte_grid_game.dart';
 import 'memory_match_game.dart';
@@ -11,14 +9,14 @@ import 'pattern_matrix_game.dart';
 import 'odd_one_out_game.dart';
 import 'tic_tac_toe_game.dart';
 import 'study_spinner_game.dart';
+import 'game_2048.dart';
+import 'simon_sequence_game.dart';
 
 class BrainGamesHubScreen extends StatelessWidget {
   const BrainGamesHubScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-    final accent = settings.activeAccentColor;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final List<Map<String, dynamic>> games = [
@@ -101,6 +99,22 @@ class BrainGamesHubScreen extends StatelessWidget {
         'icon': Icons.motion_photos_on_rounded,
         'color': const Color(0xFFD97706),
         'screen': const StudySpinnerGame(),
+      },
+      {
+        'title': '🔢 2048 Logic Merge',
+        'subtitle': 'Classic 4×4 sliding number merge puzzle with undo & best score',
+        'benefit': 'Strengthens look-ahead planning, pattern recognition & mental math',
+        'icon': Icons.grid_4x4_rounded,
+        'color': const Color(0xFFEA580C),
+        'screen': const Game2048Screen(),
+      },
+      {
+        'title': '🎵 Simon Pulse Memory',
+        'subtitle': 'Repeat growing glowing pad sequences in 4-Pad Classic or 6-Pad Pro mode',
+        'benefit': 'Boosts short-term working memory & sustained sequence focus',
+        'icon': Icons.touch_app_rounded,
+        'color': const Color(0xFF4F46E5),
+        'screen': const SimonSequenceGame(),
       },
     ];
 

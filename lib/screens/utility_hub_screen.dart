@@ -201,8 +201,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
               icon: Icons.psychology_rounded,
               color: Colors.amber.shade800,
               title: 'Brain Games & Mental Focus',
-              subtitle: 'Speed Math, Schulte Grid, Memory Match, Stroop Reflex, Word Scramble & Number Logic',
-              badge: '6 GAMES',
+              subtitle: 'Speed Math, 2048 Merge, Simon Memory, Schulte Grid, Tic-Tac-Toe & Decision Spinner',
+              badge: '12 GAMES',
               onTap: () {
                 Navigator.push(
                   context,
@@ -386,7 +386,7 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                 _buildSmallToolCard(
                   icon: Icons.handyman_outlined,
                   color: Colors.teal,
-                  title: 'PDF Tools Hub',
+                  title: 'Utility Tools',
                   onTap: () {
                     Navigator.push(
                       context,

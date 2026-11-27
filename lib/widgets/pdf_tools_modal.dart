@@ -354,7 +354,7 @@ class _PdfToolsModalState extends State<PdfToolsModal> with SingleTickerProvider
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'PDF Tools Suite',
+                          'Utility Tools Suite',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         Text(

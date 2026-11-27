@@ -223,11 +223,11 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
             const SizedBox(height: 12),
           ],
 
-          // 7-Day Weekly Report Line Chart Card
+          // 7-Day Weekly Report Line Chart Card (Compact Height)
           Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -237,41 +237,32 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
                               color: accent.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(7),
                             ),
-                            child: Icon(Icons.show_chart_rounded, size: 16, color: accent),
+                            child: Icon(Icons.show_chart_rounded, size: 15, color: accent),
                           ),
-                          const SizedBox(width: 8),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Weekly Reading Report',
-                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                'Last 7 Days Trend • Tap point for details',
-                                style: TextStyle(fontSize: 10.5, color: Colors.grey),
-                              ),
-                            ],
+                          const SizedBox(width: 7),
+                          const Text(
+                            'Weekly Reading Report',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: accent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           selectedDay != null
                               ? '${selectedDay['day']}: ${selectedDay['minutes'] ?? 0}m'
                               : '${totalWeekMinutes}m total',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.bold,
                             color: accent,
                           ),
@@ -279,29 +270,29 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
 
-                  // Summary Metrics Row
+                  // Compact Summary Metrics Row
                   Row(
                     children: [
                       _buildMiniMetric('Today', '${_todayMinutes}m', accent),
-                      const SizedBox(width: 8),
-                      _buildMiniMetric('Daily Avg', '${avgDailyMinutes}m', Colors.teal),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
+                      _buildMiniMetric('Avg', '${avgDailyMinutes}m', Colors.teal),
+                      const SizedBox(width: 6),
                       _buildMiniMetric('Streak', '${_streakDays}d', Colors.deepOrange),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 6),
 
-                  // Animated Interactive Line Chart Canvas
+                  // Compact Animated Interactive Line Chart Canvas
                   SizedBox(
                     width: double.infinity,
-                    height: 148,
+                    height: 96,
                     child: _weekData.isEmpty
                         ? const Center(
                             child: Text(
                               'Start reading to see your weekly chart',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(fontSize: 11.5, color: Colors.grey),
                             ),
                           )
                         : LayoutBuilder(
@@ -318,7 +309,7 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
                                   curve: Curves.easeOutCubic,
                                   builder: (ctx, animValue, _) {
                                     return CustomPaint(
-                                      size: Size(constraints.maxWidth, 148),
+                                      size: Size(constraints.maxWidth, 96),
                                       painter: WeeklyLineChartPainter(
                                         weekData: _weekData,
                                         accentColor: accent,
@@ -345,21 +336,21 @@ class _ReadingTrackerCardState extends State<ReadingTrackerCard> with AutomaticK
   Widget _buildMiniMetric(String label, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
         decoration: BoxDecoration(
           color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               '$label: ',
-              style: const TextStyle(fontSize: 10.5, color: Colors.grey, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
             ),
             Text(
               value,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: color),
             ),
           ],
         ),
@@ -414,8 +405,8 @@ class WeeklyLineChartPainter extends CustomPainter {
 
     final double leftPad = math.max(34.0, maxTickW + 10.0);
     const double rightPad = 16.0;
-    const double topPad = 20.0;
-    const double bottomPad = 24.0;
+    const double topPad = 14.0;
+    const double bottomPad = 18.0;
 
     final double chartW = math.max(10.0, size.width - leftPad - rightPad);
     final double chartH = math.max(10.0, size.height - topPad - bottomPad);
