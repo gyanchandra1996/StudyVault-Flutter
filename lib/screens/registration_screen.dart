@@ -17,7 +17,7 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'Gyanchandra Yadav');
+  final _nameController = TextEditingController();
   final _pinController = TextEditingController();
   String _selectedStream = 'Computer Science & IT';
   String? _profileImagePath;
@@ -349,7 +349,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             controller: _nameController,
                             textCapitalization: TextCapitalization.words,
                             decoration: InputDecoration(
-                              hintText: 'e.g. Gyanchandra Yadav',
+                              hintText: 'Enter your full name',
                               prefixIcon: const Icon(Icons.person_outline, color: brightBlue),
                               filled: true,
                               fillColor: const Color(0xFFF8FAFC),

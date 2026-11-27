@@ -25,13 +25,14 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
   List<QuizQuestion> _mistakeQuestions = [];
   List<QuizResult> _pastResults = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadQuizData();
+    _loadQuizData(showLoading: true);
   }
 
   @override
@@ -40,8 +41,10 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
     super.dispose();
   }
 
-  Future<void> _loadQuizData() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadQuizData({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final questions = await _quizRepo.getAllQuestions();
     final results = await _quizRepo.getAllResults();
     final mistakes = await _quizRepo.getMistakeQuestions();
@@ -52,6 +55,7 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
         _pastResults = results;
         _mistakeQuestions = mistakes;
         _isLoading = false;
+        _hasLoadedOnce = true;
       });
     }
   }
@@ -186,6 +190,7 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final study = Provider.of<StudyProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const primaryBlue = Color(0xFF1E3A8A);
 
@@ -196,32 +201,34 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
         title: const Text('Assessments & Quizzes', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0.5,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.table_chart, color: Colors.teal),
-            tooltip: 'Import CSV Questions',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => ImportQuestionsDialog(
-                  examId: study.selectedExam?.id,
-                  onImported: _loadQuizData,
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.auto_awesome, color: Colors.purple),
-            tooltip: 'AI Create Quiz',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => AiQuizModal(
-                  examId: study.selectedExam?.id,
-                  onGenerated: _loadQuizData,
-                ),
-              );
-            },
-          ),
+          if (settings.canManageFiles)
+            IconButton(
+              icon: const Icon(Icons.table_chart, color: Colors.teal),
+              tooltip: 'Import CSV Questions',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => ImportQuestionsDialog(
+                    examId: study.selectedExam?.id,
+                    onImported: _loadQuizData,
+                  ),
+                );
+              },
+            ),
+          if (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit)
+            IconButton(
+              icon: const Icon(Icons.auto_awesome, color: Colors.purple),
+              tooltip: 'AI Create Quiz',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => AiQuizModal(
+                    examId: study.selectedExam?.id,
+                    onGenerated: _loadQuizData,
+                  ),
+                );
+              },
+            ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -258,24 +265,26 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
                           onPressed: () => _showStartPracticeQuiz(),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.purple),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      if (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit) ...[
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.purple),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
+                          label: const Text('AI Quiz', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AiQuizModal(
+                                examId: study.selectedExam?.id,
+                                onGenerated: _loadQuizData,
+                              ),
+                            );
+                          },
                         ),
-                        icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
-                        label: const Text('AI Quiz', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold)),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) => AiQuizModal(
-                              examId: study.selectedExam?.id,
-                              onGenerated: _loadQuizData,
-                            ),
-                          );
-                        },
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -285,7 +294,7 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
                     controller: _tabController,
                     children: [
                       // TAB 1: Past Assessments
-                      _buildPastResultsTab(),
+                      _buildPastResultsTab(settings),
 
                       // TAB 2: Mistake Bank
                       _buildMistakeBankTab(),
@@ -307,7 +316,7 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildPastResultsTab() {
+  Widget _buildPastResultsTab(SettingsProvider settings) {
     if (_pastResults.isEmpty) {
       return Center(
         child: Padding(
@@ -375,7 +384,21 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
                 ),
               ],
             ),
-            trailing: const Icon(Icons.chevron_right, color: Color(0xFF1E3A8A)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (settings.canDelete && r.id != null)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                    tooltip: 'Delete Result',
+                    onPressed: () async {
+                      await _quizRepo.deleteQuizResult(r.id!);
+                      _loadQuizData();
+                    },
+                  ),
+                const Icon(Icons.chevron_right, color: Color(0xFF1E3A8A)),
+              ],
+            ),
             onTap: () {
               Navigator.push(
                 context,

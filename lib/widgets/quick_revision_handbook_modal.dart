@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/handbook_data.dart';
+import '../providers/settings_provider.dart';
 
 class QuickRevisionHandbookModal extends StatefulWidget {
   const QuickRevisionHandbookModal({Key? key}) : super(key: key);
@@ -354,6 +356,7 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
     if (_isLoading) {
       return const Dialog(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
     }
@@ -441,11 +444,12 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.deepOrange),
-                    tooltip: 'Add Custom Subject Tab',
-                    onPressed: _showAddNewTabDialog,
-                  ),
+                  if (settings.canManageFolders)
+                    IconButton(
+                      icon: const Icon(Icons.add_circle, color: Colors.deepOrange),
+                      tooltip: 'Add Custom Subject Tab',
+                      onPressed: _showAddNewTabDialog,
+                    ),
                 ],
               ),
             ),
@@ -474,16 +478,18 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                       onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.add, size: 15),
-                    label: const Text('Add Note', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.amber.shade900,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  if (settings.canEdit) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.add, size: 15),
+                      label: const Text('Add Note', style: TextStyle(fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.amber.shade900,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      onPressed: () => _showAddNoteDialog(_getActiveTabName()),
                     ),
-                    onPressed: () => _showAddNoteDialog(_getActiveTabName()),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -494,7 +500,7 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                 controller: _tabController,
                 children: [
                   ..._coreTabs.map((t) => _buildList(t['data'] as List<Map<String, String>>, subtitle: t['subtitle'] as String)),
-                  ...customTabEntries.map((e) => _buildCustomTabList(e.key, e.value)),
+                  ...customTabEntries.map((e) => _buildCustomTabList(e.key, e.value, settings)),
                 ],
               ),
             ),
@@ -598,7 +604,7 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
     );
   }
 
-  Widget _buildCustomTabList(String tabName, List<Map<String, String>> items) {
+  Widget _buildCustomTabList(String tabName, List<Map<String, String>> items, SettingsProvider settings) {
     final filtered = items.asMap().entries.where((entry) {
       if (_searchQuery.isEmpty) return true;
       final it = entry.value;
@@ -621,20 +627,22 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
               ),
               Row(
                 children: [
-                  TextButton.icon(
-                    icon: const Icon(Icons.add, size: 14),
-                    label: const Text('Add Point', style: TextStyle(fontSize: 11)),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.amber.shade900,
-                      visualDensity: VisualDensity.compact,
+                  if (settings.canEdit)
+                    TextButton.icon(
+                      icon: const Icon(Icons.add, size: 14),
+                      label: const Text('Add Point', style: TextStyle(fontSize: 11)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.amber.shade900,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () => _showAddNoteDialog(tabName),
                     ),
-                    onPressed: () => _showAddNoteDialog(tabName),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                    tooltip: 'Delete Tab',
-                    onPressed: () => _deleteCustomTab(tabName),
-                  ),
+                  if (settings.canDelete)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                      tooltip: 'Delete Tab',
+                      onPressed: () => _deleteCustomTab(tabName),
+                    ),
                 ],
               ),
             ],
@@ -684,11 +692,12 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                                 ],
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                              tooltip: 'Delete Note',
-                              onPressed: () => _deleteCustomNote(tabName, originalIndex),
-                            ),
+                            if (settings.canDelete)
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                                tooltip: 'Delete Note',
+                                onPressed: () => _deleteCustomNote(tabName, originalIndex),
+                              ),
                           ],
                         ),
                       ),

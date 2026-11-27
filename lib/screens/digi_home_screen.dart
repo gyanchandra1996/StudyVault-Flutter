@@ -25,6 +25,7 @@ import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/ai_flashcard_modal.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
+import '../widgets/master_control_section.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
@@ -57,6 +58,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
   List<QuizQuestion> _allQuestions = [];
   List<QuizResult> _pastResults = [];
   int _docVaultCount = 0;
+  int _readingRefreshSignal = 0;
   bool _isLoadingAssessment = true;
 
   @override
@@ -475,7 +477,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
 
     final userName = settings.userProfile.name.isNotEmpty
         ? settings.userProfile.name
-        : 'Gyanchandra Yadav';
+        : 'Scholar';
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
@@ -483,6 +485,7 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
         onRefresh: () async {
           await study.loadInitialData();
           await _loadAssessmentData();
+          if (mounted) setState(() => _readingRefreshSignal++);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -551,6 +554,44 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                           ],
                         ),
                         const Spacer(),
+
+                        // Master Edit/View Control Quick Pill
+                        InkWell(
+                          onTap: () => showMasterControlModal(context),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: settings.isEditMode
+                                  ? Colors.orange.withOpacity(0.28)
+                                  : Colors.white.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: settings.isEditMode ? Colors.orangeAccent : Colors.white38,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  settings.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  settings.isEditMode ? 'Edit' : 'View',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
 
                         // Picture-in-Picture Button
                         InkWell(
@@ -685,9 +726,9 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
               const SizedBox(height: 12),
 
               // ==================== 3. WEEKLY READING ACTIVITY ====================
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: ReadingTrackerCard(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ReadingTrackerCard(refreshSignal: _readingRefreshSignal),
               ),
 
               const SizedBox(height: 16),
@@ -842,8 +883,20 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                       icon: Icons.auto_awesome,
                       color: Colors.purple,
                       title: 'AI Create Quiz',
-                      subtitle: 'Topic to Quiz',
+                      subtitle: settings.canEdit ? 'Topic to Quiz' : 'View Mode Locked',
                       onTap: () {
+                        if (!settings.canEdit) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('View-Only Mode: Enable Edit Mode in Master Control to create quizzes.'),
+                              action: SnackBarAction(
+                                label: 'Controls',
+                                onPressed: () => showMasterControlModal(context),
+                              ),
+                            ),
+                          );
+                          return;
+                        }
                         showDialog(
                           context: context,
                           builder: (_) => AiQuizModal(

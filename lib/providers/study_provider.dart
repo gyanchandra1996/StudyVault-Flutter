@@ -15,6 +15,7 @@ class StudyProvider extends ChangeNotifier {
   Exam? _selectedExam;
   List<Category> _categories = [];
   Map<int, int> _categoryPdfCounts = {};
+  Map<int, CategoryStats> _categoryStats = {};
   List<PdfDocument> _recentPdfs = [];
   bool _isLoading = false;
 
@@ -23,18 +24,25 @@ class StudyProvider extends ChangeNotifier {
   List<Category> get categories => _categories;
   Category? get selectedCategory => _categories.isNotEmpty ? _categories.first : null;
   Map<int, int> get categoryPdfCounts => _categoryPdfCounts;
+  Map<int, CategoryStats> get categoryStats => _categoryStats;
+  CategoryStats statsFor(int? categoryId) =>
+      categoryId != null ? (_categoryStats[categoryId] ?? const CategoryStats()) : const CategoryStats();
   List<PdfDocument> get recentPdfs => _recentPdfs;
   bool get isLoading => _isLoading;
 
   Future<void> loadInitialData({bool force = false}) async {
     if (!force && _exams.isNotEmpty && _categories.isNotEmpty) {
       _recentPdfs = await _pdfRepo.getRecentPdfs();
+      _categoryStats = await _categoryRepo.getAllCategoryStats();
+      _categoryPdfCounts = _categoryStats.map((k, v) => MapEntry(k, v.pdfCount));
       notifyListeners();
       return;
     }
 
-    _isLoading = true;
-    notifyListeners();
+    if (_categories.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     _exams = await _examRepo.getAllExams();
     if (_exams.isEmpty) {
@@ -70,13 +78,8 @@ class StudyProvider extends ChangeNotifier {
 
   Future<void> loadCategoriesForSelectedExam() async {
     _categories = await _categoryRepo.getCategoriesByExam(_selectedExam?.id);
-    final Map<int, int> counts = {};
-    for (final cat in _categories) {
-      if (cat.id != null) {
-        counts[cat.id!] = await _categoryRepo.getPdfCountForCategory(cat.id!);
-      }
-    }
-    _categoryPdfCounts = counts;
+    _categoryStats = await _categoryRepo.getAllCategoryStats();
+    _categoryPdfCounts = _categoryStats.map((k, v) => MapEntry(k, v.pdfCount));
     notifyListeners();
   }
 
@@ -120,6 +123,8 @@ class StudyProvider extends ChangeNotifier {
 
   Future<void> refreshRecentPdfs() async {
     _recentPdfs = await _pdfRepo.getRecentPdfs();
+    _categoryStats = await _categoryRepo.getAllCategoryStats();
+    _categoryPdfCounts = _categoryStats.map((k, v) => MapEntry(k, v.pdfCount));
     notifyListeners();
   }
 }

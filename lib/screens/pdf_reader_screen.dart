@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:open_file/open_file.dart';
+import '../providers/settings_provider.dart';
 import '../services/share_service.dart';
 import '../models/pdf_document.dart';
 import '../database/pdf_repo.dart';
@@ -121,8 +123,10 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   }
 
   void _showScratchpadDialog() async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
     final notes = widget.pdf.id != null ? await _noteRepo.getNotesForPdf(widget.pdf.id!) : [];
     final textCtrl = TextEditingController();
+    if (!mounted) return;
 
     showModalBottomSheet(
       context: context,
@@ -149,38 +153,52 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: textCtrl,
-                        decoration: InputDecoration(
-                          hintText: 'Jot down note on Page $_currentPage...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                if (settings.canEdit)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: textCtrl,
+                          decoration: InputDecoration(
+                            hintText: 'Jot down note on Page $_currentPage...',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), foregroundColor: Colors.white),
+                        onPressed: () async {
+                          if (textCtrl.text.trim().isNotEmpty) {
+                            await _noteRepo.addNote(
+                              pdfId: widget.pdf.id,
+                              pageNumber: _currentPage,
+                              noteText: textCtrl.text.trim(),
+                            );
+                            textCtrl.clear();
+                            final updated = await _noteRepo.getNotesForPdf(widget.pdf.id!);
+                            setSheetState(() => notes.clear());
+                            setSheetState(() => notes.addAll(updated));
+                          }
+                        },
+                        child: const Text('Save'),
+                      ),
+                    ],
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), foregroundColor: Colors.white),
-                      onPressed: () async {
-                        if (textCtrl.text.trim().isNotEmpty) {
-                          await _noteRepo.addNote(
-                            pdfId: widget.pdf.id,
-                            pageNumber: _currentPage,
-                            noteText: textCtrl.text.trim(),
-                          );
-                          textCtrl.clear();
-                          final updated = await _noteRepo.getNotesForPdf(widget.pdf.id!);
-                          setSheetState(() => notes.clear());
-                          setSheetState(() => notes.addAll(updated));
-                        }
-                      },
-                      child: const Text('Save'),
+                    child: const Text(
+                      'View-Only Mode: Enable Master Edit Mode to add or edit notes.',
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF1E3A8A)),
                     ),
-                  ],
-                ),
+                  ),
                 const SizedBox(height: 16),
                 const Text('Saved Notes:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
                 const SizedBox(height: 8),
@@ -199,15 +217,17 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                   child: Text('P${n.pageNumber}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                 ),
                                 title: Text(n.noteText),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                  onPressed: () async {
-                                    await _noteRepo.deleteNote(n.id!);
-                                    final updated = await _noteRepo.getNotesForPdf(widget.pdf.id!);
-                                    setSheetState(() => notes.clear());
-                                    setSheetState(() => notes.addAll(updated));
-                                  },
-                                ),
+                                trailing: settings.canDelete
+                                    ? IconButton(
+                                        icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                        onPressed: () async {
+                                          await _noteRepo.deleteNote(n.id!);
+                                          final updated = await _noteRepo.getNotesForPdf(widget.pdf.id!);
+                                          setSheetState(() => notes.clear());
+                                          setSheetState(() => notes.addAll(updated));
+                                        },
+                                      )
+                                    : null,
                               ),
                             );
                           },
@@ -367,6 +387,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final settings = Provider.of<SettingsProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -402,11 +423,12 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
             onPressed: _showScratchpadDialog,
           ),
           // Create Flashcard
-          IconButton(
-            icon: const Icon(Icons.style),
-            tooltip: 'Create Flashcard',
-            onPressed: _showAddFlashcardDialog,
-          ),
+          if (settings.canEdit)
+            IconButton(
+              icon: const Icon(Icons.style),
+              tooltip: 'Create Flashcard',
+              onPressed: _showAddFlashcardDialog,
+            ),
           // Share PDF
           IconButton(
             icon: const Icon(Icons.share_outlined),

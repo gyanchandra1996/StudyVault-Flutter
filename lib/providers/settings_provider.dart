@@ -26,11 +26,14 @@ class SettingsProvider extends ChangeNotifier {
   bool _isAiTutorEnabled = true;
   bool _isAiPdfNotesEnabled = true;
   bool _isStudyFolderAndImportEnabled = true;
+  bool _allowEditActions = true;
+  bool _allowFileControls = true;
+  bool _allowFolderControls = true;
   int _aiFlashcardCount = 5;
   bool _hasCompletedAppTour = false;
   String _targetExamName = '';
   String _targetExamDate = ''; // 'YYYY-MM-DD'
-  bool _showDeleteActions = true;
+  bool _showDeleteActions = false; // Default OFF for safety
   String _themeStyle = 'light'; // 'light', 'dark', 'amoled', 'sepia'
   String _accentName = 'indigo'; // 'indigo', 'emerald', 'amethyst', 'amber'
   String _readerFilter = 'original'; // 'original', 'sepia', 'night'
@@ -63,7 +66,16 @@ class SettingsProvider extends ChangeNotifier {
   bool get isAiFlashcardsEnabled => _isAiFlashcardsEnabled;
   bool get isAiTutorEnabled => _isAiTutorEnabled;
   bool get isAiPdfNotesEnabled => _isAiPdfNotesEnabled;
-  bool get isStudyFolderAndImportEnabled => _isStudyFolderAndImportEnabled;
+  bool get isStudyFolderAndImportEnabled => _allowFileControls && _allowFolderControls;
+  bool get allowEditActions => _allowEditActions;
+  bool get allowFileControls => _allowFileControls;
+  bool get allowFolderControls => _allowFolderControls;
+  bool get isViewOnlyMode => !_isEditMode;
+  bool get canEdit => _isEditMode && _allowEditActions;
+  bool get canDelete => _isEditMode && _showDeleteActions;
+  bool get canManageFiles => _isEditMode && _allowFileControls;
+  bool get canManageFolders => _isEditMode && _allowFolderControls;
+  bool get canCreateContent => _isEditMode && (_allowEditActions || _allowFileControls || _allowFolderControls);
   int get aiFlashcardCount => _aiFlashcardCount;
   bool get hasCompletedAppTour => _hasCompletedAppTour;
   String get targetExamName => _targetExamName;
@@ -201,10 +213,20 @@ class SettingsProvider extends ChangeNotifier {
     _isAiTutorEnabled = prefs.getBool('isAiTutorEnabled') ?? true;
     _isAiPdfNotesEnabled = prefs.getBool('isAiPdfNotesEnabled') ?? true;
     _isStudyFolderAndImportEnabled = prefs.getBool('isStudyFolderAndImportEnabled') ?? true;
+    _allowEditActions = prefs.getBool('allowEditActions') ?? true;
+    _allowFileControls = prefs.getBool('allowFileControls') ?? _isStudyFolderAndImportEnabled;
+    _allowFolderControls = prefs.getBool('allowFolderControls') ?? _isStudyFolderAndImportEnabled;
     _hasCompletedAppTour = prefs.getBool('hasCompletedAppTour') ?? false;
     _targetExamName = prefs.getString('targetExamName') ?? '';
     _targetExamDate = prefs.getString('targetExamDate') ?? '';
-    _showDeleteActions = prefs.getBool('showDeleteActions') ?? true;
+    final migratedDeleteDefault = prefs.getBool('master_control_delete_off_v1') ?? false;
+    if (!migratedDeleteDefault) {
+      _showDeleteActions = false;
+      await prefs.setBool('showDeleteActions', false);
+      await prefs.setBool('master_control_delete_off_v1', true);
+    } else {
+      _showDeleteActions = prefs.getBool('showDeleteActions') ?? false;
+    }
     _themeStyle = prefs.getString('themeStyle') ?? (prefs.getBool('isDarkMode') == true ? 'dark' : 'light');
     _accentName = prefs.getString('accentName') ?? 'indigo';
     _readerFilter = prefs.getString('readerFilter') ?? 'original';
@@ -249,7 +271,7 @@ class SettingsProvider extends ChangeNotifier {
     final pinToSave = pin.trim().isNotEmpty ? pin.trim() : masterPin;
     await setLockPin(true, pinToSave);
     final updated = _userProfile.copyWith(
-      name: name.trim().isNotEmpty ? name.trim() : 'Gyanchandra Yadav',
+      name: name.trim().isNotEmpty ? name.trim() : 'Scholar',
       email: email.trim(),
       mobile: mobile.trim(),
       gender: gender.trim(),
@@ -333,8 +355,73 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setStudyFolderAndImportEnabled(bool value) async {
     _isStudyFolderAndImportEnabled = value;
+    _allowFileControls = value;
+    _allowFolderControls = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isStudyFolderAndImportEnabled', value);
+    await prefs.setBool('allowFileControls', value);
+    await prefs.setBool('allowFolderControls', value);
+    notifyListeners();
+  }
+
+  Future<void> setAllowEditActions(bool value) async {
+    _allowEditActions = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('allowEditActions', value);
+    notifyListeners();
+  }
+
+  Future<void> setAllowFileControls(bool value) async {
+    _allowFileControls = value;
+    _isStudyFolderAndImportEnabled = _allowFileControls && _allowFolderControls;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('allowFileControls', value);
+    await prefs.setBool('isStudyFolderAndImportEnabled', _isStudyFolderAndImportEnabled);
+    notifyListeners();
+  }
+
+  Future<void> setAllowFolderControls(bool value) async {
+    _allowFolderControls = value;
+    _isStudyFolderAndImportEnabled = _allowFileControls && _allowFolderControls;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('allowFolderControls', value);
+    await prefs.setBool('isStudyFolderAndImportEnabled', _isStudyFolderAndImportEnabled);
+    notifyListeners();
+  }
+
+  /// Apply one of the Master Edit & View Control presets:
+  /// - 'view_only': read-only mode across entire app
+  /// - 'safe_edit': edit/files/folders ON, delete actions OFF
+  /// - 'full_control': edit/files/folders/delete all ON
+  Future<void> applyMasterControlPreset(String preset) async {
+    final prefs = await SharedPreferences.getInstance();
+    switch (preset) {
+      case 'full_control':
+        _isEditMode = true;
+        _allowEditActions = true;
+        _allowFileControls = true;
+        _allowFolderControls = true;
+        _showDeleteActions = true;
+        break;
+      case 'safe_edit':
+        _isEditMode = true;
+        _allowEditActions = true;
+        _allowFileControls = true;
+        _allowFolderControls = true;
+        _showDeleteActions = false;
+        break;
+      case 'view_only':
+      default:
+        _isEditMode = false;
+        break;
+    }
+    _isStudyFolderAndImportEnabled = _allowFileControls && _allowFolderControls;
+    await prefs.setBool('isEditMode', _isEditMode);
+    await prefs.setBool('allowEditActions', _allowEditActions);
+    await prefs.setBool('allowFileControls', _allowFileControls);
+    await prefs.setBool('allowFolderControls', _allowFolderControls);
+    await prefs.setBool('showDeleteActions', _showDeleteActions);
+    await prefs.setBool('isStudyFolderAndImportEnabled', _isStudyFolderAndImportEnabled);
     notifyListeners();
   }
 

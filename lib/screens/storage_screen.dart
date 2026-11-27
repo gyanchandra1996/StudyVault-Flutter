@@ -13,19 +13,24 @@ class _StorageScreenState extends State<StorageScreen> {
   final PdfRepo _pdfRepo = PdfRepo();
   Map<String, dynamic> _stats = {};
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _loadStats(showLoading: true);
   }
 
-  Future<void> _loadStats() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadStats({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final stats = await _pdfRepo.getStorageStats();
+    if (!mounted) return;
     setState(() {
       _stats = stats;
       _isLoading = false;
+      _hasLoadedOnce = true;
     });
   }
 

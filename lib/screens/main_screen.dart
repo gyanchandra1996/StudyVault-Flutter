@@ -26,6 +26,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   bool _isAlarmShowing = false;
+  bool _isExitDialogShowing = false;
   bool _showPipOverlay = false;
 
   void _checkAndShowAlarm(PomodoroProvider pomodoro) {
@@ -93,6 +94,8 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _showExitConfirmation(BuildContext context) async {
+    if (_isExitDialogShowing) return;
+    _isExitDialogShowing = true;
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -132,6 +135,7 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     );
+    _isExitDialogShowing = false;
 
     if (shouldExit == true) {
       SystemNavigator.pop();
@@ -243,11 +247,20 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
+    final gateState = context.select<SettingsProvider,
+        ({bool isInitialized, bool isRegistered, bool hasProfileName, bool isLockEnabled, bool isAppUnlocked})>(
+      (s) => (
+        isInitialized: s.isInitialized,
+        isRegistered: s.isRegistered,
+        hasProfileName: s.userProfile.name.trim().isNotEmpty,
+        isLockEnabled: s.isLockEnabled,
+        isAppUnlocked: s.isAppUnlocked,
+      ),
+    );
     const primaryBlue = Color(0xFF1E3A8A);
 
     // 0. Wait for initial settings & profile to load from local storage
-    if (!settings.isInitialized) {
+    if (!gateState.isInitialized) {
       return const Scaffold(
         backgroundColor: primaryBlue,
         body: Center(
@@ -278,8 +291,8 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     // 1. Mandatory First Time Registration / Accidental Logout PIN Login
-    if (!settings.isRegistered) {
-      if (settings.userProfile.name.isNotEmpty) {
+    if (!gateState.isRegistered) {
+      if (gateState.hasProfileName) {
         return PinLoginScreen(
           onLoggedIn: () => setState(() {}),
         );
@@ -290,7 +303,7 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     // 2. Lock screen check
-    if (settings.isLockEnabled && !settings.isAppUnlocked) {
+    if (gateState.isLockEnabled && !gateState.isAppUnlocked) {
       return const LockScreen();
     }
 
@@ -298,6 +311,10 @@ class _MainScreenState extends State<MainScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+        if (_showPipOverlay) {
+          setState(() => _showPipOverlay = false);
+          return;
+        }
         if (_currentIndex != 0) {
           setState(() => _currentIndex = 0);
           return;
@@ -319,20 +336,22 @@ class _MainScreenState extends State<MainScreen> {
                   },
                 ),
                 Expanded(
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: [
-                      DigiHomeScreen(
-                        onNavigateToTab: (idx) => setState(() => _currentIndex = idx),
-                        onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
-                      ),
-                      const StudyHubScreen(),
-                      UtilityHubScreen(
-                        onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
-                      ),
-                      const QuizHubScreen(),
-                      const SettingsScreen(),
-                    ],
+                  child: RepaintBoundary(
+                    child: IndexedStack(
+                      index: _currentIndex,
+                      children: [
+                        DigiHomeScreen(
+                          onNavigateToTab: (idx) => setState(() => _currentIndex = idx),
+                          onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
+                        ),
+                        const StudyHubScreen(),
+                        UtilityHubScreen(
+                          onTriggerPip: () => setState(() => _showPipOverlay = !_showPipOverlay),
+                        ),
+                        const QuizHubScreen(),
+                        const SettingsScreen(),
+                      ],
+                    ),
                   ),
                 ),
               ],

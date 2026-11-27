@@ -15,19 +15,24 @@ class _RecentScreenState extends State<RecentScreen> {
   final PdfRepo _pdfRepo = PdfRepo();
   List<PdfDocument> _recentPdfs = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    _loadRecent();
+    _loadRecent(showLoading: true);
   }
 
-  Future<void> _loadRecent() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadRecent({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final list = await _pdfRepo.getRecentPdfs();
+    if (!mounted) return;
     setState(() {
       _recentPdfs = list;
       _isLoading = false;
+      _hasLoadedOnce = true;
     });
   }
 

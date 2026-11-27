@@ -12,260 +12,187 @@ void main() async {
 }
 
 final TextTheme _cachedDevanagariTextTheme = GoogleFonts.notoSansDevanagariTextTheme();
+final Map<String, ThemeData> _cachedThemes = {};
+
+/// Lightweight fade + subtle slide page transition that avoids Android
+/// ZoomPageTransitionsBuilder snapshotting and back-navigation flicker.
+class _SmoothSlideFadeTransitionsBuilder extends PageTransitionsBuilder {
+  const _SmoothSlideFadeTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (route.isFirst) return child;
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.05, 0.0),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
+const PageTransitionsTheme _smoothPageTransitionsTheme = PageTransitionsTheme(
+  builders: {
+    TargetPlatform.android: _SmoothSlideFadeTransitionsBuilder(),
+    TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.windows: _SmoothSlideFadeTransitionsBuilder(),
+    TargetPlatform.linux: _SmoothSlideFadeTransitionsBuilder(),
+    TargetPlatform.macOS: _SmoothSlideFadeTransitionsBuilder(),
+  },
+);
 
 class StudyVaultApp extends StatelessWidget {
   const StudyVaultApp({Key? key}) : super(key: key);
 
-  ThemeData _buildTheme(SettingsProvider settings) {
+  ThemeData _buildTheme(String themeStyle, String accentName, Color accent) {
+    final cacheKey = '${themeStyle}_$accentName';
+    final cached = _cachedThemes[cacheKey];
+    if (cached != null) return cached;
+
     final textTheme = _cachedDevanagariTextTheme;
-    final accent = settings.activeAccentColor;
 
-    switch (settings.themeStyle) {
+    ThemeData makeTheme({
+      required Brightness brightness,
+      required Color scaffoldBg,
+      required Color appBarBg,
+      required Color cardBg,
+      required Color borderColor,
+      required Color textColor,
+      double appBarElevation = 0.5,
+      double navOpacity = 0.2,
+    }) {
+      return ThemeData(
+        useMaterial3: true,
+        brightness: brightness,
+        colorSchemeSeed: accent,
+        scaffoldBackgroundColor: scaffoldBg,
+        pageTransitionsTheme: _smoothPageTransitionsTheme,
+        textTheme: textTheme.apply(
+          bodyColor: textColor,
+          displayColor: textColor,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: appBarBg,
+          foregroundColor: textColor,
+          elevation: appBarElevation,
+          titleTextStyle: (_cachedDevanagariTextTheme.titleLarge ?? const TextStyle()).copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+        cardTheme: CardTheme(
+          color: cardBg,
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(Radius.circular(16)),
+            side: BorderSide(color: borderColor, width: 0.8),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: appBarBg,
+          indicatorColor: accent.withOpacity(navOpacity),
+        ),
+      );
+    }
+
+    final ThemeData result;
+    switch (themeStyle) {
       case 'amoled':
-        return ThemeData(
-          useMaterial3: true,
+        result = makeTheme(
           brightness: Brightness.dark,
-          colorSchemeSeed: accent,
-          scaffoldBackgroundColor: Colors.black,
-          textTheme: textTheme.apply(
-            bodyColor: const Color(0xFFE2E8F0),
-            displayColor: Colors.white,
-          ),
-          appBarTheme: AppBarTheme(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            titleTextStyle: GoogleFonts.notoSansDevanagari(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          cardTheme: const CardTheme(
-            color: Color(0xFF121212),
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              side: BorderSide(color: Color(0xFF262626), width: 0.8),
-            ),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: Colors.black,
-            indicatorColor: accent.withOpacity(0.25),
-          ),
+          scaffoldBg: Colors.black,
+          appBarBg: Colors.black,
+          cardBg: const Color(0xFF121212),
+          borderColor: const Color(0xFF262626),
+          textColor: const Color(0xFFE2E8F0),
+          appBarElevation: 0,
+          navOpacity: 0.25,
         );
-
+        break;
       case 'sepia':
-        const sepiaBg = Color(0xFFFBF0D9);
-        const sepiaCard = Color(0xFFFFF9EE);
-        const sepiaText = Color(0xFF4A3525);
-        return ThemeData(
-          useMaterial3: true,
+        result = makeTheme(
           brightness: Brightness.light,
-          colorSchemeSeed: accent,
-          scaffoldBackgroundColor: sepiaBg,
-          textTheme: textTheme.apply(
-            bodyColor: sepiaText,
-            displayColor: sepiaText,
-          ),
-          appBarTheme: AppBarTheme(
-            backgroundColor: sepiaCard,
-            foregroundColor: sepiaText,
-            elevation: 0.5,
-            titleTextStyle: GoogleFonts.notoSansDevanagari(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: sepiaText,
-            ),
-          ),
-          cardTheme: const CardTheme(
-            color: sepiaCard,
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              side: BorderSide(color: Color(0xFFE8D7B8), width: 0.8),
-            ),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: sepiaCard,
-            indicatorColor: accent.withOpacity(0.2),
-          ),
+          scaffoldBg: const Color(0xFFFBF0D9),
+          appBarBg: const Color(0xFFFFF9EE),
+          cardBg: const Color(0xFFFFF9EE),
+          borderColor: const Color(0xFFE8D7B8),
+          textColor: const Color(0xFF4A3525),
         );
-
+        break;
       case 'dark':
-        return ThemeData(
-          useMaterial3: true,
+        result = makeTheme(
           brightness: Brightness.dark,
-          colorSchemeSeed: accent,
-          scaffoldBackgroundColor: const Color(0xFF0F172A),
-          textTheme: textTheme.apply(
-            bodyColor: const Color(0xFFF1F5F9),
-            displayColor: const Color(0xFFF1F5F9),
-          ),
-          appBarTheme: AppBarTheme(
-            backgroundColor: const Color(0xFF1E293B),
-            foregroundColor: Colors.white,
-            elevation: 0.5,
-            titleTextStyle: GoogleFonts.notoSansDevanagari(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          cardTheme: const CardTheme(
-            color: Color(0xFF1E293B),
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              side: BorderSide(color: Color(0xFF334155), width: 0.8),
-            ),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: const Color(0xFF1E293B),
-            indicatorColor: accent.withOpacity(0.25),
-          ),
+          scaffoldBg: const Color(0xFF0F172A),
+          appBarBg: const Color(0xFF1E293B),
+          cardBg: const Color(0xFF1E293B),
+          borderColor: const Color(0xFF334155),
+          textColor: const Color(0xFFF1F5F9),
+          navOpacity: 0.25,
         );
-
+        break;
       case 'nordic':
-        const nordicBg = Color(0xFFF0F4F9);
-        const nordicCard = Color(0xFFFFFFFF);
-        const nordicText = Color(0xFF1E293B);
-        return ThemeData(
-          useMaterial3: true,
+        result = makeTheme(
           brightness: Brightness.light,
-          colorSchemeSeed: accent,
-          scaffoldBackgroundColor: nordicBg,
-          textTheme: textTheme.apply(
-            bodyColor: nordicText,
-            displayColor: nordicText,
-          ),
-          appBarTheme: AppBarTheme(
-            backgroundColor: nordicCard,
-            foregroundColor: nordicText,
-            elevation: 0.5,
-            titleTextStyle: GoogleFonts.notoSansDevanagari(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: nordicText,
-            ),
-          ),
-          cardTheme: const CardTheme(
-            color: nordicCard,
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              side: BorderSide(color: Color(0xFFD0DBE5), width: 0.8),
-            ),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: nordicCard,
-            indicatorColor: accent.withOpacity(0.2),
-          ),
+          scaffoldBg: const Color(0xFFF0F4F9),
+          appBarBg: Colors.white,
+          cardBg: Colors.white,
+          borderColor: const Color(0xFFD0DBE5),
+          textColor: const Color(0xFF1E293B),
         );
-
+        break;
       case 'forest':
-        const forestBg = Color(0xFFF1F6F2);
-        const forestCard = Color(0xFFFFFFFF);
-        const forestText = Color(0xFF1B3828);
-        return ThemeData(
-          useMaterial3: true,
+        result = makeTheme(
           brightness: Brightness.light,
-          colorSchemeSeed: accent,
-          scaffoldBackgroundColor: forestBg,
-          textTheme: textTheme.apply(
-            bodyColor: forestText,
-            displayColor: forestText,
-          ),
-          appBarTheme: AppBarTheme(
-            backgroundColor: forestCard,
-            foregroundColor: forestText,
-            elevation: 0.5,
-            titleTextStyle: GoogleFonts.notoSansDevanagari(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: forestText,
-            ),
-          ),
-          cardTheme: const CardTheme(
-            color: forestCard,
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              side: BorderSide(color: Color(0xFFCCE0D2), width: 0.8),
-            ),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: forestCard,
-            indicatorColor: accent.withOpacity(0.2),
-          ),
+          scaffoldBg: const Color(0xFFF1F6F2),
+          appBarBg: Colors.white,
+          cardBg: Colors.white,
+          borderColor: const Color(0xFFCCE0D2),
+          textColor: const Color(0xFF1B3828),
         );
-
+        break;
       case 'twilight':
-        return ThemeData(
-          useMaterial3: true,
+        result = makeTheme(
           brightness: Brightness.dark,
-          colorSchemeSeed: accent,
-          scaffoldBackgroundColor: const Color(0xFF181515),
-          textTheme: textTheme.apply(
-            bodyColor: const Color(0xFFF5EFE6),
-            displayColor: const Color(0xFFF5EFE6),
-          ),
-          appBarTheme: AppBarTheme(
-            backgroundColor: const Color(0xFF262121),
-            foregroundColor: Colors.white,
-            elevation: 0.5,
-            titleTextStyle: GoogleFonts.notoSansDevanagari(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          cardTheme: const CardTheme(
-            color: Color(0xFF262121),
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              side: BorderSide(color: Color(0xFF383131), width: 0.8),
-            ),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: const Color(0xFF262121),
-            indicatorColor: accent.withOpacity(0.25),
-          ),
+          scaffoldBg: const Color(0xFF181515),
+          appBarBg: const Color(0xFF262121),
+          cardBg: const Color(0xFF262121),
+          borderColor: const Color(0xFF383131),
+          textColor: const Color(0xFFF5EFE6),
+          navOpacity: 0.25,
         );
-
+        break;
       case 'light':
       default:
-        return ThemeData(
-          useMaterial3: true,
+        result = makeTheme(
           brightness: Brightness.light,
-          colorSchemeSeed: accent,
-          scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-          textTheme: textTheme,
-          appBarTheme: AppBarTheme(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF0F172A),
-            elevation: 0.5,
-            titleTextStyle: GoogleFonts.notoSansDevanagari(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF0F172A),
-            ),
-          ),
-          cardTheme: const CardTheme(
-            color: Colors.white,
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-              side: BorderSide(color: Color(0xFFE2E8F0), width: 0.8),
-            ),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: Colors.white,
-            indicatorColor: accent.withOpacity(0.18),
-          ),
+          scaffoldBg: const Color(0xFFF8FAFC),
+          appBarBg: Colors.white,
+          cardBg: Colors.white,
+          borderColor: const Color(0xFFE2E8F0),
+          textColor: const Color(0xFF0F172A),
+          navOpacity: 0.18,
         );
+        break;
     }
+
+    _cachedThemes[cacheKey] = result;
+    return result;
   }
 
   @override
@@ -276,12 +203,17 @@ class StudyVaultApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => StudyProvider()),
         ChangeNotifierProvider(create: (_) => PomodoroProvider()),
       ],
-      child: Consumer<SettingsProvider>(
-        builder: (context, settings, _) {
+      child: Selector<SettingsProvider, ({String themeStyle, String accentName})>(
+        selector: (_, settings) => (
+          themeStyle: settings.themeStyle,
+          accentName: settings.accentName,
+        ),
+        builder: (context, themeState, _) {
+          final accent = Provider.of<SettingsProvider>(context, listen: false).activeAccentColor;
           return MaterialApp(
             title: 'Medhavi',
             debugShowCheckedModeBanner: false,
-            theme: _buildTheme(settings),
+            theme: _buildTheme(themeState.themeStyle, themeState.accentName, accent),
             home: const MainScreen(),
           );
         },

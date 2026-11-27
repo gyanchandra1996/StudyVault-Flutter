@@ -17,7 +17,7 @@ class UserProfile {
   final int lastUpdated;
 
   UserProfile({
-    this.name = 'Gyanchandra Yadav',
+    this.name = '',
     this.email = '',
     this.mobile = '',
     this.gender = 'Male',
@@ -67,7 +67,7 @@ class UserProfile {
     final bool isReg = isRegVal == true || isRegVal == 1 || isRegVal == '1';
 
     return UserProfile(
-      name: (map['name'] as String?)?.trim().isNotEmpty == true ? map['name'] as String : 'Gyanchandra Yadav',
+      name: (map['name'] as String?)?.trim().isNotEmpty == true ? map['name'] as String : '',
       email: (map['email'] as String?) ?? '',
       mobile: (map['mobile'] as String?) ?? '',
       gender: (map['gender'] as String?) ?? 'Male',

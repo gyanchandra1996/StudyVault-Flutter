@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/settings_provider.dart';
 
 class SyllabusTrackerModal extends StatefulWidget {
   const SyllabusTrackerModal({Key? key}) : super(key: key);
@@ -446,6 +448,7 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
     if (_isLoading) {
       return const Dialog(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
     }
@@ -535,15 +538,17 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
                       padding: const EdgeInsets.only(left: 6),
                       child: _buildExamChip(e.key, e.value),
                     )),
-                    const SizedBox(width: 6),
-                    ActionChip(
-                      avatar: const Icon(Icons.add, size: 14, color: Color(0xFF059669)),
-                      label: const Text('+ New Exam', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
-                      backgroundColor: const Color(0xFF059669).withOpacity(0.08),
-                      side: const BorderSide(color: Color(0xFF10B981)),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: _showAddCustomExamDialog,
-                    ),
+                    if (settings.canEdit) ...[
+                      const SizedBox(width: 6),
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 14, color: Color(0xFF059669)),
+                        label: const Text('+ New Exam', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                        backgroundColor: const Color(0xFF059669).withOpacity(0.08),
+                        side: const BorderSide(color: Color(0xFF10B981)),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: _showAddCustomExamDialog,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -649,7 +654,7 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
                                         color: isChecked ? Colors.grey : null,
                                       ),
                                     ),
-                                    secondary: _customSubjects[_selectedExam]?[subName]?.contains(topic) == true
+                                    secondary: (settings.canDelete && _customSubjects[_selectedExam]?[subName]?.contains(topic) == true)
                                         ? IconButton(
                                             icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
                                             tooltip: 'Remove Topic',
@@ -660,21 +665,22 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
                                     onChanged: (_) => _toggleTopic(key),
                                   );
                                 }).toList(),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: TextButton.icon(
-                                      icon: const Icon(Icons.add, size: 14),
-                                      label: Text('Add topic to $subName', style: const TextStyle(fontSize: 12)),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: const Color(0xFF059669),
-                                        visualDensity: VisualDensity.compact,
+                                if (settings.canEdit)
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: TextButton.icon(
+                                        icon: const Icon(Icons.add, size: 14),
+                                        label: Text('Add topic to $subName', style: const TextStyle(fontSize: 12)),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: const Color(0xFF059669),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                        onPressed: () => _showAddTopicDialog(subName),
                                       ),
-                                      onPressed: () => _showAddTopicDialog(subName),
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                           );
@@ -684,26 +690,27 @@ class _SyllabusTrackerModalState extends State<SyllabusTrackerModal> {
             ),
 
             // Footer Action: "+ Add Category / Subject"
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.add_circle_outline, size: 16),
-                      label: const Text('Add Subject / Category', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            if (settings.canManageFolders)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.add_circle_outline, size: 16),
+                        label: const Text('Add Subject / Category', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF059669),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: _showAddSubjectCategoryDialog,
                       ),
-                      onPressed: _showAddSubjectCategoryDialog,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

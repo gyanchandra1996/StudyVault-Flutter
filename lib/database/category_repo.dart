@@ -1,6 +1,20 @@
 import '../models/category.dart';
 import 'app_database.dart';
 
+class CategoryStats {
+  final int directSubcategoryCount;
+  final int totalSubcategoryCount;
+  final int pdfCount;
+  final int questionCount;
+
+  const CategoryStats({
+    this.directSubcategoryCount = 0,
+    this.totalSubcategoryCount = 0,
+    this.pdfCount = 0,
+    this.questionCount = 0,
+  });
+}
+
 class CategoryRepo {
   final AppDatabase dbProvider = AppDatabase.instance;
 
@@ -115,6 +129,79 @@ class CategoryRepo {
       allCatIds.toList(),
     );
     return (res.first['count'] as int?) ?? 0;
+  }
+
+  /// Computes recursive subcategory, PDF, and question counts for all categories in 3 fast queries.
+  Future<Map<int, CategoryStats>> getAllCategoryStats() async {
+    final db = await dbProvider.database;
+    final catRows = await db.rawQuery('SELECT id, parent_id FROM categories');
+    final pdfRows = await db.rawQuery(
+      'SELECT category_id, COUNT(*) as c FROM pdfs WHERE is_deleted = 0 AND category_id IS NOT NULL GROUP BY category_id',
+    );
+    final qRows = await db.rawQuery(
+      'SELECT category_id, COUNT(*) as c FROM quiz_questions WHERE category_id IS NOT NULL GROUP BY category_id',
+    );
+
+    final Set<int> allIds = {};
+    final Map<int, List<int>> children = {};
+    for (final row in catRows) {
+      final id = row['id'] as int?;
+      if (id == null) continue;
+      allIds.add(id);
+      children.putIfAbsent(id, () => []);
+      final parentId = row['parent_id'] as int?;
+      if (parentId != null) {
+        children.putIfAbsent(parentId, () => []).add(id);
+      }
+    }
+
+    final Map<int, int> directPdfs = {};
+    for (final row in pdfRows) {
+      final cid = row['category_id'] as int?;
+      final c = (row['c'] as int?) ?? 0;
+      if (cid != null) directPdfs[cid] = c;
+    }
+
+    final Map<int, int> directQuestions = {};
+    for (final row in qRows) {
+      final cid = row['category_id'] as int?;
+      final c = (row['c'] as int?) ?? 0;
+      if (cid != null) directQuestions[cid] = c;
+    }
+
+    final Map<int, CategoryStats> memo = {};
+    CategoryStats compute(int id, Set<int> visiting) {
+      if (memo.containsKey(id)) return memo[id]!;
+      if (visiting.contains(id)) return const CategoryStats();
+      visiting.add(id);
+
+      final directSubs = children[id] ?? const <int>[];
+      int totalSubs = directSubs.length;
+      int pdfs = directPdfs[id] ?? 0;
+      int questions = directQuestions[id] ?? 0;
+
+      for (final childId in directSubs) {
+        final childStats = compute(childId, visiting);
+        totalSubs += childStats.totalSubcategoryCount;
+        pdfs += childStats.pdfCount;
+        questions += childStats.questionCount;
+      }
+
+      visiting.remove(id);
+      final stats = CategoryStats(
+        directSubcategoryCount: directSubs.length,
+        totalSubcategoryCount: totalSubs,
+        pdfCount: pdfs,
+        questionCount: questions,
+      );
+      memo[id] = stats;
+      return stats;
+    }
+
+    for (final id in allIds) {
+      compute(id, <int>{});
+    }
+    return memo;
   }
 
   Future<List<Category>> getCategoryHierarchyPath(int categoryId) async {

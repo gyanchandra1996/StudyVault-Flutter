@@ -266,14 +266,15 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('All Target Exam Reminders', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.indigo, size: 28),
-                    tooltip: 'Add Target Exam',
-                    onPressed: () {
-                      Navigator.pop(sheetCtx);
-                      _showAddEditExamDialog();
-                    },
-                  ),
+                  if (Provider.of<SettingsProvider>(context, listen: false).canEdit)
+                    IconButton(
+                      icon: const Icon(Icons.add_circle, color: Colors.indigo, size: 28),
+                      tooltip: 'Add Target Exam',
+                      onPressed: () {
+                        Navigator.pop(sheetCtx);
+                        _showAddEditExamDialog();
+                      },
+                    ),
                 ],
               ),
               const Divider(),
@@ -303,13 +304,15 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
                         ),
                         title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('${item.examDate} • ${days >= 0 ? "$days days left" : "Concluded"}'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit, size: 20),
-                          onPressed: () {
-                            Navigator.pop(sheetCtx);
-                            _showAddEditExamDialog(item);
-                          },
-                        ),
+                        trailing: Provider.of<SettingsProvider>(context, listen: false).canEdit
+                            ? IconButton(
+                                icon: const Icon(Icons.edit, size: 20),
+                                onPressed: () {
+                                  Navigator.pop(sheetCtx);
+                                  _showAddEditExamDialog(item);
+                                },
+                              )
+                            : null,
                       );
                     },
                   ),
@@ -362,18 +365,19 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
                 ],
               ),
             ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                visualDensity: VisualDensity.compact,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            if (settings.canEdit)
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Exam', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                onPressed: () => _showAddEditExamDialog(),
               ),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add Exam', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              onPressed: () => _showAddEditExamDialog(),
-            ),
           ],
         ),
       );
@@ -412,19 +416,21 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    InkWell(
-                      onTap: () => _showAddEditExamDialog(),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: accent.withOpacity(0.12),
-                          shape: BoxShape.circle,
+                    if (settings.canEdit) ...[
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: () => _showAddEditExamDialog(),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.add, size: 16, color: accent),
                         ),
-                        child: Icon(Icons.add, size: 16, color: accent),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
@@ -601,12 +607,13 @@ class _ExamCountdownWidgetState extends State<ExamCountdownWidget> {
                       ),
 
                       // Edit button
-                      IconButton(
-                        icon: const Icon(Icons.edit_calendar_outlined, size: 18),
-                        tooltip: 'Edit Exam',
-                        color: accent,
-                        onPressed: () => _showAddEditExamDialog(item),
-                      ),
+                      if (settings.canEdit)
+                        IconButton(
+                          icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+                          tooltip: 'Edit Exam',
+                          color: accent,
+                          onPressed: () => _showAddEditExamDialog(item),
+                        ),
                     ],
                   ),
                 );

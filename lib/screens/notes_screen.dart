@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../database/note_repo.dart';
 import '../models/personal_note.dart';
+import '../providers/settings_provider.dart';
 
 class NotesScreen extends StatefulWidget {
   const NotesScreen({Key? key}) : super(key: key);
@@ -14,20 +16,25 @@ class _NotesScreenState extends State<NotesScreen> {
   final NoteRepo _noteRepo = NoteRepo();
   List<PersonalNote> _notes = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _loadNotes();
+    _loadNotes(showLoading: true);
   }
 
-  Future<void> _loadNotes({String? search}) async {
-    setState(() => _isLoading = true);
+  Future<void> _loadNotes({String? search, bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final list = await _noteRepo.getAllNotes(search: search);
+    if (!mounted) return;
     setState(() {
       _notes = list;
       _isLoading = false;
+      _hasLoadedOnce = true;
     });
   }
 
@@ -71,6 +78,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Consolidated Study Notes'),
@@ -171,18 +179,20 @@ class _NotesScreenState extends State<NotesScreen> {
                                       ),
                                       Row(
                                         children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
-                                            onPressed: () => _showEditNoteDialog(note),
-                                            constraints: const BoxConstraints(),
-                                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                            onPressed: () => _deleteNote(note.id!),
-                                            constraints: const BoxConstraints(),
-                                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                                          ),
+                                          if (settings.canEdit)
+                                            IconButton(
+                                              icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                                              onPressed: () => _showEditNoteDialog(note),
+                                              constraints: const BoxConstraints(),
+                                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                                            ),
+                                          if (settings.canDelete)
+                                            IconButton(
+                                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                              onPressed: () => _deleteNote(note.id!),
+                                              constraints: const BoxConstraints(),
+                                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                                            ),
                                         ],
                                       ),
                                     ],

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/category.dart';
 import '../providers/study_provider.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/master_control_section.dart';
 import 'category_detail_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -113,17 +114,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
       appBar: AppBar(
         title: const Text('Subjects & Categories', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          // Edit Mode toggle pill
+          // Edit Mode toggle pill (long-press opens Master Control)
           InkWell(
             onTap: () {
               settings.toggleEditMode();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(settings.isEditMode ? '✏️ Edit Mode ON: You can add and edit categories' : '👁️ View Only Mode: Content is in read-only mode'),
+                  content: Text(settings.isEditMode
+                      ? '✏️ Edit Mode ON (Delete: ${settings.canDelete ? "ON" : "OFF"})'
+                      : '👁️ View Only Mode: Content is in read-only mode'),
                   duration: const Duration(seconds: 2),
                 ),
               );
             },
+            onLongPress: () => showMasterControlModal(context),
             borderRadius: BorderRadius.circular(16),
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
@@ -162,7 +166,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
             tooltip: settings.isCategoryGridView ? 'Switch to List View' : 'Switch to Grid View',
             onPressed: () => settings.toggleCategoryViewMode(),
           ),
-          if (settings.isEditMode && settings.isStudyFolderAndImportEnabled)
+          if (settings.canManageFolders)
             IconButton(
               icon: const Icon(Icons.add),
               tooltip: 'Add Category',
@@ -251,7 +255,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                               itemCount: filteredCategories.length,
                               itemBuilder: (ctx, idx) {
                                 final cat = filteredCategories[idx];
-                                final pdfCount = study.categoryPdfCounts[cat.id] ?? 0;
+                                final stats = study.statsFor(cat.id);
                                 return InkWell(
                                   borderRadius: BorderRadius.circular(18),
                                   onTap: () {
@@ -301,19 +305,19 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                   child: Text(
-                                                    '📄 $pdfCount',
+                                                    '📁 ${stats.directSubcategoryCount} • 📄 ${stats.pdfCount} • ❓ ${stats.questionCount}',
                                                     style: TextStyle(
-                                                      fontSize: 10,
+                                                      fontSize: 9.5,
                                                       fontWeight: FontWeight.bold,
                                                       color: accent,
                                                     ),
                                                   ),
                                                 ),
-                                                if (settings.isEditMode && settings.showDeleteActions) ...[
+                                                if (settings.canDelete) ...[
                                                   const SizedBox(width: 4),
                                                   GestureDetector(
                                                     onTap: () => study.deleteCategory(cat.id!),
-                                                    child: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                                                    child: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
                                                   ),
                                                 ],
                                               ],
@@ -352,7 +356,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                               itemCount: filteredCategories.length,
                               itemBuilder: (ctx, idx) {
                                 final cat = filteredCategories[idx];
-                                final pdfCount = study.categoryPdfCounts[cat.id] ?? 0;
+                                final stats = study.statsFor(cat.id);
                                 return Card(
                                   elevation: 1,
                                   margin: const EdgeInsets.only(bottom: 10),
@@ -371,8 +375,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                     ),
                                     subtitle: Text(
                                       cat.description.isNotEmpty
-                                          ? '${cat.description} • 📄 $pdfCount PDFs'
-                                          : '📄 $pdfCount PDFs inside',
+                                          ? '${cat.description} • 📁 ${stats.directSubcategoryCount} • 📄 ${stats.pdfCount} • ❓ ${stats.questionCount}'
+                                          : '📁 ${stats.directSubcategoryCount} Topics • 📄 ${stats.pdfCount} Files • ❓ ${stats.questionCount} Qs',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 12),
@@ -380,9 +384,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepA
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        if (settings.isEditMode && settings.showDeleteActions)
+                                        if (settings.canDelete)
                                           IconButton(
-                                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
                                             onPressed: () => study.deleteCategory(cat.id!),
                                           ),
                                         const Icon(Icons.chevron_right, color: Colors.grey),

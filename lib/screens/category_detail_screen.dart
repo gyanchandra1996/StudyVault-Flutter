@@ -13,6 +13,7 @@ import '../widgets/ai_quiz_modal.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/question_modal.dart';
 import '../widgets/import_questions_dialog.dart';
+import '../widgets/master_control_section.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
@@ -37,28 +38,25 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   final QuizRepo _quizRepo = QuizRepo();
 
   List<Category> _subcategories = [];
-  Map<int, int> _subPdfCounts = {};
+  Map<int, CategoryStats> _allStats = {};
   List<PdfDocument> _pdfs = [];
   List<QuizResult> _quizzes = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadData(showLoading: true);
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadData({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final subs = await _catRepo.getSubcategories(widget.category.id!);
     final pdfDocs = await _pdfRepo.getPdfsByCategory(widget.category.id!);
-
-    final Map<int, int> counts = {};
-    for (final s in subs) {
-      if (s.id != null) {
-        counts[s.id!] = await _catRepo.getPdfCountForCategory(s.id!);
-      }
-    }
+    final statsMap = await _catRepo.getAllCategoryStats();
 
     final allQuizzes = await _quizRepo.getAllResults();
     final catQuizzes = allQuizzes.where((r) =>
@@ -66,12 +64,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       r.categoryId == widget.category.id
     ).toList();
 
+    if (!mounted) return;
     setState(() {
       _subcategories = subs;
-      _subPdfCounts = counts;
+      _allStats = statsMap;
       _pdfs = pdfDocs;
       _quizzes = catQuizzes;
       _isLoading = false;
+      _hasLoadedOnce = true;
     });
   }
 
@@ -151,6 +151,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   void _showActionSheet() {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -162,72 +163,75 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFEEF2FF),
-                  child: Icon(Icons.create_new_folder, color: Colors.indigo),
+              if (settings.canManageFolders)
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFEEF2FF),
+                    child: Icon(Icons.create_new_folder, color: Colors.indigo),
+                  ),
+                  title: const Text('New Subcategory / Topic', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Create a nested topic (e.g. Stack, Queue, Linked List)'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showAddSubcategoryDialog();
+                  },
                 ),
-                title: const Text('New Subcategory / Topic', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Create a nested topic (e.g. Stack, Queue, Linked List)'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showAddSubcategoryDialog();
-                },
-              ),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFF0FDF4),
-                  child: Icon(Icons.table_chart, color: Colors.teal),
+              if (settings.canManageFiles) ...[
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFF0FDF4),
+                    child: Icon(Icons.table_chart, color: Colors.teal),
+                  ),
+                  title: const Text('Import CSV Quiz / Questions', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Import questions from CSV file directly into this category'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    showDialog(
+                      context: context,
+                      builder: (_) => ImportQuestionsDialog(
+                        initialCategory: widget.category.title,
+                        initialCategoryId: widget.category.id,
+                        examId: widget.category.examId,
+                        onImported: _loadData,
+                      ),
+                    );
+                  },
                 ),
-                title: const Text('Import CSV Quiz / Questions', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Import questions from CSV file directly into this category'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  showDialog(
-                    context: context,
-                    builder: (_) => ImportQuestionsDialog(
-                      initialCategory: widget.category.title,
-                      initialCategoryId: widget.category.id,
-                      examId: widget.category.examId,
-                      onImported: _loadData,
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFFEF2F2),
-                  child: Icon(Icons.upload_file, color: Colors.red),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFEF2F2),
+                    child: Icon(Icons.upload_file, color: Colors.red),
+                  ),
+                  title: const Text('Import PDF Notes', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Add PDF document directly to this folder'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _addPdf();
+                  },
                 ),
-                title: const Text('Import PDF Notes', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Add PDF document directly to this folder'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _addPdf();
-                },
-              ),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFEFF6FF),
-                  child: Icon(Icons.add_task, color: Colors.indigo),
+              ],
+              if (settings.canEdit)
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFEFF6FF),
+                    child: Icon(Icons.add_task, color: Colors.indigo),
+                  ),
+                  title: const Text('Add Question to Bank', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Create a manual question for this category'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    showDialog(
+                      context: context,
+                      builder: (_) => QuestionModal(
+                        initialCategory: widget.category.title,
+                        initialCategoryId: widget.category.id,
+                        examId: widget.category.examId,
+                        onSaved: _loadData,
+                      ),
+                    );
+                  },
                 ),
-                title: const Text('Add Question to Bank', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Create a manual question for this category'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  showDialog(
-                    context: context,
-                    builder: (_) => QuestionModal(
-                      initialCategory: widget.category.title,
-                      initialCategoryId: widget.category.id,
-                      examId: widget.category.examId,
-                      onSaved: _loadData,
-                    ),
-                  );
-                },
-              ),
-              if (Provider.of<SettingsProvider>(context, listen: false).isAiEnabled &&
-                  Provider.of<SettingsProvider>(context, listen: false).isAiPdfNotesEnabled) ...[
+              if (settings.isAiEnabled && settings.isAiPdfNotesEnabled && settings.canManageFiles)
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFFF3E8FF),
@@ -243,6 +247,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     );
                   },
                 ),
+              if (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit)
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFFF0FDF4),
@@ -263,7 +268,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     );
                   },
                 ),
-              ],
             ],
           ),
         ),
@@ -342,10 +346,32 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     _loadData();
   }
 
+  Future<void> _confirmDeleteSubcategory(Category sub) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Subfolder?'),
+        content: Text('Delete "${sub.title}" and its nested folders?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && sub.id != null) {
+      await _catRepo.deleteCategory(sub.id!);
+      _loadData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final showDelete = settings.showDeleteActions;
+    final showDelete = settings.canDelete;
     final isGrid = settings.isCategoryGridView;
 
     final fullBreadcrumb = widget.breadcrumbPath.isEmpty
@@ -356,22 +382,26 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       appBar: AppBar(
         title: Text(widget.category.title),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Rename Category',
-            onPressed: () => _showRenameCategoryDialog(widget.category),
-          ),
-          // Edit Mode toggle pill
+          if (settings.canEdit)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Rename Category',
+              onPressed: () => _showRenameCategoryDialog(widget.category),
+            ),
+          // Master Edit/View Mode toggle pill (long-press opens Master Control)
           InkWell(
             onTap: () {
               settings.toggleEditMode();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(settings.isEditMode ? '✏️ Edit Mode ON: You can add and edit topics/quizzes' : '👁️ View Only Mode: Content is in read-only mode'),
+                  content: Text(settings.isEditMode
+                      ? '✏️ Edit Mode ON (Delete: ${settings.canDelete ? "ON" : "OFF"})'
+                      : '👁️ View Only Mode: Content is in read-only mode'),
                   duration: const Duration(seconds: 2),
                 ),
               );
             },
+            onLongPress: () => showMasterControlModal(context),
             borderRadius: BorderRadius.circular(16),
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
@@ -412,7 +442,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           ),
         ],
       ),
-      floatingActionButton: settings.isEditMode
+      floatingActionButton: settings.canCreateContent
           ? FloatingActionButton.extended(
               backgroundColor: const Color(0xFF1E3A8A),
               foregroundColor: Colors.white,
@@ -487,7 +517,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           ),
                         ],
                       ),
-                      if (settings.isEditMode)
+                      if (settings.canManageFolders)
                         TextButton.icon(
                           icon: const Icon(Icons.create_new_folder, size: 16),
                           label: const Text('New Topic', style: TextStyle(fontSize: 12)),
@@ -525,19 +555,19 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
-                        childAspectRatio: 1.4,
+                        childAspectRatio: 1.32,
                       ),
                       itemCount: _subcategories.length,
                       itemBuilder: (ctx, idx) {
                         final sub = _subcategories[idx];
-                        final pdfCount = _subPdfCounts[sub.id] ?? 0;
-                        return _buildFolderGridCard(sub, pdfCount, fullBreadcrumb);
+                        final stats = _allStats[sub.id] ?? const CategoryStats();
+                        return _buildFolderGridCard(sub, stats, fullBreadcrumb, settings);
                       },
                     )
                   else
                     ..._subcategories.map((sub) {
-                      final pdfCount = _subPdfCounts[sub.id] ?? 0;
-                      return _buildFolderListTile(sub, pdfCount, fullBreadcrumb);
+                      final stats = _allStats[sub.id] ?? const CategoryStats();
+                      return _buildFolderListTile(sub, stats, fullBreadcrumb, settings);
                     }),
                   const SizedBox(height: 24),
 
@@ -555,7 +585,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           ),
                         ],
                       ),
-                      if (settings.isEditMode)
+                      if (settings.canManageFiles)
                         TextButton.icon(
                           icon: const Icon(Icons.upload_file, size: 16),
                           label: const Text('Import PDF', style: TextStyle(fontSize: 12)),
@@ -657,39 +687,41 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           ),
                         ],
                       ),
-                      if (settings.isEditMode)
+                      if (settings.canManageFiles || (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit))
                         Row(
                           children: [
-                            TextButton.icon(
-                              icon: const Icon(Icons.table_chart, size: 15, color: Colors.teal),
-                              label: const Text('CSV Quiz', style: TextStyle(fontSize: 12, color: Colors.teal)),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => ImportQuestionsDialog(
-                                    initialCategory: widget.category.title,
-                                    initialCategoryId: widget.category.id,
-                                    examId: widget.category.examId,
-                                    onImported: _loadData,
-                                  ),
-                                );
-                              },
-                            ),
-                            TextButton.icon(
-                              icon: const Icon(Icons.auto_awesome, size: 15, color: Colors.purple),
-                              label: const Text('AI Quiz', style: TextStyle(fontSize: 12, color: Colors.purple)),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => AiQuizModal(
-                                    initialCategory: widget.category.title,
-                                    initialCategoryId: widget.category.id,
-                                    examId: widget.category.examId,
-                                    onGenerated: _loadData,
-                                  ),
-                                );
-                              },
-                            ),
+                            if (settings.canManageFiles)
+                              TextButton.icon(
+                                icon: const Icon(Icons.table_chart, size: 15, color: Colors.teal),
+                                label: const Text('CSV Quiz', style: TextStyle(fontSize: 12, color: Colors.teal)),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => ImportQuestionsDialog(
+                                      initialCategory: widget.category.title,
+                                      initialCategoryId: widget.category.id,
+                                      examId: widget.category.examId,
+                                      onImported: _loadData,
+                                    ),
+                                  );
+                                },
+                              ),
+                            if (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit)
+                              TextButton.icon(
+                                icon: const Icon(Icons.auto_awesome, size: 15, color: Colors.purple),
+                                label: const Text('AI Quiz', style: TextStyle(fontSize: 12, color: Colors.purple)),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AiQuizModal(
+                                      initialCategory: widget.category.title,
+                                      initialCategoryId: widget.category.id,
+                                      examId: widget.category.examId,
+                                      onGenerated: _loadData,
+                                    ),
+                                  );
+                                },
+                              ),
                           ],
                         ),
                     ],
@@ -727,7 +759,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
-  Widget _buildFolderGridCard(Category sub, int pdfCount, List<Category> breadcrumb) {
+  Widget _buildFolderGridCard(Category sub, CategoryStats stats, List<Category> breadcrumb, SettingsProvider settings) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -740,7 +772,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           ),
         ).then((_) => _loadData());
       },
-      onLongPress: () => _showRenameCategoryDialog(sub),
+      onLongPress: settings.canEdit ? () => _showRenameCategoryDialog(sub) : null,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -763,37 +795,49 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.folder, color: Colors.indigo, size: 28),
+                const Icon(Icons.folder, color: Colors.indigo, size: 26),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    InkWell(
-                      onTap: () => _showRenameCategoryDialog(sub),
-                      child: const Padding(
-                        padding: EdgeInsets.all(2),
-                        child: Icon(Icons.edit, size: 14, color: Colors.blueGrey),
+                    if (settings.canEdit)
+                      InkWell(
+                        onTap: () => _showRenameCategoryDialog(sub),
+                        child: const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: Icon(Icons.edit, size: 14, color: Colors.blueGrey),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
+                    if (settings.canDelete) ...[
+                      const SizedBox(width: 2),
+                      InkWell(
+                        onTap: () => _confirmDeleteSubcategory(sub),
+                        child: const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: Icon(Icons.delete_outline, size: 15, color: Colors.redAccent),
+                        ),
                       ),
-                      child: Text(
-                        '📄 $pdfCount',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ],
             ),
-            Text(
-              sub.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  sub.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '📁 ${stats.directSubcategoryCount} • 📄 ${stats.pdfCount} • ❓ ${stats.questionCount}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.indigo),
+                ),
+              ],
             ),
           ],
         ),
@@ -801,7 +845,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
-  Widget _buildFolderListTile(Category sub, int pdfCount, List<Category> breadcrumb) {
+  Widget _buildFolderListTile(Category sub, CategoryStats stats, List<Category> breadcrumb, SettingsProvider settings) {
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 8),
@@ -815,15 +859,25 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           child: const Icon(Icons.folder, color: Colors.indigo),
         ),
         title: Text(sub.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text('📄 $pdfCount Documents inside', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        subtitle: Text(
+          '📁 ${stats.directSubcategoryCount} Topics • 📄 ${stats.pdfCount} Files • ❓ ${stats.questionCount} Qs',
+          style: const TextStyle(fontSize: 11.5, color: Colors.grey),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blueGrey),
-              tooltip: 'Rename Folder',
-              onPressed: () => _showRenameCategoryDialog(sub),
-            ),
+            if (settings.canEdit)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blueGrey),
+                tooltip: 'Rename Folder',
+                onPressed: () => _showRenameCategoryDialog(sub),
+              ),
+            if (settings.canDelete)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                tooltip: 'Delete Folder',
+                onPressed: () => _confirmDeleteSubcategory(sub),
+              ),
             const Icon(Icons.chevron_right, color: Colors.grey),
           ],
         ),
@@ -889,9 +943,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     ],
                   ),
                 ),
-                if (settings.showDeleteActions)
+                if (settings.canDelete)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
                     onPressed: () async {
                       if (r.id != null) {
                         await _quizRepo.deleteQuizResult(r.id!);

@@ -1063,7 +1063,7 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       );
                                     }),
-                                    if (settings.isStudyFolderAndImportEnabled)
+                                    if (settings.canManageFolders)
                                       ActionChip(
                                         avatar: const Icon(Icons.add, size: 16),
                                         label: const Text('New Exam'),
@@ -1161,52 +1161,55 @@ class _HomeScreenState extends State<HomeScreen>
                                   tooltip: settings.isCategoryGridView ? 'Switch to List' : 'Switch to Grid',
                                   onPressed: settings.toggleCategoryViewMode,
                                 ),
-                                if (settings.isStudyFolderAndImportEnabled) ...[
+                                if (settings.canManageFolders)
                                   IconButton(
                                     icon: const Icon(Icons.create_new_folder, color: Colors.indigo),
                                     tooltip: 'Add Subject / Folder',
                                     onPressed: _showAddCategoryDialog,
                                   ),
+                                if (settings.canManageFiles)
                                   IconButton(
                                     icon: const Icon(Icons.note_add_outlined, color: Colors.indigo),
                                     tooltip: 'Import PDF / Document',
                                     onPressed: _pickAndAddGlobalPdf,
                                   ),
-                                ],
                               ],
                             ),
                           ],
                         ),
                       ),
 
-                      if (settings.isStudyFolderAndImportEnabled)
+                      if (settings.canManageFolders || settings.canManageFiles)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           child: Row(
                             children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              if (settings.canManageFolders)
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    icon: const Icon(Icons.create_new_folder_outlined, size: 16),
+                                    label: const Text('Add Folder', style: TextStyle(fontSize: 12)),
+                                    onPressed: _showAddCategoryDialog,
                                   ),
-                                  icon: const Icon(Icons.create_new_folder_outlined, size: 16),
-                                  label: const Text('Add Folder', style: TextStyle(fontSize: 12)),
-                                  onPressed: _showAddCategoryDialog,
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              if (settings.canManageFolders && settings.canManageFiles)
+                                const SizedBox(width: 8),
+                              if (settings.canManageFiles)
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    icon: const Icon(Icons.file_upload_outlined, size: 16),
+                                    label: const Text('Import Files', style: TextStyle(fontSize: 12)),
+                                    onPressed: _pickAndAddGlobalPdf,
                                   ),
-                                  icon: const Icon(Icons.file_upload_outlined, size: 16),
-                                  label: const Text('Import Files', style: TextStyle(fontSize: 12)),
-                                  onPressed: _pickAndAddGlobalPdf,
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -1225,7 +1228,7 @@ class _HomeScreenState extends State<HomeScreen>
                               const Icon(Icons.folder_open, size: 40, color: Colors.grey),
                               const SizedBox(height: 8),
                               const Text('No categories created yet for this exam.'),
-                              if (settings.isStudyFolderAndImportEnabled) ...[
+                              if (settings.canManageFolders) ...[
                                 const SizedBox(height: 8),
                                 TextButton.icon(
                                   icon: const Icon(Icons.add),
@@ -1295,10 +1298,10 @@ class _HomeScreenState extends State<HomeScreen>
                                               style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: accent),
                                             ),
                                           ),
-                                          if (settings.showDeleteActions)
+                                          if (settings.canDelete)
                                             GestureDetector(
                                               onTap: () => study.deleteCategory(cat.id!),
-                                              child: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                                              child: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
                                             ),
                                         ],
                                       ),
@@ -1334,9 +1337,9 @@ class _HomeScreenState extends State<HomeScreen>
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      if (settings.showDeleteActions)
+                                      if (settings.canDelete)
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
                                           onPressed: () => study.deleteCategory(cat.id!),
                                         ),
                                       const Icon(Icons.chevron_right, color: Colors.grey),
@@ -2163,9 +2166,9 @@ class _HomeScreenState extends State<HomeScreen>
                                                     ],
                                                   ),
                                                 ),
-                                                if (settings.showDeleteActions)
+                                                if (settings.canDelete)
                                                   IconButton(
-                                                    icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 16),
+                                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
                                                     onPressed: () async {
                                                       await _quizRepo.deleteQuestion(q.id!);
                                                       _loadAssessmentData();
@@ -2488,9 +2491,9 @@ class _HomeScreenState extends State<HomeScreen>
                     ],
                   ),
                 ),
-                if (settings.showDeleteActions)
+                if (settings.canDelete)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
                     onPressed: () async {
                       if (r.id != null) {
                         await _quizRepo.deleteQuizResult(r.id!);

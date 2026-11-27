@@ -89,18 +89,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v2.7.0
-          name: "Medhavi (मेधावी) Flutter v2.7.0 - Aarna AI, Anti-Flicker, Pomodoro Presets, Tic-Tac-Toe & Decision Spinner"
+          tag_name: v2.8.0
+          name: "Medhavi (मेधावी) Flutter v2.8.0 - Smooth Back Navigation, Hierarchy Counts, Master Control & Weekly Line Chart"
           body: |
-            ### 📱 Medhavi (मेधावी) Flutter v2.7.0 Official Release APK
-            - **1. Rebranded to Aarna (Master AI)**: Renamed Master AI to Aarna AI everywhere across Home, Study Hub, and Settings.
-            - **2. Flicker & Jitter Elimination**: Fixed root startup initialization flicker, converted full-screen rebuilding timers to scoped consumers, eliminated build-phase state mutations, and cached typography.
-            - **3. Exam Utility Tools Suite (1 Row 3 Cards & Proper Scaffold)**: Wrapped the utility tools suite in a proper Scaffold with royal Medhavi AppBar, back navigation, and consistent 3-column square card grid.
-            - **4. Authentic DigiLocker ID Vault**: Replaced breaking card design with official DigiLocker credential card style featuring credential numbers, view & share actions, and toggles between 3-column grid and list view.
-            - **5. Interactive Candidate Profile & Photo Upload**: Tap avatar or greeting to view security PIN info, change name, upload/change profile photo directly from camera, gallery, or device files, and logout.
-            - **6. Pomodoro Focus Timer Settings Sheet**: Added quick presets (Standard 25/5, Deep Focus 45/10, Power Session 50/10, Marathon 60/15, Quick Sprint 15/3) and custom sliders (5-120 min study, 1-45 min break) with persistent storage and trigger buttons on Home bar, Utility Suite, and PiP overlay.
-            - **7. 10-in-1 Cognitive Brain Training Games**: Added **Tic-Tac-Toe** (tactical 3×3 strategy vs Aarna AI or local 2-Player mode) and **Study Decision Spinner Wheel** (physics-based animated spinner for revision topics, break activities, and rapid challenges).
-            - **8. Registration & Login Redesign**: Clean Medhavi header and simplified student login interface.
-            - **9. Flashcards & Zero Divider Hierarchy**: Glowing mastery flashcards and removed unwanted horizontal divider lines across subjects and subtopics.
+            ### 📱 Medhavi (मेधावी) Flutter v2.8.0 Official Release APK
+            - **1. Smooth Back Navigation (Anti-Flicker)**: Replaced Android snapshotting zoom transition with `_SmoothSlideFadeTransitionsBuilder`, cached themes, scoped `MaterialApp` / `MainScreen` rebuilds, disabled predictive-back window peeking, and removed loading spinner flashes on back navigation.
+            - **2. Study Category Hierarchy Counts**: Added recursive subcategory, PDF/file, and question counts across `StudyHubScreen`, `CategoriesScreen`, and `CategoryDetailScreen`.
+            - **3. Master Edit & View Control Section**: Added global permission controls (Master Edit/View mode, Edit/Rename, Delete Actions defaulting to OFF, File & Import controls, and Folder & Category controls) with `View Only`, `Safe Edit`, and `Full Admin` presets in Settings, Profile, and quick-access header pills.
+            - **4. Interactive Study & Hierarchy Controls**: Added Expand All / Collapse All, interactive `Subcategories: N` toggle pill, nested topic expand/collapse badges, and `+ Subcategory` quick creation.
+            - **5. Home Weekly Report Line Chart**: Replaced the weekly bar chart with a smooth gradient-filled line chart with Y-axis scale guides, Today highlight, Daily Avg, and Streak metrics.
           files: build/app/outputs/flutter-apk/app-release.apk
           overwrite: true

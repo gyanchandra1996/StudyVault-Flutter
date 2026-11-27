@@ -14,19 +14,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   final PdfRepo _pdfRepo = PdfRepo();
   List<PdfDocument> _favorites = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
+    _loadFavorites(showLoading: true);
   }
 
-  Future<void> _loadFavorites() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadFavorites({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final favs = await _pdfRepo.getFavorites();
+    if (!mounted) return;
     setState(() {
       _favorites = favs;
       _isLoading = false;
+      _hasLoadedOnce = true;
     });
   }
 

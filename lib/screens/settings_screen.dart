@@ -23,6 +23,7 @@ import '../widgets/pdf_tools_modal.dart';
 import '../widgets/app_intro_walkthrough.dart';
 import '../widgets/backup_restore_modal.dart';
 import '../widgets/api_key_generator_modal.dart';
+import '../widgets/master_control_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -378,71 +379,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Safe Study Mode Section
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.shield_outlined, color: Colors.blue),
-                      SizedBox(width: 8),
-                      Text(
-                        'Safe Study Mode',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'When disabled, destructive delete buttons are hidden across categories and documents to avoid accidental deletions during exam preparation.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Edit / Creator Mode', style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      settings.isEditMode
-                          ? 'Edit Mode ON: You can add/edit/delete quizzes, topics, and study materials.'
-                          : 'View Only Mode: Safe read-only mode, only viewing and practicing allowed.',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    value: settings.isEditMode,
-                    activeColor: const Color(0xFF1E3A8A),
-                    onChanged: (val) => settings.setEditMode(val),
-                  ),
-                  const Divider(height: 16),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Show Delete Actions'),
-                    subtitle: Text(
-                      settings.showDeleteActions ? 'Actions are visible' : 'Delete buttons hidden for safety',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    value: settings.showDeleteActions,
-                    onChanged: (val) => settings.setShowDeleteActions(val),
-                  ),
-                  const Divider(height: 16),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Study Tab Folder & Import Controls'),
-                    subtitle: Text(
-                      settings.isStudyFolderAndImportEnabled
-                          ? 'Folder creation and file import buttons are visible in Study Material tab'
-                          : 'Folder and file import buttons are hidden for clean study view',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    value: settings.isStudyFolderAndImportEnabled,
-                    onChanged: (val) => settings.setStudyFolderAndImportEnabled(val),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Master Edit & View Control Section
+          const MasterEditViewControlSection(),
           const SizedBox(height: 16),
 
           // App Security & PIN Lock Section

@@ -22,6 +22,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
   final DocumentRepo _docRepo = DocumentRepo();
   List<PersonalDocument> _documents = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
   String _selectedType = 'all';
   bool _isGridView = true;
 
@@ -41,14 +42,18 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
     _loadDocuments();
   }
 
-  Future<void> _loadDocuments() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadDocuments({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final docs = _selectedType == 'all'
         ? await _docRepo.getAllDocuments()
         : await _docRepo.getDocumentsByType(_selectedType);
+    if (!mounted) return;
     setState(() {
       _documents = docs;
       _isLoading = false;
+      _hasLoadedOnce = true;
     });
   }
 
@@ -294,11 +299,12 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
             tooltip: _isGridView ? 'Switch to List View' : 'Switch to Grid View (3 Cards/Row)',
             onPressed: () => setState(() => _isGridView = !_isGridView),
           ),
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Add Document',
-            onPressed: _pickAndAddDocument,
-          ),
+          if (settings.canManageFiles)
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Add Document',
+              onPressed: _pickAndAddDocument,
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
@@ -381,16 +387,18 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.indigo,
-                                foregroundColor: Colors.white,
+                            if (settings.canManageFiles) ...[
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.indigo,
+                                  foregroundColor: Colors.white,
+                                ),
+                                icon: const Icon(Icons.add_photo_alternate),
+                                label: const Text('Add First Document'),
+                                onPressed: _pickAndAddDocument,
                               ),
-                              icon: const Icon(Icons.add_photo_alternate),
-                              label: const Text('Add First Document'),
-                              onPressed: _pickAndAddDocument,
-                            ),
+                            ],
                           ],
                         ),
                       )
@@ -412,27 +420,29 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                               return InkWell(
                                 borderRadius: BorderRadius.circular(16),
                                 onTap: () => _openDocument(doc),
-                                onLongPress: () async {
-                                  final del = await showDialog<bool>(
-                                    context: context,
-                                    builder: (c) => AlertDialog(
-                                      title: const Text('Delete Document?'),
-                                      content: Text('Do you want to delete "${doc.title}"?'),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                                          onPressed: () => Navigator.pop(c, true),
-                                          child: const Text('Delete'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (del == true && doc.id != null) {
-                                    await _docRepo.deleteDocument(doc.id!);
-                                    _loadDocuments();
-                                  }
-                                },
+                                onLongPress: settings.canDelete
+                                    ? () async {
+                                        final del = await showDialog<bool>(
+                                          context: context,
+                                          builder: (c) => AlertDialog(
+                                            title: const Text('Delete Document?'),
+                                            content: Text('Do you want to delete "${doc.title}"?'),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                              ElevatedButton(
+                                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                                onPressed: () => Navigator.pop(c, true),
+                                                child: const Text('Delete'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (del == true && doc.id != null) {
+                                          await _docRepo.deleteDocument(doc.id!);
+                                          _loadDocuments();
+                                        }
+                                      }
+                                    : null,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                                   decoration: BoxDecoration(
@@ -627,7 +637,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                                               padding: const EdgeInsets.all(6),
                                               onPressed: () => ShareService.sharePdf(doc.filePath, title: doc.title),
                                             ),
-                                            if (settings.showDeleteActions) ...[
+                                            if (settings.canDelete) ...[
                                               const SizedBox(width: 8),
                                               IconButton(
                                                 icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
@@ -671,13 +681,15 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_a_photo),
-        label: const Text('Add Document'),
-        onPressed: _pickAndAddDocument,
-      ),
+      floatingActionButton: settings.canManageFiles
+          ? FloatingActionButton.extended(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_a_photo),
+              label: const Text('Add Document'),
+              onPressed: _pickAndAddDocument,
+            )
+          : null,
     );
   }
 }

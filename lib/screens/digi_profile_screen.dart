@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../models/user_profile.dart';
 import '../widgets/backup_restore_modal.dart';
+import '../widgets/master_control_section.dart';
 import 'settings_screen.dart';
 import 'favorites_screen.dart';
 
@@ -390,7 +391,7 @@ class DigiProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    profile.name.isNotEmpty ? profile.name : 'Gyanchandra Yadav',
+                    profile.name.isNotEmpty ? profile.name : 'Scholar',
                     style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -470,69 +471,37 @@ class DigiProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Mode & Security Settings Card
+            // Master Edit & View Control Section
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: MasterEditViewControlSection(),
+            ),
+
+            const SizedBox(height: 14),
+
+            // Appearance Card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
                 elevation: 1,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Study & Access Modes',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Dark Mode Theme', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('Comfortable night reading style', style: TextStyle(fontSize: 12)),
+                    secondary: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const Divider(height: 20),
-
-                      // Edit Mode Switch
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Edit / Creator Mode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text(
-                          settings.isEditMode
-                              ? 'Enabled: You can create, edit and delete quizzes, folders, and notes.'
-                              : 'Disabled: View & Read only mode. Content cannot be accidentally changed.',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        secondary: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: settings.isEditMode ? Colors.orange.withOpacity(0.15) : Colors.blue.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            settings.isEditMode ? Icons.edit_note : Icons.visibility,
-                            color: settings.isEditMode ? Colors.orange : Colors.blue,
-                          ),
-                        ),
-                        value: settings.isEditMode,
-                        activeColor: const Color(0xFF1E3A8A),
-                        onChanged: (val) => settings.setEditMode(val),
-                      ),
-
-                      const Divider(height: 16),
-
-                      // Dark Mode Switch
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Dark Mode Theme', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Comfortable night reading style', style: TextStyle(fontSize: 12)),
-                        secondary: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.indigo.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.dark_mode, color: Colors.indigo),
-                        ),
-                        value: settings.isDarkMode,
-                        activeColor: const Color(0xFF1E3A8A),
-                        onChanged: (val) => settings.toggleDarkMode(),
-                      ),
-                    ],
+                      child: const Icon(Icons.dark_mode, color: Colors.indigo),
+                    ),
+                    value: settings.isDarkMode,
+                    activeColor: const Color(0xFF1E3A8A),
+                    onChanged: (val) => settings.toggleDarkMode(),
                   ),
                 ),
               ),

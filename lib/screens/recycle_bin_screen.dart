@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../database/pdf_repo.dart';
 import '../models/pdf_document.dart';
+import '../providers/settings_provider.dart';
 
 class RecycleBinScreen extends StatefulWidget {
   const RecycleBinScreen({Key? key}) : super(key: key);
@@ -13,19 +15,24 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
   final PdfRepo _pdfRepo = PdfRepo();
   List<PdfDocument> _binList = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    _loadBin();
+    _loadBin(showLoading: true);
   }
 
-  Future<void> _loadBin() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadBin({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     final list = await _pdfRepo.getRecycleBinPdfs();
+    if (!mounted) return;
     setState(() {
       _binList = list;
       _isLoading = false;
+      _hasLoadedOnce = true;
     });
   }
 
@@ -87,11 +94,12 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recycle Bin'),
         actions: [
-          if (_binList.isNotEmpty)
+          if (_binList.isNotEmpty && settings.canDelete)
             TextButton.icon(
               onPressed: _emptyBin,
               icon: const Icon(Icons.delete_forever, color: Colors.red),
@@ -139,16 +147,18 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.restore, color: Color(0xFF10B981)),
-                              tooltip: 'Restore',
-                              onPressed: () => _restorePdf(pdf),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_forever, color: Colors.red),
-                              tooltip: 'Delete Forever',
-                              onPressed: () => _permanentDelete(pdf),
-                            ),
+                            if (settings.canManageFiles || settings.canEdit)
+                              IconButton(
+                                icon: const Icon(Icons.restore, color: Color(0xFF10B981)),
+                                tooltip: 'Restore',
+                                onPressed: () => _restorePdf(pdf),
+                              ),
+                            if (settings.canDelete)
+                              IconButton(
+                                icon: const Icon(Icons.delete_forever, color: Colors.red),
+                                tooltip: 'Delete Forever',
+                                onPressed: () => _permanentDelete(pdf),
+                              ),
                           ],
                         ),
                       ),

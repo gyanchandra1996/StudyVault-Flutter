@@ -22,6 +22,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
   int _currentIndex = 0;
   bool _isFlipped = false;
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
 
   // Stored Library State (Tab 2)
   List<Flashcard> _allCards = [];
@@ -46,8 +47,10 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadData({bool showLoading = false}) async {
+    if (showLoading || !_hasLoadedOnce) {
+      setState(() => _isLoading = true);
+    }
     var all = await _repo.getAllFlashcards();
     if (all.isEmpty) {
       // Seed high-yield starter flashcards for immediate practice
@@ -89,6 +92,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
         _currentIndex = 0;
         _isFlipped = false;
         _isLoading = false;
+        _hasLoadedOnce = true;
       });
       _applyFilter();
     }
@@ -240,7 +244,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
       appBar: AppBar(
         title: const Text('Flashcards & Memory Deck', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          if (canUseAi)
+          if (canUseAi && settings.canEdit)
             IconButton(
               icon: const Icon(Icons.auto_awesome, color: Colors.purple),
               tooltip: 'Generate Flashcards with AI',
@@ -251,11 +255,12 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
                 );
               },
             ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Add Flashcard',
-            onPressed: () => _showAddEditCardDialog(),
-          ),
+          if (settings.canEdit)
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Add Flashcard',
+              onPressed: () => _showAddEditCardDialog(),
+            ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -281,17 +286,17 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
               controller: _tabController,
               children: [
                 // ---------------- TAB 1: ⚡ REVIEW DECK ----------------
-                _buildReviewDeckTab(canUseAi, accent, isDark),
+                _buildReviewDeckTab(canUseAi, accent, isDark, settings),
 
                 // ---------------- TAB 2: 🗂️ ALL STORED FLASHCARDS ----------------
-                _buildStoredLibraryTab(accent, isDark, canUseAi),
+                _buildStoredLibraryTab(accent, isDark, canUseAi, settings),
               ],
             ),
     );
   }
 
   // ---------------- TAB 1: REVIEW DECK VIEW ----------------
-  Widget _buildReviewDeckTab(bool canUseAi, Color accent, bool isDark) {
+  Widget _buildReviewDeckTab(bool canUseAi, Color accent, bool isDark, SettingsProvider settings) {
     if (_dueCards.isEmpty || _currentIndex >= _dueCards.length) {
       return Center(
         child: Padding(
@@ -339,7 +344,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
                     label: const Text('Browse All Stored Cards'),
                     onPressed: () => _tabController.animateTo(1),
                   ),
-                  if (canUseAi)
+                  if (canUseAi && settings.canEdit)
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
@@ -354,15 +359,16 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
                       icon: const Icon(Icons.auto_awesome, size: 18),
                       label: const Text('AI Generate Deck'),
                     ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: Colors.white,
+                  if (settings.canEdit)
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => _showAddEditCardDialog(),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add Card'),
                     ),
-                    onPressed: () => _showAddEditCardDialog(),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Card'),
-                  ),
                 ],
               ),
             ],
@@ -731,7 +737,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
   }
 
   // ---------------- TAB 2: ALL STORED FLASHCARDS BROWSER ----------------
-  Widget _buildStoredLibraryTab(Color accent, bool isDark, bool canUseAi) {
+  Widget _buildStoredLibraryTab(Color accent, bool isDark, bool canUseAi, SettingsProvider settings) {
     return Column(
       children: [
         // Stats Overview Bar
@@ -815,12 +821,14 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () => _showAddEditCardDialog(),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Flashcard'),
-                        ),
+                        if (settings.canEdit) ...[
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => _showAddEditCardDialog(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Flashcard'),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -945,16 +953,18 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> with SingleTickerPr
                                         tooltip: 'Schedule for Review Today',
                                         onPressed: card.id != null ? () => _resetCardForReview(card.id!) : null,
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit_outlined, size: 18),
-                                        tooltip: 'Edit Card',
-                                        onPressed: () => _showAddEditCardDialog(card),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                        tooltip: 'Delete Card',
-                                        onPressed: card.id != null ? () => _deleteCard(card.id!) : null,
-                                      ),
+                                      if (settings.canEdit)
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_outlined, size: 18),
+                                          tooltip: 'Edit Card',
+                                          onPressed: () => _showAddEditCardDialog(card),
+                                        ),
+                                      if (settings.canDelete)
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                          tooltip: 'Delete Card',
+                                          onPressed: card.id != null ? () => _deleteCard(card.id!) : null,
+                                        ),
                                     ],
                                   ),
                                 ],
