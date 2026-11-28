@@ -19,7 +19,7 @@ class AppDatabase {
 
     final db = await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -28,6 +28,7 @@ class AppDatabase {
     await _upgradeToV5(db);
     await _upgradeToV6(db);
     await _upgradeToV7(db);
+    await _upgradeToV8(db);
     return db;
   }
 
@@ -50,6 +51,19 @@ class AppDatabase {
     if (oldVersion < 7) {
       await _upgradeToV7(db);
     }
+    if (oldVersion < 8) {
+      await _upgradeToV8(db);
+    }
+  }
+
+  Future<void> _upgradeToV8(Database db) async {
+    try {
+      final catColumns = await db.rawQuery('PRAGMA table_info(categories)');
+      final catColNames = catColumns.map((c) => c['name'] as String).toSet();
+      if (!catColNames.contains('image_path')) {
+        await db.execute("ALTER TABLE categories ADD COLUMN image_path TEXT DEFAULT ''");
+      }
+    } catch (_) {}
   }
 
   Future<void> _upgradeToV7(Database db) async {
@@ -186,6 +200,7 @@ class AppDatabase {
         description TEXT,
         color TEXT DEFAULT '#6366F1',
         icon TEXT DEFAULT 'folder',
+        image_path TEXT DEFAULT '',
         parent_id INTEGER,
         exam_id INTEGER,
         created_at INTEGER NOT NULL,

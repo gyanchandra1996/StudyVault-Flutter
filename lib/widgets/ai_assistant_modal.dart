@@ -14,6 +14,7 @@ import '../database/flashcard_repo.dart';
 import '../database/exam_reminder_repo.dart';
 import 'aarna_profile_dialog.dart';
 import 'formatted_ai_text.dart';
+import 'voice_settings_sheet.dart';
 
 class AiAssistantModal extends StatefulWidget {
   final String? initialTopic;
@@ -516,6 +517,11 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
                     ),
                   ),
                   IconButton(
+                    icon: const Icon(Icons.record_voice_over_outlined, size: 21),
+                    tooltip: 'Voice & Speech Settings',
+                    onPressed: () => showVoiceSettingsSheet(context),
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.person_pin, size: 22),
                     tooltip: 'About Me & Memory',
                     onPressed: _openProfileEditor,
@@ -726,11 +732,17 @@ class _AiAssistantModalState extends State<AiAssistantModal> {
                                                   setState(() => _currentlySpeakingContent = null);
                                                 } else {
                                                   setState(() => _currentlySpeakingContent = content);
-                                                  VoiceService.instance.speak(content, onStatusChange: (speaking) {
-                                                    if (mounted && !speaking) {
-                                                      setState(() => _currentlySpeakingContent = null);
-                                                    }
-                                                  });
+                                                  VoiceService.instance.speak(
+                                                    content,
+                                                    speechRate: settings.ttsSpeechRate,
+                                                    preferredLocale: settings.ttsPreferredLocale,
+                                                    preferredVoiceName: settings.ttsPreferredVoiceName,
+                                                    onStatusChange: (speaking) {
+                                                      if (mounted && !speaking && _currentlySpeakingContent == content) {
+                                                        setState(() => _currentlySpeakingContent = null);
+                                                      }
+                                                    },
+                                                  );
                                                 }
                                               },
                                               borderRadius: BorderRadius.circular(4),

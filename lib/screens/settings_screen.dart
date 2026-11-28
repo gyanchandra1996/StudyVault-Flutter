@@ -25,9 +25,12 @@ import '../widgets/backup_restore_modal.dart';
 import '../widgets/master_excel_import_modal.dart';
 import '../widgets/api_key_generator_modal.dart';
 import '../widgets/master_control_section.dart';
+import '../widgets/voice_settings_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  final VoidCallback? onOpenDrawer;
+
+  const SettingsScreen({Key? key, this.onOpenDrawer}) : super(key: key);
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -196,6 +199,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: (!Navigator.canPop(context) && widget.onOpenDrawer != null)
+            ? IconButton(
+                icon: const Icon(Icons.menu_rounded),
+                tooltip: 'Open Navigation Menu',
+                onPressed: widget.onOpenDrawer,
+              )
+            : null,
         title: const Text('Settings'),
       ),
       body: ListView(
@@ -1097,6 +1107,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           builder: (_) => const AiAssistantModal(),
                         );
                       },
+                    ),
+                    const Divider(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFE0F2FE),
+                        child: Icon(Icons.record_voice_over_rounded, color: Color(0xFF0284C7), size: 20),
+                      ),
+                      title: const Text('Aarna Voice & Speech Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Text(
+                        'Speed: ${settings.ttsSpeechRate.toStringAsFixed(2)} • Accent: ${settings.ttsPreferredLocale.toUpperCase()}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () => showVoiceSettingsSheet(context),
                     ),
                     const Divider(height: 8),
                     ListTile(

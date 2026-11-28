@@ -13,13 +13,16 @@ import '../widgets/ai_quiz_modal.dart';
 import '../widgets/ai_assistant_modal.dart';
 import '../widgets/import_questions_dialog.dart';
 import '../widgets/question_modal.dart';
-import '../widgets/master_control_section.dart';
+import '../widgets/category_visual_picker.dart';
+import 'categories_screen.dart';
 import 'category_detail_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
 
 class StudyHubScreen extends StatefulWidget {
-  const StudyHubScreen({Key? key}) : super(key: key);
+  final VoidCallback? onOpenDrawer;
+
+  const StudyHubScreen({Key? key, this.onOpenDrawer}) : super(key: key);
 
   @override
   State<StudyHubScreen> createState() => _StudyHubScreenState();
@@ -37,9 +40,8 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
   Map<int, List<Category>> _nestedSubcategoriesMap = {};
   Map<int, CategoryStats> _categoryStats = {};
   Map<String, List<int>> _catIdsByTitle = {};
-  final Set<int> _expandedCategoryIds = {};
   final Set<int> _expandedSubcategoryIds = {};
-  bool _hasInitializedExpansion = false;
+  int? _selectedCategoryId;
   bool _isLoading = true;
   bool _hasLoadedOnce = false;
   String _searchQuery = '';
@@ -108,11 +110,8 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
         _nestedSubcategoriesMap = nestedMap;
         _categoryStats = statsMap;
         _catIdsByTitle = idsByTitle;
-        if (!_hasInitializedExpansion) {
-          for (final cat in study.categories) {
-            if (cat.id != null) _expandedCategoryIds.add(cat.id!);
-          }
-          _hasInitializedExpansion = true;
+        if (_selectedCategoryId == null || !study.categories.any((c) => c.id == _selectedCategoryId)) {
+          _selectedCategoryId = study.categories.isNotEmpty ? study.categories.first.id : null;
         }
         _isLoading = false;
         _hasLoadedOnce = true;
@@ -121,99 +120,43 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
   }
 
   Future<void> _importPdfIntoCategory(Category cat) async {
-    final pdf = await PdfStorageService.pickAndSavePdf(
+    final pdfs = await PdfStorageService.pickAndSaveMultiplePdfs(
       categoryId: cat.id,
       examId: cat.examId,
     );
-    if (pdf != null) {
-      await _pdfRepo.insertPdf(pdf);
+    if (pdfs.isNotEmpty) {
+      for (final pdf in pdfs) {
+        await _pdfRepo.insertPdf(pdf);
+      }
       await _loadAllStudyData();
       if (mounted) {
         Provider.of<StudyProvider>(context, listen: false).refreshRecentPdfs();
+        final msg = pdfs.length == 1
+            ? '✓ Saved "${pdfs.first.title}" inside ${cat.title}'
+            : '✓ Saved ${pdfs.length} PDF files inside ${cat.title}';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✓ Saved "${pdf.title}" inside ${cat.title}')),
+          SnackBar(content: Text(msg)),
         );
       }
     }
   }
 
   void _showAddSubcategoryDialog(Category parentCat) {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-
-    showDialog(
+    showCategoryEditorDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
-            Icon(Icons.create_new_folder, color: Color(0xFF1E3A8A)),
-            SizedBox(width: 8),
-            Text('Add Subcategory', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Inside: ${parentCat.title}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: titleController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Subcategory / Topic Name',
-                hintText: 'e.g. Data Structures, Polity, Trigonometry',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final title = titleController.text.trim();
-              if (title.isNotEmpty) {
-                await _categoryRepo.insertCategory(Category(
-                  title: title,
-                  description: descController.text.trim(),
-                  parentId: parentCat.id,
-                  examId: parentCat.examId,
-                  color: parentCat.color,
-                  icon: 'folder',
-                ));
-                if (parentCat.id != null) {
-                  _expandedCategoryIds.add(parentCat.id!);
-                }
-                if (ctx.mounted) Navigator.pop(ctx);
-                await _loadAllStudyData();
-                if (mounted) {
-                  Provider.of<StudyProvider>(context, listen: false).refreshRecentPdfs();
-                }
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+      parentTitle: parentCat.title,
+      parentId: parentCat.id,
+      examId: parentCat.examId,
+      onSave: (newSub) async {
+        await _categoryRepo.insertCategory(newSub);
+        if (parentCat.id != null) {
+          _selectedCategoryId = parentCat.id;
+        }
+        await _loadAllStudyData();
+        if (mounted) {
+          Provider.of<StudyProvider>(context, listen: false).refreshRecentPdfs();
+        }
+      },
     );
   }
 
@@ -221,7 +164,7 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isSubcategory ? 'Delete Subcategory?' : 'Delete Subject?'),
+        title: Text(isSubcategory ? 'Delete Subcategory?' : 'Delete Category?'),
         content: Text('Delete "${cat.title}" and all its nested topics?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -235,131 +178,34 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
     );
     if (confirm == true && cat.id != null && mounted) {
       await Provider.of<StudyProvider>(context, listen: false).deleteCategory(cat.id!);
+      if (!isSubcategory && _selectedCategoryId == cat.id) {
+        _selectedCategoryId = null;
+      }
       await _loadAllStudyData();
     }
   }
 
   void _showAddCategoryDialog() {
     final study = Provider.of<StudyProvider>(context, listen: false);
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-
-    showDialog(
+    showCategoryEditorDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Subject / Category', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Category Name',
-                hintText: 'e.g. Computer Science, Mathematics',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              if (titleController.text.trim().isNotEmpty) {
-                await study.addCategory(Category(
-                  title: titleController.text.trim(),
-                  description: descController.text.trim(),
-                  examId: study.selectedExam?.id,
-                ));
-                Navigator.pop(ctx);
-                _loadAllStudyData();
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+      examId: study.selectedExam?.id,
+      onSave: (newCat) async {
+        final newId = await _categoryRepo.insertCategory(newCat);
+        _selectedCategoryId = newId;
+        await _loadAllStudyData();
+      },
     );
   }
 
   void _showRenameCategoryDialog(Category cat) {
-    final titleController = TextEditingController(text: cat.title);
-    final descController = TextEditingController(text: cat.description);
-
-    showDialog(
+    showCategoryEditorDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
-            Icon(Icons.edit, color: Color(0xFF1E3A8A)),
-            SizedBox(width: 8),
-            Text('Rename Subject / Topic', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'New Name',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              if (titleController.text.trim().isNotEmpty) {
-                final updated = cat.copyWith(
-                  title: titleController.text.trim(),
-                  description: descController.text.trim(),
-                );
-                await _categoryRepo.updateCategory(updated);
-                Navigator.pop(ctx);
-                _loadAllStudyData();
-              }
-            },
-            child: const Text('Save Changes'),
-          ),
-        ],
-      ),
+      existing: cat,
+      onSave: (updated) async {
+        await _categoryRepo.updateCategory(updated);
+        await _loadAllStudyData();
+      },
     );
   }
 
@@ -540,59 +386,49 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
     }
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF3F4FA),
       appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        title: const Text('Study Center & Hierarchy', style: TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0.5,
-        actions: [
-          // Master Edit/View Control quick pill (long-press opens full Master Control)
-          InkWell(
-            onTap: () {
-              settings.toggleEditMode();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(settings.isEditMode
-                      ? '✏️ Edit Mode ON (Delete: ${settings.canDelete ? "ON" : "OFF"})'
-                      : '👁️ View Only Mode active across app'),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            onLongPress: () => showMasterControlModal(context),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF3F4FA),
+        leading: widget.onOpenDrawer != null
+            ? IconButton(
+                icon: const Icon(Icons.menu_rounded),
+                tooltip: 'Open Navigation Menu',
+                onPressed: widget.onOpenDrawer,
+              )
+            : null,
+        titleSpacing: widget.onOpenDrawer != null ? 0 : null,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: settings.isEditMode ? Colors.orange.withOpacity(0.18) : Colors.blue.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: settings.isEditMode ? Colors.orange : primaryBlue,
-                  width: 1,
-                ),
+                color: const Color(0xFF4F46E5).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: const Icon(Icons.school_rounded, color: Color(0xFF4F46E5), size: 22),
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    settings.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
-                    size: 15,
-                    color: settings.isEditMode ? Colors.orange.shade800 : primaryBlue,
-                  ),
-                  const SizedBox(width: 4),
                   Text(
-                    settings.isEditMode ? 'Edit' : 'View',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: settings.isEditMode ? Colors.orange.shade900 : primaryBlue,
-                    ),
+                    'Study Center',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    'Learn • Practice • Score',
+                    style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
+        ),
+        elevation: 0,
+        actions: [
           // Aarna AI Suite Button
           InkWell(
             onTap: () {
@@ -601,17 +437,17 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                 builder: (_) => const AiAssistantModal(),
               );
             },
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF8B5CF6).withOpacity(0.35),
@@ -620,9 +456,9 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
                   ),
                 ],
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(Icons.auto_awesome, size: 15, color: Colors.white),
                   SizedBox(width: 4),
                   Text(
@@ -640,8 +476,8 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
           ),
           if (settings.canManageFolders)
             IconButton(
-              icon: const Icon(Icons.add, color: primaryBlue),
-              tooltip: 'Add Subject / Category',
+              icon: const Icon(Icons.add_circle_outline, color: Color(0xFF4F46E5)),
+              tooltip: 'Add Category',
               onPressed: _showAddCategoryDialog,
             ),
         ],
@@ -763,81 +599,151 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
 
                     // Content Switch based on selected tab
                     if (_selectedFilterTab == 0) ...[
-                      // ==================== TAB 0: SUBJECTS & HIERARCHY ====================
+                      // ==================== TAB 0: CATEGORIES GRID & SELECTED SUBCATEGORY PANEL ====================
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              child: Text(
-                                'Category Hierarchy (${filteredCategories.length})',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : const Color(0xFF1E293B),
-                                ),
+                            const Icon(Icons.layers_rounded, color: Color(0xFF4F46E5), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Categories',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : const Color(0xFF1E293B),
                               ),
                             ),
-                            if (filteredCategories.isNotEmpty)
-                              TextButton.icon(
-                                icon: Icon(
-                                  filteredCategories.every((c) => c.id != null && _expandedCategoryIds.contains(c.id))
-                                      ? Icons.unfold_less
-                                      : Icons.unfold_more,
-                                  size: 16,
-                                ),
-                                label: Text(
-                                  filteredCategories.every((c) => c.id != null && _expandedCategoryIds.contains(c.id))
-                                      ? 'Collapse All'
-                                      : 'Expand All',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                onPressed: () {
-                                  final allExpanded = filteredCategories.every(
-                                    (c) => c.id != null && _expandedCategoryIds.contains(c.id),
-                                  );
-                                  setState(() {
-                                    if (allExpanded) {
-                                      _expandedCategoryIds.clear();
-                                    } else {
-                                      for (final c in filteredCategories) {
-                                        if (c.id != null) _expandedCategoryIds.add(c.id!);
-                                      }
-                                    }
-                                  });
-                                },
-                              ),
+                            const Spacer(),
                             if (settings.canManageFolders)
-                              TextButton.icon(
-                                icon: const Icon(Icons.add, size: 16),
-                                label: const Text('Add Subject', style: TextStyle(fontSize: 12)),
-                                onPressed: _showAddCategoryDialog,
+                              InkWell(
+                                onTap: _showAddCategoryDialog,
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4F46E5).withOpacity(0.10),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add, size: 14, color: Color(0xFF4F46E5)),
+                                      SizedBox(width: 3),
+                                      Text(
+                                        'Add',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF4F46E5),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
+                            const SizedBox(width: 6),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                foregroundColor: const Color(0xFF4F46E5),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+                                ).then((_) => _loadAllStudyData());
+                              },
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('View All', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                  SizedBox(width: 3),
+                                  Icon(Icons.arrow_forward_rounded, size: 15),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
 
                       if (filteredCategories.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(32),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
                           child: Center(
-                            child: Text('No categories found. Tap "+ Add Subject" to create one.'),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.category_outlined, size: 42, color: Colors.grey),
+                                const SizedBox(height: 8),
+                                const Text('No categories found.'),
+                                if (settings.canManageFolders) ...[
+                                  const SizedBox(height: 8),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF4F46E5),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    icon: const Icon(Icons.add, size: 16),
+                                    label: const Text('Add Category'),
+                                    onPressed: _showAddCategoryDialog,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         )
-                      else
-                        ListView.builder(
+                      else ...[
+                        // 3-Column Category Cards Grid (Matches reference image)
+                        GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.78,
+                          ),
                           itemCount: filteredCategories.length,
                           itemBuilder: (ctx, idx) {
                             final cat = filteredCategories[idx];
                             final subs = _subcategoriesMap[cat.id] ?? [];
-                            return _buildHierarchicalCategoryCard(cat, subs, settings);
+                            final isSelected = _selectedCategoryId == cat.id ||
+                                (_selectedCategoryId == null && idx == 0);
+                            return _buildGridCategoryTile(
+                              cat: cat,
+                              subs: subs,
+                              isSelected: isSelected,
+                              settings: settings,
+                              isDark: isDark,
+                            );
                           },
                         ),
+                        const SizedBox(height: 16),
+
+                        // Selected Category Panel (Subcategories List + Start Quiz Button)
+                        Builder(
+                          builder: (ctx) {
+                            final selectedCat = filteredCategories.firstWhere(
+                              (c) => c.id == _selectedCategoryId,
+                              orElse: () => filteredCategories.first,
+                            );
+                            final subs = _subcategoriesMap[selectedCat.id] ?? [];
+                            return _buildSelectedCategoryPanel(
+                              cat: selectedCat,
+                              subcategories: subs,
+                              settings: settings,
+                              isDark: isDark,
+                            );
+                          },
+                        ),
+                      ],
                     ] else if (_selectedFilterTab == 1) ...[
                       // ==================== TAB 1: QUIZZES & TESTS ====================
                       Padding(
@@ -1084,8 +990,161 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
     );
   }
 
-  Widget _buildHierarchicalCategoryCard(Category cat, List<Category> subcategories, SettingsProvider settings) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  static const List<Color> _subPalette = [
+    Color(0xFFE11D48),
+    Color(0xFF059669),
+    Color(0xFF4F46E5),
+    Color(0xFFD97706),
+    Color(0xFF0284C7),
+    Color(0xFF7C3AED),
+  ];
+
+  Widget _buildGridCategoryTile({
+    required Category cat,
+    required List<Category> subs,
+    required bool isSelected,
+    required SettingsProvider settings,
+    required bool isDark,
+  }) {
+    final catColor = parseCategoryColor(cat.color);
+    final topicCount = subs.length;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        if (isSelected) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
+          ).then((_) => _loadAllStudyData());
+        } else {
+          setState(() => _selectedCategoryId = cat.id);
+        }
+      },
+      onLongPress: settings.canEdit ? () => _showRenameCategoryDialog(cat) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? catColor.withOpacity(0.18) : const Color(0xFFF5F8FF))
+              : (isDark ? const Color(0xFF1E293B) : Colors.white),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF2563EB)
+                : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+            width: isSelected ? 1.8 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? const Color(0xFF2563EB).withOpacity(0.10)
+                  : Colors.black.withOpacity(0.03),
+              blurRadius: isSelected ? 10 : 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 2),
+                CategoryVisualBadge(
+                  category: cat,
+                  size: 46,
+                  borderRadius: 13,
+                ),
+                Text(
+                  cat.title,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    height: 1.15,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.08)
+                        : const Color(0xFFEFF3FB),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '$topicCount Topics',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white70 : const Color(0xFF334155),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 13,
+                        color: isDark ? Colors.white70 : const Color(0xFF4F46E5),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (settings.canEdit)
+              Positioned(
+                top: -6,
+                right: -6,
+                child: PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, size: 15, color: Colors.grey.shade500),
+                  padding: EdgeInsets.zero,
+                  onSelected: (val) {
+                    if (val == 'edit') {
+                      _showRenameCategoryDialog(cat);
+                    } else if (val == 'open') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
+                      ).then((_) => _loadAllStudyData());
+                    } else if (val == 'delete') {
+                      _confirmDeleteCategory(cat);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'open', child: Text('Open Folder')),
+                    const PopupMenuItem(value: 'edit', child: Text('Edit Category')),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete Category', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedCategoryPanel({
+    required Category cat,
+    required List<Category> subcategories,
+    required SettingsProvider settings,
+    required bool isDark,
+  }) {
     final catKey = cat.title.trim().toLowerCase();
     final mergedIds = _catIdsByTitle[catKey] ?? (cat.id != null ? [cat.id!] : <int>[]);
     int totalPdfs = 0;
@@ -1097,483 +1156,530 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
         totalQuestions += st.questionCount;
       }
     }
-    int nestedTopicsCount = 0;
-    for (final sub in subcategories) {
-      nestedTopicsCount += (_nestedSubcategoriesMap[sub.id]?.length ?? 0);
-    }
 
-    final isExpanded = cat.id != null && _expandedCategoryIds.contains(cat.id);
+    final catQuestions = _allQuestions.where((q) {
+      if (q.categoryId != null && mergedIds.contains(q.categoryId)) return true;
+      final qSub = q.subject.trim().toLowerCase();
+      if (qSub == catKey) return true;
+      return subcategories.any((s) =>
+          s.id == q.categoryId || s.title.trim().toLowerCase() == qSub);
+    }).toList();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.25), width: 1.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              if (cat.id == null) return;
-              setState(() {
-                if (isExpanded) {
-                  _expandedCategoryIds.remove(cat.id!);
-                } else {
-                  _expandedCategoryIds.add(cat.id!);
-                }
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          // Selected Category Header Row
+          Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
+                  ).then((_) => _loadAllStudyData());
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: CategoryVisualBadge(
+                  category: cat,
+                  size: 44,
+                  borderRadius: 12,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
+                    ).then((_) => _loadAllStudyData());
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.school, color: Color(0xFF1E3A8A), size: 22),
+                      Text(
+                        cat.title,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 2),
+                      Text(
+                        totalPdfs > 0 || totalQuestions > 0
+                            ? 'Select a subcategory • $totalPdfs Files • $totalQuestions Qs'
+                            : 'Select a subcategory to start',
+                        style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4F46E5).withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  '${subcategories.length} Total',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4F46E5),
+                  ),
+                ),
+              ),
+              if (settings.canEdit)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 19, color: Colors.grey),
+                  onSelected: (val) {
+                    if (val == 'edit') {
+                      _showRenameCategoryDialog(cat);
+                    } else if (val == 'open') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
+                      ).then((_) => _loadAllStudyData());
+                    } else if (val == 'add_sub') {
+                      _showAddSubcategoryDialog(cat);
+                    } else if (val == 'import_pdf') {
+                      _importPdfIntoCategory(cat);
+                    } else if (val == 'delete') {
+                      _confirmDeleteCategory(cat);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'open', child: Text('Open Category Folder')),
+                    const PopupMenuItem(value: 'edit', child: Text('Edit Category (Name / Icon / Image)')),
+                    if (settings.canManageFolders)
+                      const PopupMenuItem(value: 'add_sub', child: Text('Add Subcategory')),
+                    if (settings.canManageFiles)
+                      const PopupMenuItem(value: 'import_pdf', child: Text('Import Multiple PDFs')),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete Category', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Quick Category Actions Ribbon
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                if (settings.canManageFolders) ...[
+                  _buildCompactPanelChip(
+                    icon: Icons.create_new_folder_outlined,
+                    label: '+ Subcategory',
+                    color: const Color(0xFF4F46E5),
+                    onTap: () => _showAddSubcategoryDialog(cat),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (settings.canManageFiles) ...[
+                  _buildCompactPanelChip(
+                    icon: Icons.upload_file_outlined,
+                    label: 'Import PDFs',
+                    color: Colors.teal,
+                    onTap: () => _importPdfIntoCategory(cat),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit) ...[
+                  _buildCompactPanelChip(
+                    icon: Icons.auto_awesome,
+                    label: 'AI Quiz',
+                    color: Colors.purple,
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AiQuizModal(
+                          initialCategory: cat.title,
+                          initialCategoryId: cat.id,
+                          examId: cat.examId,
+                          onGenerated: _loadAllStudyData,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (settings.canManageFiles) ...[
+                  _buildCompactPanelChip(
+                    icon: Icons.table_chart_outlined,
+                    label: 'Import CSV',
+                    color: Colors.blueGrey,
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => ImportQuestionsDialog(
+                          initialCategory: cat.title,
+                          initialCategoryId: cat.id,
+                          examId: cat.examId,
+                          onImported: _loadAllStudyData,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                _buildCompactPanelChip(
+                  icon: Icons.folder_open_rounded,
+                  label: 'Open Folder',
+                  color: const Color(0xFF2563EB),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
+                    ).then((_) => _loadAllStudyData());
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Subcategory Rows (Matches list in reference image)
+          if (subcategories.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.folder_open_outlined, size: 20, color: Colors.grey),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'No subcategories yet. Add one or open folder to view PDFs.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                  if (settings.canManageFolders)
+                    TextButton(
+                      onPressed: () => _showAddSubcategoryDialog(cat),
+                      child: const Text('+ Add'),
+                    ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: subcategories.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final sub = entry.value;
+                final subStats = _categoryStats[sub.id] ?? const CategoryStats();
+                final nestedSubs = _nestedSubcategoriesMap[sub.id] ?? const <Category>[];
+                final isSubExpanded = sub.id != null && _expandedSubcategoryIds.contains(sub.id);
+                final subColor = sub.color.isNotEmpty && sub.color != cat.color
+                    ? parseCategoryColor(sub.color)
+                    : _subPalette[idx % _subPalette.length];
+
+                final countLabel = subStats.questionCount > 0
+                    ? '${subStats.questionCount} Questions'
+                    : (subStats.pdfCount > 0
+                        ? '${subStats.pdfCount} Files'
+                        : '${nestedSubs.length} Topics');
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CategoryDetailScreen(
+                              category: sub,
+                              breadcrumbPath: [cat, sub],
+                            ),
+                          ),
+                        ).then((_) => _loadAllStudyData());
+                      },
+                      onLongPress: settings.canEdit ? () => _showRenameCategoryDialog(sub) : null,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark ? Colors.white10 : const Color(0xFFEFF3FB),
+                          ),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              cat.title,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            CategoryVisualBadge(
+                              category: sub,
+                              size: 36,
+                              circular: true,
+                              overrideColor: subColor,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              nestedTopicsCount > 0
-                                  ? '${subcategories.length} subcategories • $nestedTopicsCount topics'
-                                  : '${subcategories.length} subcategories / topics',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    sub.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13.5,
+                                      color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                  if (subStats.pdfCount > 0 || nestedSubs.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      [
+                                        if (nestedSubs.isNotEmpty) '${nestedSubs.length} subtopics',
+                                        if (subStats.pdfCount > 0) '${subStats.pdfCount} PDFs',
+                                      ].join(' • '),
+                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
+                            if (nestedSubs.isNotEmpty && sub.id != null) ...[
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    if (isSubExpanded) {
+                                      _expandedSubcategoryIds.remove(sub.id!);
+                                    } else {
+                                      _expandedSubcategoryIds.add(sub.id!);
+                                    }
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.indigo.withOpacity(0.10),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    isSubExpanded ? Icons.expand_less : Icons.expand_more,
+                                    size: 16,
+                                    color: Colors.indigo,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            Text(
+                              countLabel,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: isDark ? Colors.white70 : const Color(0xFF4F46E5),
+                              ),
+                            ),
+                            if (settings.canEdit)
+                              PopupMenuButton<String>(
+                                icon: Icon(Icons.more_vert, size: 16, color: Colors.grey.shade500),
+                                padding: EdgeInsets.zero,
+                                onSelected: (val) {
+                                  if (val == 'edit') {
+                                    _showRenameCategoryDialog(sub);
+                                  } else if (val == 'add_topic') {
+                                    _showAddSubcategoryDialog(sub);
+                                  } else if (val == 'delete') {
+                                    _confirmDeleteCategory(sub, isSubcategory: true);
+                                  }
+                                },
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(value: 'edit', child: Text('Edit Subcategory')),
+                                  PopupMenuItem(value: 'add_topic', child: Text('Add Nested Topic')),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
-                      if (settings.canEdit)
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blueGrey),
-                          tooltip: 'Rename Subject',
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => _showRenameCategoryDialog(cat),
-                        ),
-                      if (settings.canDelete)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
-                          tooltip: 'Delete Subject',
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => _confirmDeleteCategory(cat),
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.open_in_new, size: 18, color: Color(0xFF2563EB)),
-                        tooltip: 'Open Subject Folder',
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => CategoryDetailScreen(category: cat)),
-                          ).then((_) => _loadAllStudyData());
-                        },
-                      ),
-                      Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Colors.grey,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  // Category Hierarchy Count Badges + Interactive Subcategory Toggle Button
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          if (cat.id == null) return;
-                          setState(() {
-                            if (isExpanded) {
-                              _expandedCategoryIds.remove(cat.id!);
-                            } else {
-                              _expandedCategoryIds.add(cat.id!);
-                            }
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withOpacity(isExpanded ? 0.16 : 0.09),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.account_tree_outlined,
-                                size: 13,
-                                color: isDark ? Colors.lightBlue.shade200 : const Color(0xFF1E3A8A),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Subcategories: ${subcategories.length}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.lightBlue.shade200 : const Color(0xFF1E3A8A),
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                size: 14,
-                                color: isDark ? Colors.lightBlue.shade200 : const Color(0xFF1E3A8A),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      _buildStatPill(
-                        icon: Icons.picture_as_pdf_outlined,
-                        label: 'Files: $totalPdfs',
-                        color: Colors.teal.shade700,
-                      ),
-                      _buildStatPill(
-                        icon: Icons.quiz_outlined,
-                        label: 'Qs: $totalQuestions',
-                        color: Colors.deepPurple,
-                      ),
-                      if (settings.canManageFolders)
-                        InkWell(
-                          onTap: () => _showAddSubcategoryDialog(cat),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.indigo.withOpacity(0.1),
+                    ),
+                    if (isSubExpanded && nestedSubs.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, bottom: 10),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: nestedSubs.map((topic) {
+                            final tStats = _categoryStats[topic.id] ?? const CategoryStats();
+                            return InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CategoryDetailScreen(
+                                      category: topic,
+                                      breadcrumbPath: [cat, sub, topic],
+                                    ),
+                                  ),
+                                ).then((_) => _loadAllStudyData());
+                              },
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.indigo.withOpacity(0.3)),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.create_new_folder_outlined, size: 13, color: Colors.indigo),
-                                SizedBox(width: 4),
-                                Text(
-                                  '+ Subcategory',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Expanded Subcategories & Actions
-          if (isExpanded)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (subcategories.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline, size: 16, color: Colors.grey),
-                          const SizedBox(width: 6),
-                          const Expanded(
-                            child: Text('No subcategories yet.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          ),
-                          if (settings.canManageFolders)
-                            TextButton(
-                              onPressed: () => _showAddSubcategoryDialog(cat),
-                              child: const Text('+ Add Subcategory'),
-                            ),
-                        ],
-                      ),
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: subcategories.map((sub) {
-                            final subStats = _categoryStats[sub.id] ?? const CategoryStats();
-                            final nestedSubs = _nestedSubcategoriesMap[sub.id] ?? const <Category>[];
-                            final isSubExpanded = sub.id != null && _expandedSubcategoryIds.contains(sub.id);
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => CategoryDetailScreen(
-                                          category: sub,
-                                          breadcrumbPath: [cat, sub],
-                                        ),
-                                      ),
-                                    ).then((_) => _loadAllStudyData());
-                                  },
-                                  onLongPress: settings.canEdit ? () => _showRenameCategoryDialog(sub) : null,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.indigo.withOpacity(0.08),
                                   borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: isSubExpanded
-                                            ? const Color(0xFF2563EB)
-                                            : (isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.folder_outlined, size: 14, color: Color(0xFF2563EB)),
-                                        const SizedBox(width: 5),
-                                        Text(
-                                          sub.title,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.white : const Color(0xFF1E293B),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF2563EB).withOpacity(0.12),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(
-                                            '📄 ${subStats.pdfCount} • ❓ ${subStats.questionCount}',
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF1E3A8A),
-                                            ),
-                                          ),
-                                        ),
-                                        if (nestedSubs.isNotEmpty && sub.id != null) ...[
-                                          const SizedBox(width: 5),
-                                          InkWell(
-                                            onTap: () {
-                                              setState(() {
-                                                if (isSubExpanded) {
-                                                  _expandedSubcategoryIds.remove(sub.id!);
-                                                } else {
-                                                  _expandedSubcategoryIds.add(sub.id!);
-                                                }
-                                              });
-                                            },
-                                            borderRadius: BorderRadius.circular(6),
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: Colors.indigo.withOpacity(0.14),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    '📁 ${nestedSubs.length}',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Colors.indigo,
-                                                    ),
-                                                  ),
-                                                  Icon(
-                                                    isSubExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                                                    size: 14,
-                                                    color: Colors.indigo,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                        if (settings.canEdit) ...[
-                                          const SizedBox(width: 5),
-                                          InkWell(
-                                            onTap: () => _showRenameCategoryDialog(sub),
-                                            child: const Icon(Icons.edit, size: 12, color: Colors.blueGrey),
-                                          ),
-                                        ],
-                                        if (settings.canDelete) ...[
-                                          const SizedBox(width: 5),
-                                          InkWell(
-                                            onTap: () => _confirmDeleteCategory(sub, isSubcategory: true),
-                                            child: const Icon(Icons.delete_outline, size: 13, color: Colors.redAccent),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
+                                  border: Border.all(color: Colors.indigo.withOpacity(0.22)),
+                                ),
+                                child: Text(
+                                  '${topic.title} (${tStats.pdfCount} 📄 • ${tStats.questionCount} Qs)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.indigo.shade200 : Colors.indigo.shade900,
                                   ),
                                 ),
-                                if (isSubExpanded && nestedSubs.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 6, left: 10),
-                                    child: Wrap(
-                                      spacing: 6,
-                                      runSpacing: 6,
-                                      children: nestedSubs.map((topic) {
-                                        final tStats = _categoryStats[topic.id] ?? const CategoryStats();
-                                        return InkWell(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => CategoryDetailScreen(
-                                                  category: topic,
-                                                  breadcrumbPath: [cat, sub, topic],
-                                                ),
-                                              ),
-                                            ).then((_) => _loadAllStudyData());
-                                          },
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: Colors.indigo.withOpacity(0.06),
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(color: Colors.indigo.withOpacity(0.22)),
-                                            ),
-                                            child: Text(
-                                              '${topic.title} (📄 ${tStats.pdfCount} • ❓ ${tStats.questionCount})',
-                                              style: TextStyle(
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.w600,
-                                                color: isDark ? Colors.indigo.shade200 : Colors.indigo.shade900,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                              ],
+                              ),
                             );
                           }).toList(),
                         ),
-                      ],
-                    ),
-                  if (settings.canManageFiles || (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit)) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: 4,
-                      children: [
-                        if (settings.canManageFiles)
-                          TextButton.icon(
-                            icon: const Icon(Icons.upload_file, size: 14, color: Colors.indigo),
-                            label: const Text('Import PDF', style: TextStyle(fontSize: 11, color: Colors.indigo)),
-                            onPressed: () => _importPdfIntoCategory(cat),
-                          ),
-                        if (settings.isAiEnabled && settings.isAiQuizEnabled && settings.canEdit)
-                          TextButton.icon(
-                            icon: const Icon(Icons.auto_awesome, size: 14, color: Colors.purple),
-                            label: Text('AI Quiz for ${cat.title}', style: const TextStyle(fontSize: 11, color: Colors.purple)),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => AiQuizModal(
-                                  initialCategory: cat.title,
-                                  initialCategoryId: cat.id,
-                                  examId: cat.examId,
-                                  onGenerated: _loadAllStudyData,
-                                ),
-                              );
-                            },
-                          ),
-                        if (settings.canManageFiles)
-                          TextButton.icon(
-                            icon: const Icon(Icons.table_chart, size: 14, color: Colors.teal),
-                            label: const Text('Import CSV', style: TextStyle(fontSize: 11, color: Colors.teal)),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => ImportQuestionsDialog(
-                                  initialCategory: cat.title,
-                                  initialCategoryId: cat.id,
-                                  examId: cat.examId,
-                                  onImported: _loadAllStudyData,
-                                ),
-                              );
-                            },
-                          ),
-                      ],
+                      ),
+                  ],
+                );
+              }).toList(),
+            ),
+
+          const SizedBox(height: 6),
+
+          // Full-Width Gradient Start Quiz Button (Matches reference image)
+          SizedBox(
+            width: double.infinity,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _showStartPracticeQuiz(
+                customQuestions: catQuestions.isNotEmpty ? catQuestions : _allQuestions,
+                titlePrefix: cat.title,
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withOpacity(0.32),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
-                ],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Spacer(),
+                    Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+                    SizedBox(width: 6),
+                    Text(
+                      'Start Quiz',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Spacer(),
+                    Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                  ],
+                ),
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatPill({
+  Widget _buildCompactPanelChip({
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.25)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
-          ),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.28)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildFilterTab(int index, String label) {
     final isSelected = _selectedFilterTab == index;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _selectedFilterTab = index),
@@ -1582,10 +1688,14 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
           padding: const EdgeInsets.symmetric(vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF1E3A8A) : Colors.white,
+            color: isSelected
+                ? const Color(0xFF1E3A8A)
+                : (isDark ? const Color(0xFF1E293B) : Colors.white),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFFE2E8F0),
+              color: isSelected
+                  ? const Color(0xFF1E3A8A)
+                  : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
             ),
           ),
           child: Text(
@@ -1593,7 +1703,9 @@ class _StudyHubScreenState extends State<StudyHubScreen> with AutomaticKeepAlive
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : const Color(0xFF475569),
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : const Color(0xFF475569)),
             ),
           ),
         ),

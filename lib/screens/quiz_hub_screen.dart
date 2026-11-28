@@ -11,7 +11,9 @@ import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
 
 class QuizHubScreen extends StatefulWidget {
-  const QuizHubScreen({Key? key}) : super(key: key);
+  final VoidCallback? onOpenDrawer;
+
+  const QuizHubScreen({Key? key, this.onOpenDrawer}) : super(key: key);
 
   @override
   State<QuizHubScreen> createState() => _QuizHubScreenState();
@@ -198,6 +200,13 @@ class _QuizHubScreenState extends State<QuizHubScreen> with SingleTickerProvider
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        leading: widget.onOpenDrawer != null
+            ? IconButton(
+                icon: const Icon(Icons.menu_rounded),
+                tooltip: 'Open Navigation Menu',
+                onPressed: widget.onOpenDrawer,
+              )
+            : null,
         title: const Text('Assessments & Quizzes', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0.5,
         actions: [

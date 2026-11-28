@@ -27,11 +27,13 @@ import 'digi_profile_screen.dart';
 class DigiHomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
   final VoidCallback? onTriggerPip;
+  final VoidCallback? onOpenDrawer;
 
   const DigiHomeScreen({
     Key? key,
     this.onNavigateToTab,
     this.onTriggerPip,
+    this.onOpenDrawer,
   }) : super(key: key);
 
   @override
@@ -284,9 +286,24 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Bar: Logo, Edit/View Mode Pill, PiP Icon, Avatar
+                    // Top Bar: Sidebar Menu, Logo, PiP Icon, Avatar
                     Row(
                       children: [
+                        if (widget.onOpenDrawer != null) ...[
+                          InkWell(
+                            onTap: widget.onOpenDrawer,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.18),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.menu_rounded, color: Colors.white, size: 20),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         // Shield Emblem & App Title
                         Container(
                           padding: const EdgeInsets.all(6),
@@ -322,63 +339,6 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                         ),
                         const Spacer(),
 
-                        // Master Edit/View Control Quick Pill
-                        InkWell(
-                          onTap: () => showMasterControlModal(context),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: settingsState.isEditMode
-                                  ? Colors.orange.withOpacity(0.28)
-                                  : Colors.white.withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: settingsState.isEditMode ? Colors.orangeAccent : Colors.white38,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  settingsState.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  settingsState.isEditMode ? 'Edit' : 'View',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Picture-in-Picture Button
-                        InkWell(
-                          onTap: () async {
-                            if (widget.onTriggerPip != null) {
-                              widget.onTriggerPip!();
-                            } else {
-                              await PipService.enterPip();
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.picture_in_picture_alt, color: Colors.white, size: 18),
-                          ),
-                        ),
                         const SizedBox(width: 8),
 
                         // Profile Avatar (Clickable: Opens Profile & Photo Upload)
@@ -584,10 +544,10 @@ class _DigiHomeScreenState extends State<DigiHomeScreen> with AutomaticKeepAlive
                       },
                     ),
                     _buildUtilityCard(
-                      icon: Icons.picture_in_picture_alt,
+                      icon: Icons.timer_outlined,
                       color: Colors.blue,
-                      title: 'Focus PiP',
-                      subtitle: 'Floating Timer',
+                      title: 'Focus Timer',
+                      subtitle: 'Study Session',
                       onTap: () {
                         if (widget.onTriggerPip != null) {
                           widget.onTriggerPip!();

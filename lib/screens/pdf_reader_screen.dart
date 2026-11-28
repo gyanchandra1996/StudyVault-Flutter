@@ -11,6 +11,7 @@ import '../database/pdf_repo.dart';
 import '../database/flashcard_repo.dart';
 import '../database/note_repo.dart';
 import '../database/reading_repo.dart';
+import '../widgets/formatted_note_content.dart';
 
 class PdfReaderScreen extends StatefulWidget {
   final PdfDocument pdf;
@@ -226,14 +227,26 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                             final n = notes[i];
                             return Card(
                               margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
-                                  child: Text('P${n.pageNumber}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                ),
-                                title: Text(n.noteText),
-                                trailing: settings.canDelete
-                                    ? IconButton(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                                      child: Text('P${n.pageNumber}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: FormattedNoteContent(
+                                        data: n.noteText,
+                                        accentColor: const Color(0xFF6366F1),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    if (settings.canDelete)
+                                      IconButton(
                                         icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
                                         onPressed: () async {
                                           await _noteRepo.deleteNote(n.id!);
@@ -241,8 +254,9 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
                                           setSheetState(() => notes.clear());
                                           setSheetState(() => notes.addAll(updated));
                                         },
-                                      )
-                                    : null,
+                                      ),
+                                  ],
+                                ),
                               ),
                             );
                           },

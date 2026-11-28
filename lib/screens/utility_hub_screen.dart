@@ -18,8 +18,9 @@ import 'notes_screen.dart';
 
 class UtilityHubScreen extends StatefulWidget {
   final VoidCallback? onTriggerPip;
+  final VoidCallback? onOpenDrawer;
 
-  const UtilityHubScreen({Key? key, this.onTriggerPip}) : super(key: key);
+  const UtilityHubScreen({Key? key, this.onTriggerPip, this.onOpenDrawer}) : super(key: key);
 
   @override
   State<UtilityHubScreen> createState() => _UtilityHubScreenState();
@@ -56,13 +57,19 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        title: const Text('DigiLocker Utility Suite', style: TextStyle(fontWeight: FontWeight.bold)),
+        leading: widget.onOpenDrawer != null
+            ? IconButton(
+                icon: const Icon(Icons.menu_rounded),
+                tooltip: 'Open Navigation Menu',
+                onPressed: widget.onOpenDrawer,
+              )
+            : null,
+        title: const Text('Study Utility Suite', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0.5,
         actions: [
-          // PiP trigger in AppBar
           IconButton(
-            icon: const Icon(Icons.picture_in_picture_alt, color: primaryBlue),
-            tooltip: 'Picture in Picture Timer',
+            icon: const Icon(Icons.timer_outlined, color: primaryBlue),
+            tooltip: 'Focus Timer',
             onPressed: () {
               if (widget.onTriggerPip != null) {
                 widget.onTriggerPip!();
@@ -78,7 +85,7 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Pomodoro Focus Timer with PiP Quick Trigger (scoped Consumer avoids rebuilding full screen every second)
+            // Pomodoro Focus Timer Quick Trigger (scoped Consumer avoids rebuilding full screen every second)
             Consumer<PomodoroProvider>(
               builder: (context, pomodoro, _) => Container(
                 padding: const EdgeInsets.all(16),
@@ -104,7 +111,7 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                               Icon(Icons.timer, color: Colors.white, size: 18),
                               SizedBox(width: 6),
                               Text(
-                                'Study Focus Timer (PiP)',
+                                'Study Focus Timer',
                                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                             ],
@@ -142,8 +149,8 @@ class _UtilityHubScreenState extends State<UtilityHubScreen> with AutomaticKeepA
                                   visualDensity: VisualDensity.compact,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 ),
-                                icon: const Icon(Icons.picture_in_picture_alt, size: 16),
-                                label: const Text('Floating PiP'),
+                                icon: const Icon(Icons.fullscreen, size: 16),
+                                label: const Text('Floating Timer'),
                                 onPressed: () {
                                   if (widget.onTriggerPip != null) {
                                     widget.onTriggerPip!();

@@ -8,12 +8,13 @@ import '../database/category_repo.dart';
 import '../database/pdf_repo.dart';
 import '../database/quiz_repo.dart';
 import '../providers/settings_provider.dart';
+import '../providers/study_provider.dart';
 import '../services/pdf_storage_service.dart';
 import '../widgets/ai_quiz_modal.dart';
 import '../widgets/ai_notes_generator_modal.dart';
 import '../widgets/question_modal.dart';
 import '../widgets/import_questions_dialog.dart';
-import '../widgets/master_control_section.dart';
+import '../widgets/category_visual_picker.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
 import 'quiz_scorecard_screen.dart';
@@ -75,78 +76,41 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     });
   }
 
-  void _addPdf() async {
-    final pdf = await PdfStorageService.pickAndSavePdf(
+  Future<void> _addPdf() async {
+    final pdfs = await PdfStorageService.pickAndSaveMultiplePdfs(
       categoryId: widget.category.id,
       examId: widget.category.examId,
     );
-    if (pdf != null) {
-      await _pdfRepo.insertPdf(pdf);
-      _loadData();
+    if (pdfs.isNotEmpty) {
+      for (final pdf in pdfs) {
+        await _pdfRepo.insertPdf(pdf);
+      }
+      await _loadData();
+      if (mounted) {
+        Provider.of<StudyProvider>(context, listen: false).refreshRecentPdfs();
+        final msg = pdfs.length == 1
+            ? '✓ Imported "${pdfs.first.title}"'
+            : '✓ Imported ${pdfs.length} PDF files into ${widget.category.title}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
     }
   }
 
   void _showAddSubcategoryDialog() {
-    final titleController = TextEditingController();
-    showDialog(
+    showCategoryEditorDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: const [
-            Icon(Icons.create_new_folder, color: Colors.indigo),
-            SizedBox(width: 8),
-            Text('New Subfolder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Inside: ${widget.category.title}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: titleController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Subfolder Name',
-                hintText: 'e.g. Data Structures, Modern History',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final text = titleController.text.trim();
-              if (text.isNotEmpty) {
-                final newCat = Category(
-                  title: text,
-                  parentId: widget.category.id,
-                  examId: widget.category.examId,
-                  color: widget.category.color,
-                  icon: 'folder',
-                );
-                await _catRepo.insertCategory(newCat);
-                Navigator.pop(ctx);
-                _loadData();
-              }
-            },
-            child: const Text('Create Folder'),
-          ),
-        ],
-      ),
+      parentTitle: widget.category.title,
+      parentId: widget.category.id,
+      examId: widget.category.examId,
+      onSave: (newCat) async {
+        await _catRepo.insertCategory(newCat);
+        await _loadData();
+        if (mounted) {
+          Provider.of<StudyProvider>(context, listen: false).refreshRecentPdfs();
+        }
+      },
     );
   }
 
@@ -276,68 +240,16 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   void _showRenameCategoryDialog(Category cat) {
-    final titleController = TextEditingController(text: cat.title);
-    final descController = TextEditingController(text: cat.description);
-
-    showDialog(
+    showCategoryEditorDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
-            Icon(Icons.edit, color: Color(0xFF1E3A8A)),
-            SizedBox(width: 8),
-            Text('Rename Topic / Subject', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'New Name',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              if (titleController.text.trim().isNotEmpty) {
-                final updated = cat.copyWith(
-                  title: titleController.text.trim(),
-                  description: descController.text.trim(),
-                );
-                await _catRepo.updateCategory(updated);
-                Navigator.pop(ctx);
-                _loadData();
-              }
-            },
-            child: const Text('Save Changes'),
-          ),
-        ],
-      ),
+      existing: cat,
+      onSave: (updated) async {
+        await _catRepo.updateCategory(updated);
+        await _loadData();
+        if (mounted) {
+          Provider.of<StudyProvider>(context, listen: false).loadCategoriesForSelectedExam();
+        }
+      },
     );
   }
 
@@ -382,59 +294,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       appBar: AppBar(
         title: Text(widget.category.title),
         actions: [
-          if (settings.canEdit)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Rename Category',
-              onPressed: () => _showRenameCategoryDialog(widget.category),
-            ),
-          // Master Edit/View Mode toggle pill (long-press opens Master Control)
-          InkWell(
-            onTap: () {
-              settings.toggleEditMode();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(settings.isEditMode
-                      ? '✏️ Edit Mode ON (Delete: ${settings.canDelete ? "ON" : "OFF"})'
-                      : '👁️ View Only Mode: Content is in read-only mode'),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            onLongPress: () => showMasterControlModal(context),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: settings.isEditMode ? Colors.orange.withOpacity(0.18) : Colors.blue.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: settings.isEditMode ? Colors.orange : Colors.blue,
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    settings.isEditMode ? Icons.edit_note : Icons.visibility_outlined,
-                    size: 16,
-                    color: settings.isEditMode ? Colors.orange.shade800 : Colors.blue.shade800,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    settings.isEditMode ? 'Edit' : 'View',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: settings.isEditMode ? Colors.orange.shade900 : Colors.blue.shade900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
           IconButton(
             icon: Icon(isGrid ? Icons.view_list : Icons.grid_view),
             tooltip: isGrid ? 'Switch to List View' : 'Switch to Grid View',
@@ -795,7 +654,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.folder, color: Colors.indigo, size: 26),
+                CategoryVisualBadge(category: sub, size: 32, borderRadius: 9),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -854,10 +713,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         side: BorderSide(color: Colors.indigo.withOpacity(0.12)),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.indigo.withOpacity(0.1),
-          child: const Icon(Icons.folder, color: Colors.indigo),
-        ),
+        leading: CategoryVisualBadge(category: sub, size: 40, circular: true),
         title: Text(sub.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         subtitle: Text(
           '📁 ${stats.directSubcategoryCount} Topics • 📄 ${stats.pdfCount} Files • ❓ ${stats.questionCount} Qs',

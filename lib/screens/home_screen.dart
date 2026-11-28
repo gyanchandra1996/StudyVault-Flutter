@@ -27,6 +27,7 @@ import '../widgets/app_logo.dart';
 import '../widgets/exam_analytics_modal.dart';
 import '../widgets/syllabus_tracker_modal.dart';
 import '../widgets/quick_revision_handbook_modal.dart';
+import '../widgets/category_visual_picker.dart';
 import 'category_detail_screen.dart';
 import 'pdf_reader_screen.dart';
 import 'quiz_runner_screen.dart';
@@ -551,74 +552,34 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _showAddCategoryDialog() {
     final study = Provider.of<StudyProvider>(context, listen: false);
-    final titleController = TextEditingController();
-
-    showDialog(
+    showCategoryEditorDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Category / Subject'),
-        content: TextField(
-          controller: titleController,
-          decoration: const InputDecoration(
-            labelText: 'Category Title',
-            hintText: 'e.g. Computer Science, General Hindi',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (titleController.text.trim().isNotEmpty) {
-                study.addCategory(
-                  Category(
-                    title: titleController.text.trim(),
-                    examId: study.selectedExam?.id,
-                  ),
-                );
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+      examId: study.selectedExam?.id,
+      onSave: (cat) async {
+        await study.addCategory(cat);
+      },
     );
   }
 
   void _pickAndAddGlobalPdf() async {
     final study = Provider.of<StudyProvider>(context, listen: false);
-    final pdf = await PdfStorageService.pickAndSavePdf(
+    final pdfs = await PdfStorageService.pickAndSaveMultiplePdfs(
       examId: study.selectedExam?.id,
     );
-    if (pdf != null) {
-      await _pdfRepo.insertPdf(pdf);
+    if (pdfs.isNotEmpty) {
+      for (final pdf in pdfs) {
+        await _pdfRepo.insertPdf(pdf);
+      }
       study.refreshRecentPdfs();
       study.loadCategoriesForSelectedExam();
       if (mounted) {
+        final msg = pdfs.length == 1
+            ? 'Imported "${pdfs.first.title}" successfully!'
+            : 'Imported ${pdfs.length} PDF files successfully!';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Imported "${pdf.title}" successfully!')),
+          SnackBar(content: Text(msg)),
         );
       }
-    }
-  }
-
-  IconData _getCategoryIcon(String iconName) {
-    switch (iconName) {
-      case 'computer':
-        return Icons.computer;
-      case 'calculate':
-        return Icons.calculate_outlined;
-      case 'psychology':
-        return Icons.psychology_outlined;
-      case 'public':
-        return Icons.public;
-      case 'translate':
-        return Icons.translate;
-      case 'menu_book':
-        return Icons.menu_book;
-      default:
-        return Icons.folder_outlined;
     }
   }
 
@@ -1279,14 +1240,7 @@ class _HomeScreenState extends State<HomeScreen>
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color: accent.withOpacity(0.16),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Icon(_getCategoryIcon(cat.icon), color: accent, size: 20),
-                                          ),
+                                          CategoryVisualBadge(category: cat, size: 32, borderRadius: 8),
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
@@ -1328,10 +1282,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 margin: const EdgeInsets.only(bottom: 8),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: accent.withOpacity(0.12),
-                                    child: Icon(_getCategoryIcon(cat.icon), color: accent),
-                                  ),
+                                  leading: CategoryVisualBadge(category: cat, size: 40, circular: true),
                                   title: Text(cat.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                   subtitle: Text('📄 $pdfCount Documents inside', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                                   trailing: Row(
@@ -2192,7 +2143,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
 
-          // ---------------- TAB 4: 🛠️ TOOLS SUITE (PI7 STYLE) ----------------
+          // ---------------- TAB 4: 🛠️ TOOLS SUITE ----------------
           ToolsHubScreen(onRefresh: _loadAssessmentData),
 
           // ---------------- TAB 5: 🔒 PERSONAL DOCUMENT & ID VAULT ----------------

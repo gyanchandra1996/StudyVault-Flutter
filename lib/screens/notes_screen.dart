@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../database/note_repo.dart';
 import '../models/personal_note.dart';
 import '../providers/settings_provider.dart';
+import '../services/voice_service.dart';
+import '../widgets/formatted_note_content.dart';
 
 class NotesScreen extends StatefulWidget {
   const NotesScreen({Key? key}) : super(key: key);
@@ -38,6 +40,159 @@ class _NotesScreenState extends State<NotesScreen> {
     });
   }
 
+  void _showAddNoteDialog() {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('New Study Note', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          maxLines: 7,
+          decoration: const InputDecoration(
+            hintText: 'Write note title on first line, then key points or formulas...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final text = textController.text.trim();
+              if (text.isNotEmpty) {
+                await _noteRepo.addNote(noteText: text);
+                if (ctx.mounted) Navigator.pop(ctx);
+                _loadNotes();
+              }
+            },
+            child: const Text('Save Note'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReadNoteDialog(PersonalNote note, SettingsProvider settings) {
+    bool isSpeaking = false;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 580, maxHeight: 740),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E3A8A).withOpacity(0.08),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.menu_book_rounded, color: Color(0xFF1E3A8A)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                note.pdfTitle ?? 'Study Note',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              Text(
+                                _formatDate(note.updatedAt),
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            isSpeaking ? Icons.stop_circle : Icons.volume_up_outlined,
+                            color: isSpeaking ? Colors.red : Colors.teal,
+                          ),
+                          tooltip: isSpeaking ? 'Stop Reading' : 'Listen',
+                          onPressed: () {
+                            if (isSpeaking) {
+                              VoiceService.instance.stop();
+                              setDialogState(() => isSpeaking = false);
+                            } else {
+                              setDialogState(() => isSpeaking = true);
+                              VoiceService.instance.speak(
+                                note.noteText,
+                                speechRate: settings.ttsSpeechRate,
+                                preferredLocale: settings.ttsPreferredLocale,
+                                preferredVoiceName: settings.ttsPreferredVoiceName,
+                                onStatusChange: (s) {
+                                  if (ctx.mounted && !s) {
+                                    setDialogState(() => isSpeaking = false);
+                                  }
+                                },
+                              );
+                            }
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            VoiceService.instance.stop();
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(18),
+                      child: FormattedNoteContent(
+                        data: note.noteText,
+                        accentColor: const Color(0xFF1E3A8A),
+                        fontSize: 14.5,
+                        textColor: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+                      ),
+                    ),
+                  ),
+                  if (settings.canEdit)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.edit_outlined, size: 16),
+                            label: const Text('Edit Note'),
+                            onPressed: () {
+                              VoiceService.instance.stop();
+                              Navigator.pop(ctx);
+                              _showEditNoteDialog(note);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    ).then((_) => VoiceService.instance.stop());
+  }
+
   void _showEditNoteDialog(PersonalNote note) {
     final textController = TextEditingController(text: note.noteText);
     showDialog(
@@ -46,7 +201,7 @@ class _NotesScreenState extends State<NotesScreen> {
         title: const Text('Edit Study Note'),
         content: TextField(
           controller: textController,
-          maxLines: 5,
+          maxLines: 7,
           decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
         actions: [
@@ -83,6 +238,15 @@ class _NotesScreenState extends State<NotesScreen> {
       appBar: AppBar(
         title: const Text('Consolidated Study Notes'),
       ),
+      floatingActionButton: settings.canEdit
+          ? FloatingActionButton.extended(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.note_add_outlined),
+              label: const Text('Add Note'),
+              onPressed: _showAddNoteDialog,
+            )
+          : null,
       body: Column(
         children: [
           Padding(
@@ -141,63 +305,84 @@ class _NotesScreenState extends State<NotesScreen> {
                               borderRadius: BorderRadius.circular(16),
                               side: BorderSide(color: Colors.indigo.withOpacity(0.15)),
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.picture_as_pdf, size: 16, color: Color(0xFF6366F1)),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          note.pdfTitle ?? 'Document Note',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showReadNoteDialog(note, settings),
+                              child: Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          note.pdfId != null ? Icons.picture_as_pdf : Icons.note_alt_outlined,
+                                          size: 16,
+                                          color: const Color(0xFF6366F1),
                                         ),
-                                      ),
-                                      Text(
-                                        'Page ${note.pageNumber}',
-                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                      ),
-                                    ],
-                                  ),
-                                  const Divider(height: 16),
-                                  Text(
-                                    note.noteText,
-                                    style: const TextStyle(fontSize: 15, height: 1.4),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _formatDate(note.updatedAt),
-                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                      ),
-                                      Row(
-                                        children: [
-                                          if (settings.canEdit)
-                                            IconButton(
-                                              icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
-                                              onPressed: () => _showEditNoteDialog(note),
-                                              constraints: const BoxConstraints(),
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            note.pdfTitle ?? 'Study Note',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (note.pdfId != null)
+                                          Text(
+                                            'Page ${note.pageNumber}',
+                                            style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                          ),
+                                      ],
+                                    ),
+                                    const Divider(height: 16),
+                                    FormattedNoteContent(
+                                      data: note.noteText,
+                                      accentColor: const Color(0xFF1E3A8A),
+                                      fontSize: 13.5,
+                                      selectable: false,
+                                      maxBlocks: 6,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          _formatDate(note.updatedAt),
+                                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                        ),
+                                        Row(
+                                          children: [
+                                            TextButton.icon(
+                                              style: TextButton.styleFrom(
+                                                visualDensity: VisualDensity.compact,
+                                                padding: const EdgeInsets.symmetric(horizontal: 6),
+                                              ),
+                                              icon: const Icon(Icons.chrome_reader_mode_outlined, size: 15),
+                                              label: const Text('Read', style: TextStyle(fontSize: 11.5)),
+                                              onPressed: () => _showReadNoteDialog(note, settings),
                                             ),
-                                          if (settings.canDelete)
-                                            IconButton(
-                                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                              onPressed: () => _deleteNote(note.id!),
-                                              constraints: const BoxConstraints(),
-                                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                            if (settings.canEdit)
+                                              IconButton(
+                                                icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                                                onPressed: () => _showEditNoteDialog(note),
+                                                constraints: const BoxConstraints(),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                              ),
+                                            if (settings.canDelete)
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                                onPressed: () => _deleteNote(note.id!),
+                                                constraints: const BoxConstraints(),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );

@@ -46,14 +46,20 @@ class SettingsProvider extends ChangeNotifier {
   String? _apiTestResult;
   UserProfile _userProfile = UserProfile();
   final String _assistantName = 'Aarna';
-  bool _isEditMode = false;
+  bool _isEditMode = true;
   bool _isInitialized = false;
+  double _ttsSpeechRate = 0.50;
+  String _ttsPreferredLocale = 'auto'; // 'auto', 'en-IN', 'en-US', 'en-GB', 'hi-IN'
+  String _ttsPreferredVoiceName = '';
 
   UserProfile get userProfile => _userProfile;
   String get assistantName => _assistantName;
   bool get isEditMode => _isEditMode;
   bool get isInitialized => _isInitialized;
   bool get isRegistered => _userProfile.isRegistered;
+  double get ttsSpeechRate => _ttsSpeechRate;
+  String get ttsPreferredLocale => _ttsPreferredLocale;
+  String get ttsPreferredVoiceName => _ttsPreferredVoiceName;
 
   bool get isAiEnabled => _isAiEnabled;
   String get aiProvider => _aiProvider;
@@ -238,8 +244,39 @@ class SettingsProvider extends ChangeNotifier {
     try {
       _userProfile = await UserProfileRepo().getProfile();
     } catch (_) {}
-    _isEditMode = prefs.getBool('isEditMode') ?? false;
+    final migratedEditDefault = prefs.getBool('master_control_edit_default_v2') ?? false;
+    if (!migratedEditDefault) {
+      _isEditMode = true;
+      await prefs.setBool('isEditMode', true);
+      await prefs.setBool('master_control_edit_default_v2', true);
+    } else {
+      _isEditMode = prefs.getBool('isEditMode') ?? true;
+    }
+    _ttsSpeechRate = (prefs.getDouble('ttsSpeechRate') ?? 0.50).clamp(0.35, 0.70);
+    _ttsPreferredLocale = prefs.getString('ttsPreferredLocale') ?? 'auto';
+    _ttsPreferredVoiceName = prefs.getString('ttsPreferredVoiceName') ?? '';
     _isInitialized = true;
+    notifyListeners();
+  }
+
+  Future<void> setTtsSpeechRate(double rate) async {
+    _ttsSpeechRate = rate.clamp(0.35, 0.70);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('ttsSpeechRate', _ttsSpeechRate);
+    notifyListeners();
+  }
+
+  Future<void> setTtsPreferredLocale(String locale) async {
+    _ttsPreferredLocale = locale;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ttsPreferredLocale', locale);
+    notifyListeners();
+  }
+
+  Future<void> setTtsPreferredVoiceName(String voiceName) async {
+    _ttsPreferredVoiceName = voiceName;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ttsPreferredVoiceName', voiceName);
     notifyListeners();
   }
 

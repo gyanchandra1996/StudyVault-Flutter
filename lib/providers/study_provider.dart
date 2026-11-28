@@ -124,6 +124,11 @@ class StudyProvider extends ChangeNotifier {
     await loadCategoriesForSelectedExam();
   }
 
+  Future<void> updateCategory(Category category) async {
+    await _categoryRepo.updateCategory(category);
+    await loadCategoriesForSelectedExam();
+  }
+
   Future<void> deleteCategory(int catId) async {
     await _categoryRepo.deleteCategory(catId);
     await loadCategoriesForSelectedExam();

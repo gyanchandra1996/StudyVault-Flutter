@@ -1365,7 +1365,7 @@ class _CustomImageResizerDialogState extends State<_CustomImageResizerDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Custom Image Resizer & Compressor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                        Text('Pi7 Style custom KB & dimension sizing for exams', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('Custom KB & dimension sizing for exams', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -1508,7 +1508,7 @@ class _CustomImageResizerDialogState extends State<_CustomImageResizerDialog> {
 }
 
 // ============================================================================
-// 3. CUSTOM PDF GENERATOR (PI7 STYLE)
+// 3. CUSTOM PDF GENERATOR
 // ============================================================================
 class _CustomPdfGeneratorDialog extends StatefulWidget {
   const _CustomPdfGeneratorDialog({Key? key}) : super(key: key);
@@ -1634,7 +1634,7 @@ class _CustomPdfGeneratorDialogState extends State<_CustomPdfGeneratorDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Custom PDF Generator (Pi7 Style)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('Custom PDF Generator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         Text('Create clean notes PDF with watermark & margins', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       ],
                     ),

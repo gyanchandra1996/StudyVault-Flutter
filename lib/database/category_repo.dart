@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/category.dart';
 import 'app_database.dart';
 
@@ -234,22 +235,58 @@ class CategoryRepo {
 
   Future<void> seedDefaultHierarchicalCategories(int? examId) async {
     final db = await dbProvider.database;
+    final prefs = await SharedPreferences.getInstance();
+    final hasMigratedSingleDefault = prefs.getBool('migrated_single_default_category_v1') ?? false;
+
     final countRes = await db.rawQuery('SELECT COUNT(*) as c FROM categories');
     final total = (countRes.first['c'] as int?) ?? 0;
+
     if (total > 0) {
-      // Check if "Computer Science" has subcategories like "Data Structures"
-      final csCats = await db.query('categories', where: 'title LIKE ?', whereArgs: ['%Computer Science%']);
-      if (csCats.isNotEmpty) {
-        final csId = csCats.first['id'] as int;
-        final subCount = await getSubcategoryCount(csId);
-        if (subCount == 0) {
-          await _seedCsHierarchy(csId, examId);
+      // One-time cleanup on upgrade: delete old extra seeded root categories if they have no user PDFs/questions
+      if (!hasMigratedSingleDefault) {
+        const legacyDefaultRoots = [
+          'Quantitative Aptitude',
+          'Reasoning & Mental Ability',
+          'General Studies & GK',
+        ];
+        for (final legacyTitle in legacyDefaultRoots) {
+          final matches = await db.query(
+            'categories',
+            where: 'title = ? AND parent_id IS NULL',
+            whereArgs: [legacyTitle],
+          );
+          for (final row in matches) {
+            final id = row['id'] as int?;
+            if (id == null) continue;
+            final pdfs = await getPdfCountForCategory(id, recursive: true);
+            final qs = await getQuestionCountForCategory(id, recursive: true);
+            if (pdfs == 0 && qs == 0) {
+              await deleteCategory(id);
+            }
+          }
         }
+        await prefs.setBool('migrated_single_default_category_v1', true);
       }
-      return;
+
+      // Check remaining root categories; if none left, seed the single default category
+      final remainingRes = await db.rawQuery('SELECT COUNT(*) as c FROM categories WHERE parent_id IS NULL');
+      final remainingRoots = (remainingRes.first['c'] as int?) ?? 0;
+      if (remainingRoots > 0) {
+        // Ensure Computer Science has its default subcategories if empty
+        final csCats = await db.query('categories', where: 'title LIKE ? AND parent_id IS NULL', whereArgs: ['%Computer Science%']);
+        if (csCats.isNotEmpty) {
+          final csId = csCats.first['id'] as int;
+          final subCount = await getSubcategoryCount(csId);
+          if (subCount == 0) {
+            await _seedCsHierarchy(csId, examId);
+          }
+        }
+        return;
+      }
     }
 
-    // 1. Root: Computer Science
+    // By default, seed ONE category: Computer Science (with its subcategories)
+    await prefs.setBool('migrated_single_default_category_v1', true);
     final csId = await insertCategory(Category(
       title: 'Computer Science',
       description: 'Core CS Subjects, Algorithms, Operating Systems & Engineering',
@@ -258,97 +295,6 @@ class CategoryRepo {
       examId: examId,
     ));
     await _seedCsHierarchy(csId, examId);
-
-    // 2. Root: Quantitative Aptitude
-    final quantId = await insertCategory(Category(
-      title: 'Quantitative Aptitude',
-      description: 'Arithmetic, Algebra, Geometry, Data Interpretation',
-      color: '#10B981',
-      icon: 'calculate',
-      examId: examId,
-    ));
-    final arithId = await insertCategory(Category(
-      title: 'Arithmetic',
-      description: 'Core arithmetic math problems',
-      color: '#10B981',
-      icon: 'calculate',
-      parentId: quantId,
-      examId: examId,
-    ));
-    await insertCategory(Category(
-      title: 'Percentages & Profit Loss',
-      description: 'Markup, Discount, Cost Price',
-      color: '#10B981',
-      icon: 'calculate',
-      parentId: arithId,
-      examId: examId,
-    ));
-    await insertCategory(Category(
-      title: 'Time, Speed & Distance',
-      description: 'Trains, Boats, Work and Wages',
-      color: '#10B981',
-      icon: 'calculate',
-      parentId: arithId,
-      examId: examId,
-    ));
-
-    // 3. Root: Reasoning & Logic
-    final reasonId = await insertCategory(Category(
-      title: 'Reasoning & Mental Ability',
-      description: 'Verbal, Non-Verbal, Analytical & Logical Reasoning',
-      color: '#F59E0B',
-      icon: 'psychology',
-      examId: examId,
-    ));
-    final verbalId = await insertCategory(Category(
-      title: 'Verbal Reasoning',
-      description: 'Series, Puzzles, Coding-Decoding',
-      color: '#F59E0B',
-      icon: 'psychology',
-      parentId: reasonId,
-      examId: examId,
-    ));
-    await insertCategory(Category(
-      title: 'Coding-Decoding & Series',
-      description: 'Letter and number series patterns',
-      color: '#F59E0B',
-      icon: 'psychology',
-      parentId: verbalId,
-      examId: examId,
-    ));
-    await insertCategory(Category(
-      title: 'Syllogism & Deductive Logic',
-      description: 'Statements and Venn diagrams',
-      color: '#F59E0B',
-      icon: 'psychology',
-      parentId: verbalId,
-      examId: examId,
-    ));
-
-    // 4. Root: General Studies & GK
-    final gsId = await insertCategory(Category(
-      title: 'General Studies & GK',
-      description: 'Indian Polity, History, Geography & Current Affairs',
-      color: '#EC4899',
-      icon: 'public',
-      examId: examId,
-    ));
-    final polityId = await insertCategory(Category(
-      title: 'Indian Polity & Constitution',
-      description: 'Fundamental Rights, Parliament, Articles',
-      color: '#EC4899',
-      icon: 'public',
-      parentId: gsId,
-      examId: examId,
-    ));
-    await insertCategory(Category(
-      title: 'Fundamental Rights & Duties',
-      description: 'Article 12-35, 51A',
-      color: '#EC4899',
-      icon: 'public',
-      parentId: polityId,
-      examId: examId,
-    ));
   }
 
   Future<void> _seedCsHierarchy(int csId, int? examId) async {

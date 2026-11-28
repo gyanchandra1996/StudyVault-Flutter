@@ -122,7 +122,7 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
     );
   }
 
-  /// YouTube-style PiP Player Floating Window
+  /// YouTube-style Floating Timer Player Window
   Widget _buildYouTubeStylePlayer(PomodoroProvider pomodoro) {
     final totalSeconds = (pomodoro.isWorkMode ? pomodoro.workMinutes : pomodoro.breakMinutes) * 60;
     final progress = totalSeconds > 0
@@ -139,7 +139,7 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
           color: Colors.black.withOpacity(0.35),
           child: Row(
             children: [
-              // Red "LIVE / PIP" Badge like YouTube
+              // Red "LIVE" Badge like YouTube
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
@@ -154,7 +154,7 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
                       const SizedBox(width: 3),
                     ],
                     Text(
-                      pomodoro.isRunning ? 'PiP LIVE' : 'PAUSED',
+                      pomodoro.isRunning ? 'LIVE' : 'PAUSED',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 9,
@@ -178,24 +178,24 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
                   ),
                 ),
               ),
-              // Android System Native PiP (Allows overlay over other apps)
+              // System overlay mode (Allows overlay over other apps)
               InkWell(
                 onTap: () async {
                   final success = await PipService.enterPip();
                   if (!success && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Native Android PiP is active or requires Android 8.0+'),
+                        content: Text('System overlay requires Android 8.0+'),
                         duration: Duration(seconds: 2),
                       ),
                     );
                   }
                 },
                 child: const Tooltip(
-                  message: 'Enter System PiP (Stay over other apps)',
+                  message: 'Stay over other apps',
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(Icons.picture_in_picture_alt, size: 15, color: Color(0xFF60A5FA)),
+                    child: Icon(Icons.fullscreen, size: 15, color: Color(0xFF60A5FA)),
                   ),
                 ),
               ),
@@ -207,7 +207,7 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
                   child: Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.white70),
                 ),
               ),
-              // Close PiP
+              // Close overlay
               InkWell(
                 onTap: widget.onClose,
                 child: const Padding(
@@ -355,7 +355,7 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
                 onPressed: () => showPomodoroSettingsModal(context),
               ),
 
-              // 5. Close PiP Control
+              // 5. Close Timer Overlay
               IconButton(
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
@@ -365,7 +365,7 @@ class _FloatingPipOverlayState extends State<FloatingPipOverlay> {
                   color: Colors.white70,
                   size: 20,
                 ),
-                tooltip: 'Close PiP',
+                tooltip: 'Close Timer',
                 onPressed: widget.onClose,
               ),
             ],

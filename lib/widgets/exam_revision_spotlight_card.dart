@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/handbook_data.dart';
+import 'formatted_note_content.dart';
 import 'quick_revision_handbook_modal.dart';
 
 /// Interactive Home widget for quick active-recall revision & direct entry
@@ -265,11 +266,16 @@ class _ExamRevisionSpotlightCardState extends State<ExamRevisionSpotlightCard> {
                     ),
                     if (_isRevealed) ...[
                       const Divider(height: 12),
-                      Text(
-                        desc,
-                        maxLines: 6,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, height: 1.42),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        child: SingleChildScrollView(
+                          child: FormattedNoteContent(
+                            data: desc,
+                            accentColor: subColor,
+                            fontSize: 12.5,
+                            selectable: false,
+                          ),
+                        ),
                       ),
                     ],
                   ],

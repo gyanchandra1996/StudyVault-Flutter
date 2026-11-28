@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +8,7 @@ import '../data/handbook_data.dart';
 import '../database/flashcard_repo.dart';
 import '../providers/settings_provider.dart';
 import '../services/voice_service.dart';
+import 'formatted_note_content.dart';
 
 class QuickRevisionHandbookModal extends StatefulWidget {
   final int initialTabIndex;
@@ -33,6 +34,7 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
   int _recallIndex = 0;
   bool _isAnswerRevealed = false;
   String? _speakingKey;
+  double _noteFontSize = 13.5;
 
   final Set<String> _revisedKeys = {};
   final Set<String> _bookmarkedKeys = {};
@@ -818,6 +820,23 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                 '${filtered.length} topics',
                 style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: isDark ? Colors.white60 : Colors.grey.shade700),
               ),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: () => setState(() => _noteFontSize = (_noteFontSize - 1).clamp(11.5, 18.0)),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text('A-', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.deepOrange.shade800)),
+                ),
+              ),
+              InkWell(
+                onTap: () => setState(() => _noteFontSize = (_noteFontSize + 1).clamp(11.5, 18.0)),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text('A+', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepOrange.shade800)),
+                ),
+              ),
               if (isCustomTab && settings.canDelete) ...[
                 const SizedBox(width: 6),
                 InkWell(
@@ -953,9 +972,10 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                     Expanded(
                       child: _isAnswerRevealed
                           ? SingleChildScrollView(
-                              child: SelectableText(
-                                desc,
-                                style: const TextStyle(fontSize: 13, height: 1.5),
+                              child: FormattedNoteContent(
+                                data: desc,
+                                accentColor: Colors.deepOrange.shade700,
+                                fontSize: _noteFontSize,
                               ),
                             )
                           : Center(
@@ -1123,9 +1143,11 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                   ),
                   if (isExpanded) ...[
                     const Divider(height: 14),
-                    SelectableText(
-                      desc,
-                      style: const TextStyle(fontSize: 12.5, height: 1.48),
+                    FormattedNoteContent(
+                      data: desc,
+                      accentColor: Colors.deepOrange.shade700,
+                      fontSize: _noteFontSize,
+                      selectable: false,
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -1169,11 +1191,17 @@ class _QuickRevisionHandbookModalState extends State<QuickRevisionHandbookModal>
                               setState(() => _speakingKey = null);
                             } else {
                               setState(() => _speakingKey = key);
-                              VoiceService.instance.speak('$title. $desc', onStatusChange: (speaking) {
-                                if (mounted && !speaking) {
-                                  setState(() => _speakingKey = null);
-                                }
-                              });
+                              VoiceService.instance.speak(
+                                '$title. $desc',
+                                speechRate: settings.ttsSpeechRate,
+                                preferredLocale: settings.ttsPreferredLocale,
+                                preferredVoiceName: settings.ttsPreferredVoiceName,
+                                onStatusChange: (speaking) {
+                                  if (mounted && !speaking && _speakingKey == key) {
+                                    setState(() => _speakingKey = null);
+                                  }
+                                },
+                              );
                             }
                           },
                           borderRadius: BorderRadius.circular(8),

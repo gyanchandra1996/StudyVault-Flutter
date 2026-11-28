@@ -4,6 +4,7 @@ class Category {
   final String description;
   final String color;
   final String icon;
+  final String imagePath;
   final int? parentId;
   final int? examId;
   final int createdAt;
@@ -14,6 +15,7 @@ class Category {
     this.description = '',
     this.color = '#6366F1',
     this.icon = 'folder',
+    this.imagePath = '',
     this.parentId,
     this.examId,
     int? createdAt,
@@ -26,6 +28,7 @@ class Category {
       'description': description,
       'color': color,
       'icon': icon,
+      'image_path': imagePath,
       'parent_id': parentId,
       'exam_id': examId,
       'created_at': createdAt,
@@ -39,6 +42,7 @@ class Category {
       description: (map['description'] as String?) ?? '',
       color: (map['color'] as String?) ?? '#6366F1',
       icon: (map['icon'] as String?) ?? 'folder',
+      imagePath: (map['image_path'] as String?) ?? '',
       parentId: map['parent_id'] as int?,
       examId: map['exam_id'] as int?,
       createdAt: map['created_at'] as int?,
@@ -51,6 +55,7 @@ class Category {
     String? description,
     String? color,
     String? icon,
+    String? imagePath,
     int? parentId,
     int? examId,
     int? createdAt,
@@ -61,6 +66,7 @@ class Category {
       description: description ?? this.description,
       color: color ?? this.color,
       icon: icon ?? this.icon,
+      imagePath: imagePath ?? this.imagePath,
       parentId: parentId ?? this.parentId,
       examId: examId ?? this.examId,
       createdAt: createdAt ?? this.createdAt,

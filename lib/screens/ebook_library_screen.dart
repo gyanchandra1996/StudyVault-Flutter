@@ -11,6 +11,7 @@ import '../database/ebook_repo.dart';
 import '../models/ebook_item.dart';
 import '../models/pdf_document.dart';
 import '../providers/settings_provider.dart';
+import '../services/pdf_storage_service.dart';
 import '../services/share_service.dart';
 import '../widgets/master_control_section.dart';
 import 'pdf_reader_screen.dart';
@@ -100,22 +101,130 @@ class _EbookLibraryScreenState extends State<EbookLibraryScreen> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
+        allowMultiple: true,
       );
-      if (result == null || result.files.single.path == null) return;
+      if (result == null || result.files.isEmpty) return;
 
-      final srcPath = result.files.single.path!;
-      final originalName = result.files.single.name;
+      final validFiles = result.files.where((f) => f.path != null).toList();
+      if (validFiles.isEmpty) return;
+
       final dir = await _ensureEbookDir('pdfs');
-      final safeName = '${DateTime.now().millisecondsSinceEpoch}_${originalName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_')}';
-      final savedFile = await File(srcPath).copy(p.join(dir.path, safeName));
+      final ts = DateTime.now().millisecondsSinceEpoch;
 
+      if (validFiles.length == 1) {
+        final f = validFiles.first;
+        final safeName = '${ts}_${f.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_')}';
+        final savedFile = await File(f.path!).copy(p.join(dir.path, safeName));
+        final pages = await PdfStorageService.detectPdfPageCount(savedFile);
+
+        if (!mounted) return;
+        await _showMetadataDialog(
+          defaultTitle: p.basenameWithoutExtension(f.name),
+          mediaType: 'pdf',
+          filePath: savedFile.path,
+          extraPaths: const [],
+          detectedPages: pages,
+        );
+        return;
+      }
+
+      // Multiple PDFs selected: ask optional shared Author & Subject once, then import all
+      final authorCtrl = TextEditingController();
+      final subjectCtrl = TextEditingController(text: 'General');
       if (!mounted) return;
-      await _showMetadataDialog(
-        defaultTitle: p.basenameWithoutExtension(originalName),
-        mediaType: 'pdf',
-        filePath: savedFile.path,
-        extraPaths: const [],
+
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: [
+              const Icon(Icons.picture_as_pdf, color: Color(0xFF1E3A8A)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Import ${validFiles.length} PDF E-Books',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Selected ${validFiles.length} PDF files. Apply optional details to all:',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: authorCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Author / Publisher (Optional)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: subjectCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Subject / Category',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Import ${validFiles.length} PDFs'),
+            ),
+          ],
+        ),
       );
+
+      if (proceed != true) return;
+
+      final subject = subjectCtrl.text.trim().isEmpty ? 'General' : subjectCtrl.text.trim();
+      final author = authorCtrl.text.trim();
+      int addedCount = 0;
+
+      for (int i = 0; i < validFiles.length; i++) {
+        final f = validFiles[i];
+        final safeName = '${ts}_${i}_${f.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_')}';
+        final savedFile = await File(f.path!).copy(p.join(dir.path, safeName));
+        final pages = await PdfStorageService.detectPdfPageCount(savedFile);
+        final title = p.basenameWithoutExtension(f.name).trim();
+
+        await _ebookRepo.insertEbook(
+          EbookItem(
+            title: title.isNotEmpty ? title : 'E-Book ${i + 1}',
+            author: author,
+            subject: subject,
+            mediaType: 'pdf',
+            filePath: savedFile.path,
+            extraPathsJson: '[]',
+            coverPath: '',
+            totalPages: pages,
+            notes: '',
+          ),
+        );
+        addedCount++;
+      }
+
+      await _loadEbooks();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✓ Imported $addedCount PDF E-Books!')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -198,6 +307,7 @@ class _EbookLibraryScreenState extends State<EbookLibraryScreen> {
     required String mediaType,
     required String filePath,
     required List<String> extraPaths,
+    int? detectedPages,
     EbookItem? existing,
   }) async {
     final titleCtrl = TextEditingController(text: existing?.title ?? defaultTitle);
@@ -297,7 +407,7 @@ class _EbookLibraryScreenState extends State<EbookLibraryScreen> {
                     filePath: filePath,
                     extraPathsJson: jsonEncode(extraPaths),
                     coverPath: mediaType == 'pdf' ? '' : filePath,
-                    totalPages: extraPaths.isNotEmpty ? extraPaths.length : 1,
+                    totalPages: extraPaths.isNotEmpty ? extraPaths.length : (detectedPages ?? 1),
                     notes: notesCtrl.text.trim(),
                   ),
                 );
